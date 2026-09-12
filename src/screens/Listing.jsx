@@ -93,7 +93,7 @@ export default function Listing() {
         type="button"
         class="bn-tap"
         onClick={() => go('search')}
-        style="display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#6f6d68;margin-bottom:16px"
+        style="display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#6f6d68;margin-bottom:16px"
       >
         <Icon name="back" size={15} weight={2.2} />
         <span>{t().backAll}</span>
@@ -139,7 +139,7 @@ export default function Listing() {
             <span style="font-size:14px;color:#9a9793">{[usdOf(l()), rubOf(l())].filter(Boolean).join(' · ')}</span>
           </div>
           <Show when={exchangeRateDateLabel()}>
-            <div style="margin-top:6px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#9a9793">
+            <div style="margin-top:6px;display:flex;align-items:center;gap:8px;font-size:13px;color:#9a9793">
               <span>{exchangeRateDateLabel()}</span>
               <Show when={exchangeRateIsStale()}>
                 <span style={`padding:3px 9px;border-radius:999px;background:${RED_T};color:${RED_TX};font-weight:700;font-size:11px`}>
@@ -167,7 +167,7 @@ export default function Listing() {
             </span>
           </div>
 
-          <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;font-size:13.5px;color:#6f6d68">
+          <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;font-size:14px;color:#6f6d68">
             <span style="display:flex;align-items:center;gap:6px">
               <Icon name="eye" size={15} stroke="#9a9793" />
               {viewsOf(l()) == null ? '—' : txt('statViews', { n: nf(viewsOf(l())) })}
@@ -190,14 +190,14 @@ export default function Listing() {
                 <Icon name="check" size={19} stroke="#fff" weight={2.6} />
               </span>
               <div style="flex:1">
-                <div style={`font-size:15.5px;font-weight:800;color:${warm() ? RED_TX : '#0a4f4a'}`}>
+                <div style={`font-size:16px;font-weight:800;color:${warm() ? RED_TX : '#0a4f4a'}`}>
                   {st() === 'flagged' ? txt('confBadgeFlag', { n: Math.max(1, sel().comp) }) : txt('confBadgeFresh', { x: agoOf(l()) })}
                 </div>
-                <div style={`font-size:12.5px;margin-top:2px;color:${warm() ? '#7d4030' : '#3d6b66'}`}>{t().confBadgeNote}</div>
+                <div style={`font-size:13px;margin-top:2px;color:${warm() ? '#7d4030' : '#3d6b66'}`}>{t().confBadgeNote}</div>
               </div>
             </div>
             <div style="padding:20px">
-              <div style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793;margin-bottom:12px">
+              <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793;margin-bottom:12px">
                 {t().confHistory}
               </div>
               <div style="display:flex;gap:5px;align-items:flex-end;height:56px">
@@ -205,39 +205,39 @@ export default function Listing() {
                   {(h) => <div style={`flex:1;height:${h.h};background:${h.bg};border-radius:5px;min-width:6px`} />}
                 </For>
               </div>
-              <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;color:#9a9793">
+              <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:#9a9793">
                 <span>{t().daysAgo14}</span>
                 <span>{t().todayW}</span>
               </div>
               <div style="margin-top:18px;padding-top:18px;border-top:1px solid #f0efec;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px">
                 <div>
-                  <div style="font-size:21px;font-weight:800;letter-spacing:-.02em">
+                  <div style="font-size:20px;font-weight:800;letter-spacing:-.02em">
                     {sel().conf[0]} / {sel().conf[1]}
                   </div>
-                  <div style="font-size:12.5px;color:#6f6d68;margin-top:2px">{t().confInTime}</div>
+                  <div style="font-size:13px;color:#6f6d68;margin-top:2px">{t().confInTime}</div>
                 </div>
                 <div>
-                  <div style="font-size:21px;font-weight:800;letter-spacing:-.02em">{sel().conf[1]}</div>
-                  <div style="font-size:12.5px;color:#6f6d68;margin-top:2px">{t().daysInFeed}</div>
+                  <div style="font-size:20px;font-weight:800;letter-spacing:-.02em">{sel().conf[1]}</div>
+                  <div style="font-size:13px;color:#6f6d68;margin-top:2px">{t().daysInFeed}</div>
                 </div>
                 <div>
-                  <div style={`font-size:21px;font-weight:800;letter-spacing:-.02em;color:${sel().comp > 2 ? RED : INK}`}>{sel().comp}</div>
-                  <div style="font-size:12.5px;color:#6f6d68;margin-top:2px">{t().compCount}</div>
+                  <div style={`font-size:20px;font-weight:800;letter-spacing:-.02em;color:${sel().comp > 2 ? RED : INK}`}>{sel().comp}</div>
+                  <div style="font-size:13px;color:#6f6d68;margin-top:2px">{t().compCount}</div>
                 </div>
               </div>
             </div>
           </div>
 
           <div style="margin-top:26px">
-            <h2 style="margin:0 0 12px;font-size:21px;font-weight:800;letter-spacing:-.02em">{t().descTitle}</h2>
-            <p style="margin:0;font-size:15.5px;line-height:1.65;color:#2c2a27;max-width:64ch;text-wrap:pretty">
+            <h2 style="margin:0 0 12px;font-size:20px;font-weight:800;letter-spacing:-.02em">{t().descTitle}</h2>
+            <p style="margin:0;font-size:16px;line-height:1.65;color:#2c2a27;max-width:64ch;text-wrap:pretty">
               {txt('descBody', { d: (DIST[l().d] || DIST.center)[li()] })}
             </p>
-            <p style="margin:12px 0 0;font-size:15.5px;line-height:1.65;color:#4a4844;max-width:64ch;text-wrap:pretty">{t().descBody2}</p>
+            <p style="margin:12px 0 0;font-size:16px;line-height:1.65;color:#4a4844;max-width:64ch;text-wrap:pretty">{t().descBody2}</p>
           </div>
 
           <div style="margin-top:26px">
-            <h2 style="margin:0 0 14px;font-size:21px;font-weight:800;letter-spacing:-.02em">{t().specsTitle}</h2>
+            <h2 style="margin:0 0 14px;font-size:20px;font-weight:800;letter-spacing:-.02em">{t().specsTitle}</h2>
             <div style="background:#fff;border-radius:18px;padding:6px 20px;box-shadow:0 1px 2px rgba(28,27,25,.05);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:0 32px">
               <For each={specs()}>
                 {([key, value]) => (
@@ -260,8 +260,8 @@ export default function Listing() {
                 {sel().ini}
               </span>
               <div style="min-width:0">
-                <div style="font-size:15.5px;font-weight:700">{sel().n[li()]}</div>
-                <div style="font-size:12.5px;color:#6f6d68;margin-top:1px">
+                <div style="font-size:16px;font-weight:700">{sel().n[li()]}</div>
+                <div style="font-size:13px;color:#6f6d68;margin-top:1px">
                   {txt(sel().t === 'owner' ? 'ownerW' : 'agencyW')} · {txt('onHayHomeSince', { y: sel().since })}
                 </div>
               </div>
@@ -270,12 +270,12 @@ export default function Listing() {
               <div style={`padding:14px 16px;border-radius:14px;background:${low() ? RED_T : TEAL_T}`}>
                 <div style="display:flex;align-items:baseline;justify-content:space-between">
                   <span style="font-size:12px;font-weight:700;color:#4a4844">{t().ratingHonesty}</span>
-                  <span style={`font-size:19px;font-weight:800;color:${low() ? RED_TX : TEAL_TX}`}>{sel().score}%</span>
+                  <span style={`font-size:20px;font-weight:800;color:${low() ? RED_TX : TEAL_TX}`}>{sel().score}%</span>
                 </div>
                 <div style="margin-top:10px;height:7px;border-radius:999px;background:rgba(28,27,25,.09);overflow:hidden">
                   <div style={`width:${sel().score}%;height:100%;border-radius:999px;background:${low() ? RED : TEAL}`} />
                 </div>
-                <div style="margin-top:10px;font-size:12.5px;line-height:1.45;color:#4a4844">
+                <div style="margin-top:10px;font-size:13px;line-height:1.45;color:#4a4844">
                   {low() ? txt('scoreBad', { c: sel().comp }) : txt('scoreGood', { a: sel().conf[0], b: sel().conf[1], c: sel().comp })}
                 </div>
               </div>
@@ -322,7 +322,7 @@ export default function Listing() {
                 </span>
                 <div style="min-width:0">
                   <div style="font-size:13px;font-weight:800">{t().cadastreLbl}</div>
-                  <div style="font-size:13.5px;color:#2c2a27;margin-top:2px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all">
+                  <div style="font-size:14px;color:#2c2a27;margin-top:2px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all">
                     {l().cadastreCode}
                   </div>
                 </div>
@@ -331,7 +331,7 @@ export default function Listing() {
                 href="https://www.cadastre.am"
                 target="_blank"
                 rel="noopener noreferrer"
-                style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:13px;background:#f2f1ee;color:#1c1b19;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:none"
+                style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:13px;background:#f2f1ee;color:#1c1b19;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none"
               >
                 <span>{t().cadastreBadge}</span>
               </a>
@@ -345,11 +345,11 @@ export default function Listing() {
               type="button"
               class="bn-tap"
               onClick={() => setState({ reportOn: l().id, reason: null, reportSent: false })}
-              style="width:100%;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:9px;padding:13px;border-radius:13px;background:#fceeeb;color:#93331f;font-size:13.5px;font-weight:700;text-align:center"
+              style="width:100%;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:9px;padding:13px;border-radius:13px;background:#fceeeb;color:#93331f;font-size:14px;font-weight:700;text-align:center"
             >
               <span>{t().reportCta}</span>
             </button>
-            <div style="margin-top:10px;font-size:11.5px;color:#9a9793">{t().reportFine}</div>
+            <div style="margin-top:10px;font-size:12px;color:#9a9793">{t().reportFine}</div>
           </div>
         </aside>
       </div>
@@ -358,7 +358,7 @@ export default function Listing() {
 
       <Show when={similar().length}>
         <div style="margin-top:34px">
-          <h2 style="margin:0 0 14px;font-size:21px;font-weight:800;letter-spacing:-.02em">{t().similarTitle}</h2>
+          <h2 style="margin:0 0 14px;font-size:20px;font-weight:800;letter-spacing:-.02em">{t().similarTitle}</h2>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:16px">
             <For each={similar()}>
               {(x) => (
@@ -376,7 +376,7 @@ export default function Listing() {
                     <div style="font-size:13px;font-weight:700;margin-top:4px">
                       {roomsLabel(x)}, {x.area} m²
                     </div>
-                    <div style="font-size:12.5px;color:#6f6d68;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                    <div style="font-size:13px;color:#6f6d68;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                       {addrOf(x)}
                     </div>
                   </div>

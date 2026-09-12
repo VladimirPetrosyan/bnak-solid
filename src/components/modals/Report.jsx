@@ -16,10 +16,10 @@ export default function ReportModal() {
         <div onClick={(e) => e.stopPropagation()} style={`${modal('540px')};overflow:hidden`}>
           <div style="display:flex;align-items:flex-start;gap:12px;padding:24px 24px 0">
             <div style="flex:1">
-              <div style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#c2452f">
+              <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#c2452f">
                 {t().reportKicker}
               </div>
-              <div style="font-size:19px;font-weight:800;margin-top:8px;letter-spacing:-.025em">{target()}</div>
+              <div style="font-size:20px;font-weight:800;margin-top:8px;letter-spacing:-.025em">{target()}</div>
             </div>
             <button
               type="button"
@@ -34,7 +34,7 @@ export default function ReportModal() {
 
           <Show when={!state.reportSent}>
             <div style="padding:20px 24px 24px">
-              <div style="font-size:13.5px;color:#4a4844;line-height:1.5">{t().reportQ}</div>
+              <div style="font-size:14px;color:#4a4844;line-height:1.5">{t().reportQ}</div>
               <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
                 <For each={['rs1', 'rs2', 'rs3', 'rs4']}>
                   {(key) => {
@@ -52,7 +52,7 @@ export default function ReportModal() {
                         >
                           <span style={`width:8px;height:8px;border-radius:999px;background:${r().inner};display:block`} />
                         </span>
-                        <span style={`font-size:13.5px;line-height:1.45;font-weight:${r().w}`}>{txt(key)}</span>
+                        <span style={`font-size:14px;line-height:1.45;font-weight:${r().w}`}>{txt(key)}</span>
                       </button>
                     );
                   }}
@@ -62,7 +62,7 @@ export default function ReportModal() {
                 value={state.reportText || ''}
                 onInput={(e) => setState('reportText', e.currentTarget.value)}
                 placeholder={t().reportPh}
-                style="margin-top:16px;width:100%;min-height:80px;padding:12px 16px;border-radius:14px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:13.5px;resize:vertical"
+                style="margin-top:16px;width:100%;min-height:80px;padding:12px 16px;border-radius:14px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:14px;resize:vertical"
               />
               <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
                 <button
@@ -70,7 +70,7 @@ export default function ReportModal() {
                   class="bn-tap"
                   disabled={!state.reason}
                   onClick={submitReport}
-                  style={`flex:1;display:flex;align-items:center;justify-content:center;padding:16px 20px;border-radius:14px;background:${state.reason ? RED : '#eeedea'};color:${state.reason ? '#fff' : FAINT};font-size:14.5px;font-weight:700`}
+                  style={`flex:1;display:flex;align-items:center;justify-content:center;padding:16px 20px;border-radius:14px;background:${state.reason ? RED : '#eeedea'};color:${state.reason ? '#fff' : FAINT};font-size:15px;font-weight:700`}
                 >
                   {t().sendReport}
                 </button>
@@ -78,7 +78,7 @@ export default function ReportModal() {
                   type="button"
                   class="bn-tap"
                   onClick={close}
-                  style="display:flex;align-items:center;padding:16px 20px;border-radius:14px;background:#f2f1ee;font-size:14.5px;font-weight:700"
+                  style="display:flex;align-items:center;padding:16px 20px;border-radius:14px;background:#f2f1ee;font-size:15px;font-weight:700"
                 >
                   {t().cancelW}
                 </button>
@@ -94,8 +94,8 @@ export default function ReportModal() {
                   <Icon name="check" size={19} stroke="#0e7c73" weight={2.8} />
                 </span>
                 <div>
-                  <div style="font-size:19px;font-weight:800;letter-spacing:-.02em">{t().sentTitle}</div>
-                  <div style="margin-top:8px;font-size:13.5px;line-height:1.6;color:#4a4844">{t().sentText}</div>
+                  <div style="font-size:20px;font-weight:800;letter-spacing:-.02em">{t().sentTitle}</div>
+                  <div style="margin-top:8px;font-size:14px;line-height:1.6;color:#4a4844">{t().sentText}</div>
                 </div>
               </div>
               <div style="margin-top:20px;padding:16px;border-radius:14px;background:#f7f7f6;font-size:13px;line-height:1.55;color:#4a4844">
@@ -106,7 +106,7 @@ export default function ReportModal() {
                   type="button"
                   class="bn-tap"
                   onClick={close}
-                  style="flex:1;display:flex;align-items:center;justify-content:center;padding:16px 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:14.5px;font-weight:700"
+                  style="flex:1;display:flex;align-items:center;justify-content:center;padding:16px 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:15px;font-weight:700"
                 >
                   {t().gotIt}
                 </button>
@@ -117,7 +117,7 @@ export default function ReportModal() {
                     close();
                     go('fav');
                   }}
-                  style="display:flex;align-items:center;padding:16px 20px;border-radius:14px;background:#f2f1ee;font-size:14.5px;font-weight:700"
+                  style="display:flex;align-items:center;padding:16px 20px;border-radius:14px;background:#f2f1ee;font-size:15px;font-weight:700"
                 >
                   {t().favs}
                 </button>

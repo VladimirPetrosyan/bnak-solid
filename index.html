@@ -38,6 +38,10 @@
         .bn-hide-narrow {
           display: none !important;
         }
+        .bn-cabinet-pill {
+          width: 40px;
+          padding: 0 !important;
+        }
       }
       a {
         color: #0e7c73;
@@ -93,6 +97,20 @@
       .bn-card:hover {
         box-shadow: 0 8px 24px -12px rgba(28, 27, 25, 0.35);
         transform: translateY(-2px);
+      }
+      .bn-card img {
+        transition: transform 0.4s ease;
+      }
+      .bn-card:hover img {
+        transform: scale(1.06);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .bn-card,
+        .bn-card img,
+        .bn-tap {
+          transition: none !important;
+          transform: none !important;
+        }
       }
       ::-webkit-scrollbar {
         width: 10px;

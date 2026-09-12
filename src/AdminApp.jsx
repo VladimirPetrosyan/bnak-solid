@@ -78,8 +78,8 @@ function Login(props) {
             <Icon name="shield" size={19} stroke="#fff" weight={1.8} />
           </span>
           <div>
-            <div style="font-size:17px;font-weight:800;letter-spacing:-.02em">Панель управления</div>
-            <div style="font-size:12.5px;color:#6f6d68;margin-top:2px">Только для администратора</div>
+            <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">Панель управления</div>
+            <div style="font-size:13px;color:#6f6d68;margin-top:2px">Только для администратора</div>
           </div>
         </div>
 
@@ -111,7 +111,7 @@ function Login(props) {
         <button
           type="submit"
           disabled={busy()}
-          style={`margin-top:16px;width:100%;display:flex;align-items:center;justify-content:center;padding:14px;border-radius:13px;border:none;background:${busy() ? '#9ecbc5' : TEAL};color:#fff;font-size:14.5px;font-weight:700;cursor:${busy() ? 'default' : 'pointer'}`}
+          style={`margin-top:16px;width:100%;display:flex;align-items:center;justify-content:center;padding:14px;border-radius:13px;border:none;background:${busy() ? '#9ecbc5' : TEAL};color:#fff;font-size:15px;font-weight:700;cursor:${busy() ? 'default' : 'pointer'}`}
         >
           Войти
         </button>
@@ -139,8 +139,8 @@ function Tab(props) {
 function Kpi(props) {
   return (
     <div style={`padding:20px;border-radius:16px;box-shadow:0 1px 2px rgba(28,27,25,.05);background:${props.bg || '#fff'}`}>
-      <div style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6f6d68">{props.label}</div>
-      <div style={`font-size:31px;font-weight:800;letter-spacing:-.03em;margin-top:8px;color:${props.fg || INK}`}>{props.value}</div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6f6d68">{props.label}</div>
+      <div style={`font-size:32px;font-weight:800;letter-spacing:-.03em;margin-top:8px;color:${props.fg || INK}`}>{props.value}</div>
     </div>
   );
 }
@@ -155,12 +155,12 @@ function UserRow(props) {
           {u().ini}
         </span>
         <div style="min-width:0">
-          <div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{u().name}</div>
-          <div style="font-size:11.5px;color:#9a9793;margin-top:2px">{ROLE_LABEL[u().role] || u().role}</div>
+          <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{u().name}</div>
+          <div style="font-size:12px;color:#9a9793;margin-top:2px">{ROLE_LABEL[u().role] || u().role}</div>
         </div>
       </div>
       <div style="padding:16px 20px;font-size:13px;color:#4a4844;font-variant-numeric:tabular-nums">{u().phone}</div>
-      <div style="padding:16px 20px;font-size:12.5px;color:#9a9793;font-variant-numeric:tabular-nums">{dateTime(u().createdAt)}</div>
+      <div style="padding:16px 20px;font-size:13px;color:#9a9793;font-variant-numeric:tabular-nums">{dateTime(u().createdAt)}</div>
     </div>
   );
 }
@@ -190,7 +190,7 @@ function ReportRow(props) {
 
       <div style="margin-top:14px">
         <Show when={r().listing} fallback={<span style="font-size:13px;color:#9a9793">Объявление удалено</span>}>
-          <div style="font-size:15.5px;font-weight:800;letter-spacing:-.01em">
+          <div style="font-size:16px;font-weight:800;letter-spacing:-.01em">
             {roomsLabel(r().listing)}, {r().listing.area} m²
           </div>
           <div style="font-size:13px;color:#6f6d68;margin-top:4px">
@@ -212,7 +212,7 @@ function ReportRow(props) {
 
       <div style="margin-top:14px">
         <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9a9793">Причина</div>
-        <div style="margin-top:4px;font-size:13.5px;font-weight:700;line-height:1.4">{reasonText(r().report.reason)}</div>
+        <div style="margin-top:4px;font-size:14px;font-weight:700;line-height:1.4">{reasonText(r().report.reason)}</div>
         <Show when={r().report.text}>
           <div style="margin-top:6px;font-size:13px;color:#4a4844;line-height:1.5;padding:10px 12px;border-radius:10px;background:#f7f7f6">
             «{r().report.text}»
@@ -226,7 +226,7 @@ function ReportRow(props) {
             type="button"
             class="bn-tap"
             onClick={() => props.onResolve(r().report.id, 'dismiss')}
-            style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;background:${TEAL_T};color:${TEAL_TX};white-space:nowrap`}
+            style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:13px;font-weight:700;background:${TEAL_T};color:${TEAL_TX};white-space:nowrap`}
           >
             Отклонить — вернуть в выдачу
           </button>
@@ -234,7 +234,7 @@ function ReportRow(props) {
             type="button"
             class="bn-tap"
             onClick={() => props.onResolve(r().report.id, 'uphold')}
-            style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;background:${RED_T};color:${RED_TX};white-space:nowrap`}
+            style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:13px;font-weight:700;background:${RED_T};color:${RED_TX};white-space:nowrap`}
           >
             Подтвердить — снять объявление
           </button>
@@ -252,7 +252,7 @@ function ListingRow(props) {
   return (
     <div style="display:grid;grid-template-columns:2fr 1.3fr 1.3fr 1fr 1.6fr;border-bottom:1px solid #f4f3f0;align-items:center">
       <div style="padding:16px 20px;min-width:0">
-        <div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
           {roomsLabel(l())}, {l().area} m²
         </div>
         <div style="font-size:12px;color:#6f6d68;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
@@ -261,18 +261,18 @@ function ListingRow(props) {
       </div>
       <div style="padding:16px 20px;min-width:0">
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{owner().name || '—'}</div>
-        <div style="font-size:11.5px;color:#9a9793;margin-top:2px">Владелец</div>
+        <div style="font-size:12px;color:#9a9793;margin-top:2px">Владелец</div>
       </div>
       <div style="padding:16px 20px;min-width:0">
-        <Show when={l().cadastreCode} fallback={<span style="font-size:12.5px;color:#9a9793">не указан</span>}>
-          <div style="font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        <Show when={l().cadastreCode} fallback={<span style="font-size:13px;color:#9a9793">не указан</span>}>
+          <div style="font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
             {l().cadastreCode}
           </div>
           <a
             href="https://www.cadastre.am"
             target="_blank"
             rel="noopener noreferrer"
-            style="font-size:11.5px;color:#0e7c73;font-weight:700;margin-top:2px;display:inline-block"
+            style="font-size:12px;color:#0e7c73;font-weight:700;margin-top:2px;display:inline-block"
           >
             Проверить →
           </a>
@@ -337,7 +337,7 @@ function SupportMessageBubble(props) {
         style={`max-width:78%;padding:12px;font-size:14px;line-height:1.5;box-shadow:0 1px 2px rgba(28,27,25,.05);border-radius:${mine() ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};background:${mine() ? TEAL : '#fff'};color:${mine() ? '#fff' : INK}`}
       >
         <div style="padding:0 2px;white-space:pre-wrap;word-break:break-word">{m().text}</div>
-        <div style={`font-size:10.5px;margin-top:4px;padding:0 2px;color:${mine() ? 'rgba(255,255,255,.7)' : FAINT}`}>
+        <div style={`font-size:11px;margin-top:4px;padding:0 2px;color:${mine() ? 'rgba(255,255,255,.7)' : FAINT}`}>
           {timeOf(m().createdAt)}
         </div>
       </div>
@@ -411,7 +411,7 @@ function SupportPanel(props) {
     <div style="margin-top:16px;display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:16px;align-items:start">
       <div style="background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(28,27,25,.05);overflow:hidden">
         <Show when={threads().length === 0}>
-          <div style="padding:32px 20px;text-align:center;font-size:13.5px;color:#9a9793">Обращений нет</div>
+          <div style="padding:32px 20px;text-align:center;font-size:14px;color:#9a9793">Обращений нет</div>
         </Show>
         <For each={threads()}>
           {(th) => (
@@ -424,7 +424,7 @@ function SupportPanel(props) {
                 {th.user.ini || '?'}
               </span>
               <div style="min-width:0;flex:1">
-                <div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                   {th.user.name || th.user.phone}
                 </div>
                 <div style="font-size:12px;color:#9a9793;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
@@ -442,8 +442,8 @@ function SupportPanel(props) {
       </div>
 
       <div style="background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(28,27,25,.05);display:flex;flex-direction:column;height:min(600px,70vh)">
-        <Show when={activeId()} fallback={<div style="margin:auto;font-size:13.5px;color:#9a9793">Выберите обращение слева</div>}>
-          <div style="padding:16px 20px;border-bottom:1px solid #f4f3f0;font-size:14.5px;font-weight:800">
+        <Show when={activeId()} fallback={<div style="margin:auto;font-size:14px;color:#9a9793">Выберите обращение слева</div>}>
+          <div style="padding:16px 20px;border-bottom:1px solid #f4f3f0;font-size:15px;font-weight:800">
             {active() ? active().user.name || active().user.phone : ''}
           </div>
           <div ref={listRef} style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:10px">
@@ -459,7 +459,7 @@ function SupportPanel(props) {
             <button
               type="submit"
               disabled={!draft().trim()}
-              style={`padding:0 20px;border-radius:12px;font-size:13.5px;font-weight:700;background:${TEAL};color:#fff;opacity:${draft().trim() ? 1 : 0.4}`}
+              style={`padding:0 20px;border-radius:12px;font-size:14px;font-weight:700;background:${TEAL};color:#fff;opacity:${draft().trim() ? 1 : 0.4}`}
             >
               Отправить
             </button>
@@ -572,13 +572,13 @@ function Panel(props) {
         </span>
         <div style="flex:1">
           <h1 style="margin:0;font-size:clamp(22px,4vw,28px);font-weight:800;letter-spacing:-.03em">Панель администратора</h1>
-          <div style="font-size:13.5px;color:#6f6d68;margin-top:2px">Пользователи, жалобы и объявления в одном месте.</div>
+          <div style="font-size:14px;color:#6f6d68;margin-top:2px">Пользователи, жалобы и объявления в одном месте.</div>
         </div>
         <button
           type="button"
           class="bn-tap"
           onClick={logout}
-          style="padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:13.5px;font-weight:700;color:#6f6d68;white-space:nowrap"
+          style="padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:14px;font-weight:700;color:#6f6d68;white-space:nowrap"
         >
           Выйти
         </button>
@@ -615,7 +615,7 @@ function Panel(props) {
 
       <Show when={tab() === 'reports'}>
         <Show when={data.reports.length === 0}>
-          <div style="margin-top:16px;background:#fff;border-radius:18px;padding:32px 20px;text-align:center;font-size:13.5px;color:#9a9793;box-shadow:0 1px 2px rgba(28,27,25,.05)">
+          <div style="margin-top:16px;background:#fff;border-radius:18px;padding:32px 20px;text-align:center;font-size:14px;color:#9a9793;box-shadow:0 1px 2px rgba(28,27,25,.05)">
             Жалоб нет
           </div>
         </Show>
@@ -634,7 +634,7 @@ function Panel(props) {
                 <div style="padding:16px 20px">Регистрация</div>
               </div>
               <Show when={data.users.length === 0}>
-                <div style="padding:32px 20px;text-align:center;font-size:13.5px;color:#9a9793">Пользователей нет</div>
+                <div style="padding:32px 20px;text-align:center;font-size:14px;color:#9a9793">Пользователей нет</div>
               </Show>
               <For each={data.users}>{(u) => <UserRow user={u} />}</For>
             </div>
@@ -654,7 +654,7 @@ function Panel(props) {
                 <div style="padding:16px 20px">Действие</div>
               </div>
               <Show when={data.listings.length === 0}>
-                <div style="padding:32px 20px;text-align:center;font-size:13.5px;color:#9a9793">Объявлений нет</div>
+                <div style="padding:32px 20px;text-align:center;font-size:14px;color:#9a9793">Объявлений нет</div>
               </Show>
               <For each={data.listings}>{(item) => <ListingRow item={item} onStatus={setListingStatus} onDelete={deleteListing} />}</For>
             </div>

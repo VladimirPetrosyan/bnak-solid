@@ -70,7 +70,7 @@ const EMOJI = [
 const plainBtn =
   'width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:transparent;flex:0 0 auto';
 const attachRowStyle =
-  'width:100%;text-align:left;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;font-size:13.5px;font-weight:600;color:#1c1b19';
+  'width:100%;text-align:left;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;font-size:14px;font-weight:600;color:#1c1b19';
 
 function AttachIcon(props) {
   return (
@@ -223,7 +223,7 @@ export default function Chat() {
               <div style="flex:1;min-width:0">
                 <div style="font-size:15px;font-weight:700">{seller().n[li()]}</div>
                 <Show when={!thread().support}>
-                  <div style="font-size:12.5px;color:#6f6d68;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">
+                  <div style="font-size:13px;color:#6f6d68;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">
                     <Show when={listing()}>
                       {roomsLabel(listing())} · {addrOf(listing())} ·{' '}
                     </Show>
@@ -236,7 +236,7 @@ export default function Chat() {
                   type="button"
                   class="bn-tap"
                   onClick={() => openListing(listing().id)}
-                  style="padding:8px 12px;border-radius:11px;background:#f2f1ee;font-size:12.5px;font-weight:700;white-space:nowrap"
+                  style="padding:8px 12px;border-radius:11px;background:#f2f1ee;font-size:13px;font-weight:700;white-space:nowrap"
                 >
                   {t().listingW}
                 </button>
@@ -260,7 +260,7 @@ export default function Chat() {
                           type="button"
                           class="bn-tap"
                           onClick={() => setState('draft', txt(key))}
-                          style="padding:8px 12px;border-radius:999px;border:1px solid #e8e7e4;font-size:12.5px;font-weight:600"
+                          style="padding:8px 12px;border-radius:999px;border:1px solid #e8e7e4;font-size:13px;font-weight:600"
                         >
                           {txt(key)}
                         </button>
@@ -337,20 +337,22 @@ export default function Chat() {
                       <Show when={emojiOpen()}>
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          style="position:absolute;bottom:calc(100% + 8px);left:-8px;z-index:30;width:236px;max-height:200px;overflow-y:auto;background:#fff;border-radius:16px;padding:8px;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7;display:grid;grid-template-columns:repeat(6,1fr);gap:4px"
+                          style="position:absolute;bottom:calc(100% + 8px);left:-8px;z-index:30;width:236px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7"
                         >
-                          <For each={EMOJI}>
-                            {(e) => (
-                              <button
-                                type="button"
-                                class="bn-tap"
-                                onClick={() => insertEmoji(e)}
-                                style="display:flex;align-items:center;justify-content:center;font-size:20px;padding:4px;border-radius:8px"
-                              >
-                                {e}
-                              </button>
-                            )}
-                          </For>
+                          <div style="max-height:200px;overflow-y:auto;padding:8px;display:grid;grid-template-columns:repeat(6,1fr);gap:4px">
+                            <For each={EMOJI}>
+                              {(e) => (
+                                <button
+                                  type="button"
+                                  class="bn-tap"
+                                  onClick={() => insertEmoji(e)}
+                                  style="display:flex;align-items:center;justify-content:center;font-size:20px;padding:4px;border-radius:8px"
+                                >
+                                  {e}
+                                </button>
+                              )}
+                            </For>
+                          </div>
                         </div>
                       </Show>
                     </div>
@@ -364,7 +366,7 @@ export default function Chat() {
                         setAttachOpen(false);
                       }}
                       placeholder={t().msgPh}
-                      style="flex:1;min-width:0;border:0;background:transparent;padding:10px 2px;font-size:14.5px"
+                      style="flex:1;min-width:0;border:0;background:transparent;padding:10px 2px;font-size:15px"
                     />
 
                     <Show
@@ -413,7 +415,7 @@ export default function Chat() {
                   </button>
                   <div style="flex:1;display:flex;align-items:center;gap:9px;padding:13px 16px;border-radius:14px;background:#fceeeb">
                     <span style="width:9px;height:9px;border-radius:999px;background:#c2452f;display:block;animation:bnPulse 1.2s infinite" />
-                    <span style="font-size:13.5px;font-weight:700;color:#93331f;font-variant-numeric:tabular-nums">
+                    <span style="font-size:14px;font-weight:700;color:#93331f;font-variant-numeric:tabular-nums">
                       {t().recRec} · {fmtSec(voice.seconds())}
                     </span>
                   </div>

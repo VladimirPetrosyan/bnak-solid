@@ -66,10 +66,10 @@ export default function ThreadList(props) {
                     <span
                       style={`width:8px;height:8px;border-radius:999px;display:block;flex:0 0 auto;background:${state.unread[key] ? TEAL : 'transparent'}`}
                     />
-                    <span style="font-size:11.5px;color:#9a9793">{last().time || ''}</span>
+                    <span style="font-size:12px;color:#9a9793">{last().time || ''}</span>
                   </div>
                   <Show when={item()}>
-                    <div style="font-size:12.5px;color:#6f6d68;margin-top:8px">
+                    <div style="font-size:13px;color:#6f6d68;margin-top:8px">
                       {roomsLabel(item())} · {addrOf(item())}
                     </div>
                   </Show>

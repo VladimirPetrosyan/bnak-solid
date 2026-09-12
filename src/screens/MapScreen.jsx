@@ -113,7 +113,7 @@ export default function MapScreen() {
             class="bn-tap"
             onClick={() => setMView('map')}
             aria-pressed={mView() === 'map'}
-            style={`flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:11px;font-size:13.5px;font-weight:700;background:${mView() === 'map' ? '#fff' : 'transparent'};color:${mView() === 'map' ? '#1c1b19' : '#6f6d68'};box-shadow:${mView() === 'map' ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
+            style={`flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:11px;font-size:14px;font-weight:700;background:${mView() === 'map' ? '#fff' : 'transparent'};color:${mView() === 'map' ? '#1c1b19' : '#6f6d68'};box-shadow:${mView() === 'map' ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
           >
             <Icon name="map" size={15} weight={1.9} />
             <span>{t().mapW}</span>
@@ -126,7 +126,7 @@ export default function MapScreen() {
               setMView('list');
             }}
             aria-pressed={mView() === 'list'}
-            style={`flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:11px;font-size:13.5px;font-weight:700;background:${mView() === 'list' ? '#fff' : 'transparent'};color:${mView() === 'list' ? '#1c1b19' : '#6f6d68'};box-shadow:${mView() === 'list' ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
+            style={`flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:11px;font-size:14px;font-weight:700;background:${mView() === 'list' ? '#fff' : 'transparent'};color:${mView() === 'list' ? '#1c1b19' : '#6f6d68'};box-shadow:${mView() === 'list' ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
           >
             <Icon name="list" size={15} weight={1.9} />
             <span>{txt('mapLive', { n: mapVisible().length })}</span>
@@ -140,8 +140,8 @@ export default function MapScreen() {
             <Show when={!state.isMob}>
               <div style="padding:18px 20px;border-bottom:1px solid #f0efec;display:flex;align-items:center;gap:12px">
                 <div style="flex:1">
-                  <div style="font-size:17px;font-weight:800;letter-spacing:-.02em">{txt('mapLive', { n: mapVisible().length })}</div>
-                  <div style="font-size:12.5px;color:#6f6d68;margin-top:2px">
+                  <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">{txt('mapLive', { n: mapVisible().length })}</div>
+                  <div style="font-size:13px;color:#6f6d68;margin-top:2px">
                     {cityObj().n[li()]} · {t().mapSub}
                   </div>
                 </div>
@@ -182,15 +182,15 @@ export default function MapScreen() {
                       </div>
                       <div style="min-width:0;flex:1">
                         <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
-                          <span style="font-size:17px;font-weight:800;letter-spacing:-.02em">{c().price}</span>
+                          <span style="font-size:18px;font-weight:800;letter-spacing:-.02em">{c().price}</span>
                           <span
-                            style={`font-size:10.5px;font-weight:700;padding:4px 8px;border-radius:999px;white-space:nowrap;color:${c().chipFg};background:${c().chipBg}`}
+                            style={`font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px;white-space:nowrap;color:${c().chipFg};background:${c().chipBg}`}
                           >
                             {c().chipShort}
                           </span>
                         </div>
                         <div style="font-size:13px;font-weight:700;margin-top:5px">{c().title}</div>
-                        <div style="font-size:12.5px;color:#6f6d68;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                        <div style="font-size:13px;color:#6f6d68;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                           {c().addr}
                         </div>
                         <button
@@ -200,7 +200,7 @@ export default function MapScreen() {
                             e.stopPropagation();
                             openListing(l.id);
                           }}
-                          style="margin-top:7px;display:inline-flex;padding:6px 11px;border-radius:9px;background:#f2f1ee;font-size:11.5px;font-weight:700"
+                          style="margin-top:7px;display:inline-flex;padding:6px 11px;border-radius:9px;background:#f2f1ee;font-size:12px;font-weight:700"
                         >
                           {t().viewBtn}
                         </button>
@@ -235,7 +235,7 @@ export default function MapScreen() {
                     href={cityMapUrl()}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;background:#fff;color:#1c1b19;font-size:12.5px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 1px 2px rgba(28,27,25,.08)"
+                    style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;background:#fff;color:#1c1b19;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 1px 2px rgba(28,27,25,.08)"
                   >
                     <Icon name="map" size={14} stroke="#1c1b19" weight={2} />
                     <span>{t().locationOpenYandex}</span>
@@ -245,7 +245,7 @@ export default function MapScreen() {
                   type="button"
                   class="bn-tap"
                   onClick={retry}
-                  style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;background:#fff;color:#1c1b19;font-size:12.5px;font-weight:700;box-shadow:0 1px 2px rgba(28,27,25,.08)"
+                  style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;background:#fff;color:#1c1b19;font-size:13px;font-weight:700;box-shadow:0 1px 2px rgba(28,27,25,.08)"
                 >
                   <Icon name="refresh" size={14} stroke="#1c1b19" weight={2} />
                   <span>{t().locationRetry}</span>

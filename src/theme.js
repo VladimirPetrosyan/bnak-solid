@@ -21,7 +21,7 @@ export const pill = (on) => ({
 
 export const pillStyle = (on) => {
   const p = pill(on);
-  return `padding:8px 16px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;background:${p.bg};color:${p.fg};border:1px solid ${p.bd}`;
+  return `padding:8px 16px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;background:${p.bg};color:${p.fg};border:1px solid ${p.bd};transition:background .15s ease,border-color .15s ease,color .15s ease`;
 };
 
 export const radio = (on) => ({
@@ -34,7 +34,7 @@ export const radio = (on) => ({
 
 export const input = 'width:100%;padding:12px 16px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:15px';
 
-export const label = 'font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793';
+export const label = 'font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793';
 
 export const overlay =
   'position:fixed;inset:0;z-index:200;background:rgba(28,27,25,.5);display:flex;justify-content:center;padding:clamp(12px,3vw,24px);animation:bnIn .16s ease;overflow-y:auto';

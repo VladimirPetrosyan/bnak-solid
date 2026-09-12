@@ -94,7 +94,7 @@ export default function Search() {
                         reload();
                       }}
                       aria-pressed={on()}
-                      style={`flex:1 1 auto;text-align:center;padding:8px 12px;border-radius:8px;font-size:13.5px;font-weight:700;white-space:nowrap;background:${on() ? '#fff' : 'transparent'};color:${on() ? INK : MUTED};box-shadow:${on() ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
+                      style={`flex:1 1 auto;text-align:center;padding:8px 12px;border-radius:8px;font-size:14px;font-weight:700;white-space:nowrap;background:${on() ? '#fff' : 'transparent'};color:${on() ? INK : MUTED};box-shadow:${on() ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
                     >
                       {t()[key]}
                     </button>
@@ -108,7 +108,7 @@ export default function Search() {
             type="button"
             class="bn-tap"
             onClick={() => setState({ filtersOpen: true, sortOpen: false })}
-            style="display:flex;align-items:center;justify-content:center;gap:9px;height:48px;padding:0 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:14.5px;font-weight:700;flex:0 0 auto"
+            style="display:flex;align-items:center;justify-content:center;gap:9px;height:48px;padding:0 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:15px;font-weight:700;flex:0 0 auto"
           >
             <Icon name="search" size={16} stroke="#fff" weight={2.2} />
             <span>{t().find}</span>
@@ -185,7 +185,7 @@ export default function Search() {
                 type="button"
                 class="bn-tap"
                 onClick={closeVipOnly}
-                style="padding:7px 14px;border-radius:999px;background:#f2f1ee;font-size:12.5px;font-weight:700"
+                style="padding:7px 14px;border-radius:999px;background:#f2f1ee;font-size:13px;font-weight:700"
               >
                 {t().vipBack}
               </button>
@@ -205,7 +205,7 @@ export default function Search() {
               onClick={() => setState('sortOpen', !state.sortOpen)}
               aria-haspopup="listbox"
               aria-expanded={state.sortOpen}
-              style="display:flex;align-items:center;gap:8px;padding:11px 15px;border-radius:12px;background:#fff;border:1px solid #e8e7e4;font-size:13.5px;font-weight:600;white-space:nowrap"
+              style="display:flex;align-items:center;gap:8px;padding:11px 15px;border-radius:12px;background:#fff;border:1px solid #e8e7e4;font-size:14px;font-weight:600;white-space:nowrap"
             >
               <span style="color:#6f6d68">{t().sort}</span>
               <span style="font-weight:700">
@@ -225,7 +225,7 @@ export default function Search() {
                         role="option"
                         aria-selected={on()}
                         onClick={() => setState({ sort: key, sortOpen: false })}
-                        style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:13.5px;width:100%;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
+                        style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:14px;width:100%;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
                       >
                         <span style={`width:7px;height:7px;border-radius:999px;display:block;background:${on() ? TEAL : '#dedcd7'}`} />
                         <span>{t()[textKey]}</span>
@@ -238,7 +238,7 @@ export default function Search() {
           </div>
 
           <div style="display:flex;gap:3px;padding:4px;background:#f2f1ee;border-radius:12px">
-            <div style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;background:#fff;box-shadow:0 1px 3px rgba(28,27,25,.12);font-size:13.5px;font-weight:700">
+            <div style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;background:#fff;box-shadow:0 1px 3px rgba(28,27,25,.12);font-size:14px;font-weight:700">
               <Icon name="list" size={15} stroke="#1c1b19" weight={1.9} />
               <span>{t().listW}</span>
             </div>
@@ -246,7 +246,7 @@ export default function Search() {
               type="button"
               class="bn-tap"
               onClick={() => go('map')}
-              style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;font-size:13.5px;font-weight:600;color:#6f6d68"
+              style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;font-size:14px;font-weight:600;color:#6f6d68"
             >
               <Icon name="map" size={15} weight={1.9} />
               <span>{t().mapW}</span>
@@ -275,13 +275,15 @@ export default function Search() {
 
       <Show when={!state.loading && gridSource().length === 0}>
         <div style="margin-top:22px;background:#fff;border-radius:20px;padding:clamp(28px,5vw,52px);text-align:center;box-shadow:0 1px 2px rgba(28,27,25,.05);animation:bnIn .2s ease">
-          <span style="width:58px;height:58px;border-radius:18px;background:#f2f1ee;display:inline-flex;align-items:center;justify-content:center">
-            <Icon name="search" size={26} stroke="#9a9793" weight={1.7} />
-          </span>
-          <div style="font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:16px">
-            {vipOnly() ? t().vipEmptyTitle : t().emptyTitle}
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px">
+            <span style="width:44px;height:44px;border-radius:14px;background:#f2f1ee;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto">
+              <Icon name="search" size={21} stroke="#9a9793" weight={1.7} />
+            </span>
+            <div style="font-size:20px;font-weight:800;letter-spacing:-.02em">
+              {vipOnly() ? t().vipEmptyTitle : t().emptyTitle}
+            </div>
           </div>
-          <div style="font-size:14.5px;color:#6f6d68;margin-top:7px;max-width:44ch;margin-left:auto;margin-right:auto;line-height:1.55">
+          <div style="font-size:15px;color:#6f6d68;margin-top:7px;max-width:44ch;margin-left:auto;margin-right:auto;line-height:1.55">
             {vipOnly() ? t().vipEmptyText : t().emptyText}
           </div>
           <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
@@ -330,7 +332,7 @@ export default function Search() {
             type="button"
             class="bn-tap"
             onClick={() => setState('shown', state.shown + 12)}
-            style="margin:24px auto 0;max-width:340px;display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;border-radius:14px;background:#fff;border:1px solid #e8e7e4;font-size:14.5px;font-weight:700"
+            style="margin:24px auto 0;max-width:340px;display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;border-radius:14px;background:#fff;border:1px solid #e8e7e4;font-size:15px;font-weight:700"
           >
             {txt('showMore', { n: gridSource().length - shown().length })}
           </button>

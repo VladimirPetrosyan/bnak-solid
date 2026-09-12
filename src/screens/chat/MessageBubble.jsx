@@ -21,7 +21,7 @@ export default function MessageBubble(props) {
   return (
     <div style={`display:flex;justify-content:${m().me ? 'flex-end' : 'flex-start'}`}>
       <div
-        style={`max-width:78%;padding:12px;font-size:14.5px;line-height:1.5;box-shadow:0 1px 2px rgba(28,27,25,.05);border-radius:${m().me ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};background:${m().me ? TEAL : '#fff'};color:${m().me ? '#fff' : INK}`}
+        style={`max-width:78%;padding:12px;font-size:15px;line-height:1.5;box-shadow:0 1px 2px rgba(28,27,25,.05);border-radius:${m().me ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};background:${m().me ? TEAL : '#fff'};color:${m().me ? '#fff' : INK}`}
       >
         <Switch fallback={<div style="padding:0 4px">{m().text || ''}</div>}>
           <Match when={m().kind === 'audio'}>
@@ -46,10 +46,10 @@ export default function MessageBubble(props) {
             >
               <AttachIcon name="doc" bg={m().me ? 'rgba(255,255,255,.18)' : SOFT} fg={m().me ? '#fff' : '#4a4844'} />
               <div style="min-width:0">
-                <div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px">
+                <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px">
                   {m().name}
                 </div>
-                <div style={`font-size:11.5px;margin-top:2px;color:${m().me ? 'rgba(255,255,255,.75)' : '#9a9793'}`}>
+                <div style={`font-size:12px;margin-top:2px;color:${m().me ? 'rgba(255,255,255,.75)' : '#9a9793'}`}>
                   {fmtSize(m().size || 0)}
                 </div>
               </div>
@@ -64,8 +64,8 @@ export default function MessageBubble(props) {
             >
               <AttachIcon name="pin" bg={m().me ? 'rgba(255,255,255,.18)' : RED_T} fg={m().me ? '#fff' : RED} />
               <div style="min-width:0">
-                <div style="font-size:13.5px;font-weight:700">{t().locMsg}</div>
-                <div style={`font-size:11.5px;margin-top:2px;text-decoration:underline;color:${m().me ? 'rgba(255,255,255,.85)' : TEAL}`}>
+                <div style="font-size:14px;font-weight:700">{t().locMsg}</div>
+                <div style={`font-size:12px;margin-top:2px;text-decoration:underline;color:${m().me ? 'rgba(255,255,255,.85)' : TEAL}`}>
                   {t().locOpen}
                 </div>
               </div>

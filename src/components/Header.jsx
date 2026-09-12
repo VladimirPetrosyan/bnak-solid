@@ -19,10 +19,10 @@ export default function Header() {
 
   return (
     <header style="position:sticky;top:0;z-index:60;background:#fff;box-shadow:0 1px 0 #ebeae7">
-      <div style="width:100%;max-width:1400px;margin:0 auto;padding:12px clamp(16px,3vw,28px);display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="width:100%;max-width:1400px;margin:0 auto;padding:12px clamp(16px,3vw,28px);display:flex;align-items:center;gap:16px;flex-wrap:nowrap">
         <button type="button" class="bn-tap" onClick={() => go('search')} style="display:flex;align-items:center;gap:8px;flex:0 0 auto">
           <span style="position:relative;width:34px;height:34px;border-radius:11px;background:#0e7c73;display:flex;align-items:center;justify-content:center;overflow:hidden">
-            <span style="font-family:Manrope,sans-serif;font-size:19px;font-weight:800;color:#fff;line-height:1">H</span>
+            <span style="font-family:Manrope,sans-serif;font-size:20px;font-weight:800;color:#fff;line-height:1">H</span>
             <span style="position:absolute;right:5px;bottom:5px;width:5px;height:5px;border-radius:1px;background:#7fded2" />
           </span>
           <span style="display:flex;align-items:baseline;gap:4px">
@@ -108,14 +108,14 @@ export default function Header() {
             </button>
           </Show>
 
-          <button type="button" class="bn-tap" onClick={guard('cabinet')} aria-label={cabinetLabel()} style={cabinetPillStyle(state.isMob)}>
+          <button type="button" class="bn-tap bn-cabinet-pill" onClick={guard('cabinet')} aria-label={cabinetLabel()} style={cabinetPillStyle(state.isMob)}>
             <span
               style={`width:28px;height:28px;border-radius:999px;background:${state.user ? TEAL_T : SOFT};color:${state.user ? TEAL_TX : MUTED};font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center`}
             >
               {state.user ? state.user.ini : '?'}
             </span>
             <Show when={!state.isMob}>
-              <span class="bn-hide-narrow" style="font-size:13.5px;font-weight:600;white-space:nowrap">
+              <span class="bn-hide-narrow" style="font-size:14px;font-weight:600;white-space:nowrap">
                 {cabinetLabel()}
               </span>
             </Show>

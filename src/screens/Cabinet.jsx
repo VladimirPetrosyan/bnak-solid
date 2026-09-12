@@ -23,7 +23,7 @@ export default function Cabinet() {
           <h1 style="margin:0 0 4px;font-size:clamp(24px,4vw,30px);font-weight:800;letter-spacing:-.03em">
             {user().role === 'agency' ? user().name : user().role === 'owner' ? t().cabOwner : t().cabTenant}
           </h1>
-          <div style="font-size:14.5px;color:#6f6d68">
+          <div style="font-size:15px;color:#6f6d68">
             {user().role === 'agency' ? txt('cabAgencyS', { n: items().length }) : user().role === 'owner' ? t().cabOwnerS : t().cabTenantS}
           </div>
         </div>
@@ -33,7 +33,7 @@ export default function Cabinet() {
             type="button"
             class="bn-tap"
             onClick={confirmAll}
-            style="display:flex;align-items:center;gap:8px;padding:16px 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:14.5px;font-weight:700;box-shadow:0 8px 20px -12px rgba(14,124,115,.7)"
+            style="display:flex;align-items:center;gap:8px;padding:16px 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:15px;font-weight:700;box-shadow:0 8px 20px -12px rgba(14,124,115,.7)"
           >
             <Icon name="check" size={17} weight={2.4} />
             <span>{dueLeft() ? t().confirmAll : t().allConfirmed}</span>
@@ -44,7 +44,7 @@ export default function Cabinet() {
           type="button"
           class="bn-tap"
           onClick={() => requireAuth({ type: 'go', to: 'post' }) && go('post')}
-          style="display:flex;align-items:center;gap:8px;padding:16px 20px;border-radius:14px;background:#fff;border:1px solid #e8e7e4;font-size:14.5px;font-weight:700"
+          style="display:flex;align-items:center;gap:8px;padding:16px 20px;border-radius:14px;background:#fff;border:1px solid #e8e7e4;font-size:15px;font-weight:700"
         >
           <Icon name="plus" size={16} weight={2.2} />
           <span>{t().post}</span>
@@ -57,13 +57,13 @@ export default function Cabinet() {
         </span>
         <div style="flex:1 1 160px;min-width:0">
           <div style="font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{user().name}</div>
-          <div style="font-size:12.5px;color:#6f6d68;margin-top:2px">{user().phone}</div>
+          <div style="font-size:13px;color:#6f6d68;margin-top:2px">{user().phone}</div>
         </div>
         <button
           type="button"
           class="bn-tap"
           onClick={signOut}
-          style="display:flex;align-items:center;padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:13.5px;font-weight:700;color:#6f6d68;white-space:nowrap"
+          style="display:flex;align-items:center;padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:14px;font-weight:700;color:#6f6d68;white-space:nowrap"
         >
           {t().signOutW}
         </button>

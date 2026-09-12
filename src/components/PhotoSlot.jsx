@@ -66,7 +66,7 @@ export default function PhotoSlot(props) {
         fallback={
           <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;text-align:center;pointer-events:none">
             <Icon name="image" size={18} stroke="#bab6b1" />
-            <span style="font-size:11.5px;font-weight:600;color:#8f8b85;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;max-width:22ch;line-height:1.35">
+            <span style="font-size:12px;font-weight:600;color:#8f8b85;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;max-width:22ch;line-height:1.35">
               {props.label}
             </span>
           </div>

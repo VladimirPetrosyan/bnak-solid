@@ -50,7 +50,7 @@ export default function Post() {
   return (
     <div style="width:100%;max-width:1100px;margin:0 auto;padding:32px clamp(16px,3vw,28px) 48px;animation:bnIn .2s ease">
       <h1 style="margin:0 0 8px;font-size:clamp(24px,4vw,30px);font-weight:800;letter-spacing:-.03em">{t().postTitle}</h1>
-      <div style="font-size:14.5px;color:#6f6d68;max-width:64ch">{t().postSub}</div>
+      <div style="font-size:15px;color:#6f6d68;max-width:64ch">{t().postSub}</div>
 
       <div style="display:flex;gap:8px;margin:24px 0 28px;flex-wrap:wrap">
         <For each={STEPS}>
@@ -70,7 +70,7 @@ export default function Post() {
                 <div style="font-size:11px;font-weight:700;letter-spacing:.08em;opacity:.7">
                   {t().stepW} {n}
                 </div>
-                <div style="font-size:13.5px;font-weight:700;margin-top:4px">{t()[key]}</div>
+                <div style="font-size:14px;font-weight:700;margin-top:4px">{t()[key]}</div>
               </button>
             );
           }}
@@ -105,7 +105,7 @@ export default function Post() {
                   aria-haspopup="listbox"
                   aria-expanded={cityOpen()}
                   onClick={() => setCityOpen(!cityOpen())}
-                  style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:13.5px;font-weight:600"
+                  style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:14px;font-weight:600"
                 >
                   <span>{CITY[p().city].n[li()]}</span>
                   <Icon name="down" size={13} stroke="#9a9793" weight={2.2} />
@@ -113,29 +113,31 @@ export default function Post() {
                 <Show when={cityOpen()}>
                   <div
                     role="listbox"
-                    style="position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;max-height:260px;overflow-y:auto;background:#fff;border-radius:14px;padding:6px;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7;animation:bnUp .16s ease both"
+                    style="position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7;animation:bnUp .16s ease both"
                   >
-                    <For each={Object.keys(CITY)}>
-                      {(key) => {
-                        const on = () => p().city === key;
-                        return (
-                          <button
-                            type="button"
-                            class="bn-tap"
-                            role="option"
-                            aria-selected={on()}
-                            onClick={() => {
-                              setPost({ city: key });
-                              setCityOpen(false);
-                            }}
-                            style={`width:100%;display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:13.5px;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
-                          >
-                            <span style={`width:7px;height:7px;border-radius:999px;display:block;background:${on() ? TEAL : '#dedcd7'}`} />
-                            <span>{CITY[key].n[li()]}</span>
-                          </button>
-                        );
-                      }}
-                    </For>
+                    <div style="max-height:260px;overflow-y:auto;padding:6px">
+                      <For each={Object.keys(CITY)}>
+                        {(key) => {
+                          const on = () => p().city === key;
+                          return (
+                            <button
+                              type="button"
+                              class="bn-tap"
+                              role="option"
+                              aria-selected={on()}
+                              onClick={() => {
+                                setPost({ city: key });
+                                setCityOpen(false);
+                              }}
+                              style={`width:100%;display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:14px;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
+                            >
+                              <span style={`width:7px;height:7px;border-radius:999px;display:block;background:${on() ? TEAL : '#dedcd7'}`} />
+                              <span>{CITY[key].n[li()]}</span>
+                            </button>
+                          );
+                        }}
+                      </For>
+                    </div>
                   </div>
                 </Show>
               </div>
@@ -159,7 +161,7 @@ export default function Post() {
 
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:16px;margin-top:24px">
                 <div>
-                  <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().streetLbl}</div>
+                  <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().streetLbl}</div>
                   <input
                     value={p().street}
                     onInput={(e) => setPost({ street: e.currentTarget.value })}
@@ -168,7 +170,7 @@ export default function Post() {
                   />
                 </div>
                 <div>
-                  <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().postPhoneLbl}</div>
+                  <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().postPhoneLbl}</div>
                   <div
                     class="bn-ring"
                     style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa"
@@ -220,15 +222,15 @@ export default function Post() {
 
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:16px;margin-top:24px">
                 <div>
-                  <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().areaLbl}</div>
+                  <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().areaLbl}</div>
                   <input value={p().area} onInput={(e) => setPost({ area: digitsOnly(e) })} placeholder="62" style={inputStyle} />
                 </div>
                 <div>
-                  <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().floorLbl}</div>
+                  <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().floorLbl}</div>
                   <input value={p().fl} onInput={(e) => setPost({ fl: digitsOnly(e) })} placeholder="4" style={inputStyle} />
                 </div>
                 <div>
-                  <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().floorsLbl}</div>
+                  <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().floorsLbl}</div>
                   <input value={p().fls} onInput={(e) => setPost({ fls: digitsOnly(e) })} placeholder="9" style={inputStyle} />
                 </div>
               </div>
@@ -306,13 +308,13 @@ export default function Post() {
                         style={`width:${Math.min(100, (p().photos / 5) * 100)}%;height:100%;border-radius:999px;background:${p().photos >= 5 ? '#0e7c73' : '#e4b5a9'}`}
                       />
                     </div>
-                    <div style="font-size:12.5px;color:#6f6d68;margin-top:8px">{txt('photosCount', { n: p().photos })}</div>
+                    <div style="font-size:13px;color:#6f6d68;margin-top:8px">{txt('photosCount', { n: p().photos })}</div>
                   </div>
                   <button
                     type="button"
                     class="bn-tap"
                     onClick={() => setPost({ photos: Math.min(12, p().photos + 1) })}
-                    style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:12px;background:#0e7c73;color:#fff;font-size:13.5px;font-weight:700"
+                    style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:12px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700"
                   >
                     <Icon name="plus" size={14} weight={2.4} />
                     <span>{t().addPhoto}</span>
@@ -332,12 +334,12 @@ export default function Post() {
                 <div style="font-size:12px;color:#9a9793;margin-top:12px">{t().photosNote}</div>
               </Show>
 
-              <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().descLbl}</div>
+              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().descLbl}</div>
               <textarea
                 value={p().desc}
                 onInput={(e) => setPost({ desc: e.currentTarget.value })}
                 placeholder={t().descPh}
-                style="width:100%;min-height:96px;padding:12px 16px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:14.5px;resize:vertical"
+                style="width:100%;min-height:96px;padding:12px 16px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:15px;resize:vertical"
               />
             </div>
           </Show>
@@ -347,7 +349,7 @@ export default function Post() {
               <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:16px">
                   <div>
-                    <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().priceLbl}</div>
+                    <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().priceLbl}</div>
                     <input
                       value={p().price}
                       onInput={(e) => setPost({ price: digitsOnly(e) })}
@@ -356,7 +358,7 @@ export default function Post() {
                     />
                   </div>
                   <div>
-                    <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().depositLbl}</div>
+                    <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().depositLbl}</div>
                     <input value={p().dep} onInput={(e) => setPost({ dep: e.currentTarget.value })} style={inputStyle} />
                   </div>
                 </div>
@@ -367,8 +369,8 @@ export default function Post() {
           <Show when={p().step === 4}>
             <div style="animation:bnIn .18s ease">
               <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
-                <h3 style="margin:0 0 8px;font-size:17px;font-weight:800;letter-spacing:-.01em">{t().docTitle}</h3>
-                <div style="font-size:13.5px;color:#4a4844;line-height:1.55">{t().docNote}</div>
+                <h3 style="margin:0 0 8px;font-size:18px;font-weight:800;letter-spacing:-.01em">{t().docTitle}</h3>
+                <div style="font-size:14px;color:#4a4844;line-height:1.55">{t().docNote}</div>
                 <input
                   ref={docInput}
                   type="file"
@@ -403,7 +405,7 @@ export default function Post() {
                 </button>
 
                 <div style="margin-top:20px;padding-top:20px;border-top:1px solid #f0efec">
-                  <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().cadastreLbl}</div>
+                  <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().cadastreLbl}</div>
                   <input
                     value={p().cadastreCode}
                     onInput={(e) => setPost({ cadastreCode: e.currentTarget.value })}
@@ -415,7 +417,7 @@ export default function Post() {
               </div>
 
               <div style="margin-top:20px;background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
-                <h3 style="margin:0 0 16px;font-size:17px;font-weight:800;letter-spacing:-.01em">{t().ownTitle}</h3>
+                <h3 style="margin:0 0 16px;font-size:18px;font-weight:800;letter-spacing:-.01em">{t().ownTitle}</h3>
                 <div
                   style={`display:flex;gap:12px;align-items:center;padding:16px;border-radius:14px;background:${TEAL_T};border:1px solid ${TEAL}`}
                 >
@@ -423,8 +425,8 @@ export default function Post() {
                     <Icon name="phone" size={16} stroke={TEAL} weight={2} />
                   </span>
                   <div style="flex:1">
-                    <div style="font-size:14.5px;font-weight:700">{txt('ch1', { p: '+374 ' + p().phone })}</div>
-                    <div style="font-size:12.5px;color:#6f6d68;margin-top:4px">
+                    <div style="font-size:15px;font-weight:700">{txt('ch1', { p: '+374 ' + p().phone })}</div>
+                    <div style="font-size:13px;color:#6f6d68;margin-top:4px">
                       {t().ch1n} · {t().confPhoneEdit}
                     </div>
                   </div>
@@ -442,7 +444,7 @@ export default function Post() {
                   >
                     <Icon name="check" size={12} stroke="#fff" weight={3.4} />
                   </span>
-                  <span style="font-size:13.5px;line-height:1.5;color:#4a4844">{t().agreeW}</span>
+                  <span style="font-size:14px;line-height:1.5;color:#4a4844">{t().agreeW}</span>
                 </button>
               </div>
             </div>
@@ -474,7 +476,7 @@ export default function Post() {
             <div style={labelStyle}>{t().previewW}</div>
             <div style="margin-top:16px;height:130px;border-radius:14px;background:#f2f1ee;position:relative;overflow:hidden">
               <PhotoSlot id="ph-new-0" label="Главное фото" />
-              <div style="position:absolute;top:10px;left:10px;padding:8px 12px;border-radius:999px;background:#fceeeb;color:#93331f;font-size:10.5px;font-weight:700;pointer-events:none">
+              <div style="position:absolute;top:10px;left:10px;padding:8px 12px;border-radius:999px;background:#fceeeb;color:#93331f;font-size:11px;font-weight:700;pointer-events:none">
                 {t().awaitConf}
               </div>
             </div>
@@ -494,7 +496,7 @@ export default function Post() {
               {(DIST[p().dist] || DIST.center)[li()]}
               {p().street ? ', ' + p().street : ''}
             </div>
-            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0efec;font-size:12.5px;color:#4a4844;line-height:1.5">
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0efec;font-size:13px;color:#4a4844;line-height:1.5">
               {t().docNote}
             </div>
           </div>

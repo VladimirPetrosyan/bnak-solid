@@ -72,7 +72,7 @@ export default function ListingLocation(props) {
 
   return (
     <div style="margin-top:26px">
-      <h2 style="margin:0 0 14px;font-size:21px;font-weight:800;letter-spacing:-.02em">{t().locationTitle}</h2>
+      <h2 style="margin:0 0 14px;font-size:20px;font-weight:800;letter-spacing:-.02em">{t().locationTitle}</h2>
       <div style="background:#fff;border-radius:18px;padding:20px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
         <div style="display:flex;align-items:center;gap:8px;font-size:15px;color:#4a4844">
           <Icon name="pin" size={17} stroke="#9a9793" />
@@ -87,7 +87,7 @@ export default function ListingLocation(props) {
                 href={searchUrl(props.address)}
                 target="_blank"
                 rel="noopener noreferrer"
-                style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:13px;background:#f2f1ee;color:#1c1b19;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:none"
+                style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:13px;background:#f2f1ee;color:#1c1b19;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none"
               >
                 <Icon name="search" size={15} stroke="#1c1b19" weight={2} />
                 <span>{t().locationSearchCta}</span>
@@ -114,7 +114,7 @@ export default function ListingLocation(props) {
                     href={viewUrl(coords())}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;background:#fff;color:#1c1b19;font-size:12.5px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 1px 2px rgba(28,27,25,.08)"
+                    style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;background:#fff;color:#1c1b19;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 1px 2px rgba(28,27,25,.08)"
                   >
                     <Icon name="map" size={14} stroke="#1c1b19" weight={2} />
                     <span>{t().locationOpenYandex}</span>
@@ -123,7 +123,7 @@ export default function ListingLocation(props) {
                     type="button"
                     class="bn-tap"
                     onClick={retry}
-                    style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;background:#fff;color:#1c1b19;font-size:12.5px;font-weight:700;box-shadow:0 1px 2px rgba(28,27,25,.08)"
+                    style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;background:#fff;color:#1c1b19;font-size:13px;font-weight:700;box-shadow:0 1px 2px rgba(28,27,25,.08)"
                   >
                     <Icon name="refresh" size={14} stroke="#1c1b19" weight={2} />
                     <span>{t().locationRetry}</span>
@@ -136,7 +136,7 @@ export default function ListingLocation(props) {
             href={viewUrl(coords())}
             target="_blank"
             rel="noopener noreferrer"
-            style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:13px;background:#f2f1ee;color:#1c1b19;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:none"
+            style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:13px;background:#f2f1ee;color:#1c1b19;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none"
           >
             <Icon name="map" size={15} stroke="#1c1b19" weight={2} />
             <span>{t().locationOpenCta}</span>

@@ -15,9 +15,9 @@ export default function SmsModal() {
             <span style="width:40px;height:40px;border-radius:12px;background:#e8f4f2;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
               <Icon name="chat" size={19} stroke="#0e7c73" weight={2} />
             </span>
-            <div style="flex:1;font-size:19px;font-weight:800;letter-spacing:-.02em">{t().smsTitle}</div>
+            <div style="flex:1;font-size:20px;font-weight:800;letter-spacing:-.02em">{t().smsTitle}</div>
           </div>
-          <div style="margin-top:12px;font-size:13.5px;line-height:1.55;color:#4a4844">
+          <div style="margin-top:12px;font-size:14px;line-height:1.55;color:#4a4844">
             {txt('smsSub', { a: (state.user && state.user.phone) || '' })}
           </div>
           <input
@@ -36,11 +36,11 @@ export default function SmsModal() {
               type="button"
               class="bn-tap"
               onClick={submitSms}
-              style={`flex:1;display:flex;align-items:center;justify-content:center;padding:15px;border-radius:14px;background:${ready() ? TEAL : '#eeedea'};color:${ready() ? '#fff' : FAINT};font-size:14.5px;font-weight:700`}
+              style={`flex:1;display:flex;align-items:center;justify-content:center;padding:15px;border-radius:14px;background:${ready() ? TEAL : '#eeedea'};color:${ready() ? '#fff' : FAINT};font-size:15px;font-weight:700`}
             >
               {t().confirmW}
             </button>
-            <button type="button" class="bn-tap" onClick={close} style="display:flex;align-items:center;padding:15px 18px;border-radius:14px;background:#f2f1ee;font-size:14.5px;font-weight:700">
+            <button type="button" class="bn-tap" onClick={close} style="display:flex;align-items:center;padding:15px 18px;border-radius:14px;background:#f2f1ee;font-size:15px;font-weight:700">
               {t().cancelW}
             </button>
           </div>

@@ -23,7 +23,7 @@ export default function Gallery() {
         style="position:fixed;inset:0;z-index:400;background:rgba(20,19,18,.93);display:flex;flex-direction:column;padding:clamp(12px,2vw,24px);animation:bnIn .16s ease"
       >
         <div style="display:flex;align-items:center;gap:12px;color:#fff;flex:0 0 auto">
-          <span style="font-size:13.5px;font-weight:700;letter-spacing:.02em">{txt('photoOf', { a: shot().i + 1, b: count() })}</span>
+          <span style="font-size:14px;font-weight:700;letter-spacing:.02em">{txt('photoOf', { a: shot().i + 1, b: count() })}</span>
           <button
             type="button"
             class="bn-tap"

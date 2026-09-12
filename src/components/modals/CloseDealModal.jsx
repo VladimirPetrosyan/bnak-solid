@@ -44,8 +44,8 @@ export default function CloseDealModal() {
               <Icon name="check" size={19} stroke="#0e7c73" weight={2.8} />
             </span>
             <div style="flex:1;min-width:0">
-              <div style="font-size:17px;font-weight:800;letter-spacing:-.02em">{title()}</div>
-              <div style="margin-top:2px;font-size:12.5px;color:#6f6d68">{addrOf(listing())}</div>
+              <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">{title()}</div>
+              <div style="margin-top:2px;font-size:13px;color:#6f6d68">{addrOf(listing())}</div>
             </div>
             <button
               type="button"
@@ -92,7 +92,7 @@ export default function CloseDealModal() {
               class="bn-tap"
               disabled={!ready() || state.closeDeal.busy}
               onClick={confirmCloseDeal}
-              style={`flex:1;display:flex;align-items:center;justify-content:center;padding:13px;border-radius:12px;background:${ready() ? TEAL : '#eeedea'};color:${ready() ? '#fff' : FAINT};font-size:13.5px;font-weight:700`}
+              style={`flex:1;display:flex;align-items:center;justify-content:center;padding:13px;border-radius:12px;background:${ready() ? TEAL : '#eeedea'};color:${ready() ? '#fff' : FAINT};font-size:14px;font-weight:700`}
             >
               {t().confirmW}
             </button>
@@ -101,7 +101,7 @@ export default function CloseDealModal() {
               class="bn-tap"
               disabled={state.closeDeal.busy}
               onClick={close}
-              style="display:flex;align-items:center;padding:13px 16px;border-radius:12px;background:#f2f1ee;font-size:13.5px;font-weight:700"
+              style="display:flex;align-items:center;padding:13px 16px;border-radius:12px;background:#f2f1ee;font-size:14px;font-weight:700"
             >
               {t().cancelW}
             </button>

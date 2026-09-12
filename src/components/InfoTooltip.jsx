@@ -62,7 +62,7 @@ export default function InfoTooltip(props) {
         onMouseEnter={show}
         onMouseLeave={hide}
         onFocus={show}
-        style="width:18px;height:18px;border-radius:999px;border:1px solid #c9c7c2;background:#fff;color:#6f6d68;font-size:10.5px;font-weight:800;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto"
+        style="width:18px;height:18px;border-radius:999px;border:1px solid #c9c7c2;background:#fff;color:#6f6d68;font-size:11px;font-weight:800;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto"
       >
         i
       </button>
@@ -71,7 +71,7 @@ export default function InfoTooltip(props) {
           ref={pop}
           id={id}
           role="tooltip"
-          style={`${style()};z-index:250;background:#1c1b19;color:#fff;border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.55;box-shadow:0 18px 40px -18px rgba(28,27,25,.7);animation:bnIn .14s ease`}
+          style={`${style()};z-index:250;background:#1c1b19;color:#fff;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.55;box-shadow:0 18px 40px -18px rgba(28,27,25,.7);animation:bnIn .14s ease`}
         >
           {props.children}
         </div>

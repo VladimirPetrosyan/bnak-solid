@@ -18,7 +18,7 @@ export default function HowModal() {
         <div onClick={(e) => e.stopPropagation()} style={`${modal('660px')};margin:2vh 0`}>
           <div style="display:flex;align-items:flex-start;gap:12px;padding:24px 24px 0">
             <div style="flex:1">
-              <div style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#0e7c73">
+              <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#0e7c73">
                 {t().howKicker}
               </div>
               <div style="font-size:clamp(21px,3.4vw,25px);font-weight:800;margin-top:8px;letter-spacing:-.03em">{t().howTitle}</div>
@@ -42,14 +42,14 @@ export default function HowModal() {
                   </div>
                   <div style="flex:1">
                     <div style="font-size:16px;font-weight:800;letter-spacing:-.01em">{title}</div>
-                    <div style="margin-top:4px;font-size:13.5px;line-height:1.6;color:#4a4844">{text}</div>
+                    <div style="margin-top:4px;font-size:14px;line-height:1.6;color:#4a4844">{text}</div>
                   </div>
                 </div>
               )}
             </For>
             <div style="padding:20px;border-radius:16px;background:#e8f4f2">
-              <div style="font-size:15.5px;font-weight:800;color:#0a4f4a">{t().howPractice}</div>
-              <div style="margin-top:8px;font-size:13.5px;line-height:1.6;color:#2f5f5a">{t().howPracticeX}</div>
+              <div style="font-size:16px;font-weight:800;color:#0a4f4a">{t().howPractice}</div>
+              <div style="margin-top:8px;font-size:14px;line-height:1.6;color:#2f5f5a">{t().howPracticeX}</div>
             </div>
           </div>
         </div>

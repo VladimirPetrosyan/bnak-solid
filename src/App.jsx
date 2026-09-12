@@ -109,14 +109,14 @@ export default function App() {
                 <span style="width:28px;height:28px;border-radius:9px;background:#0e7c73;display:flex;align-items:center;justify-content:center">
                   <span style="font-family:Manrope,sans-serif;font-size:16px;font-weight:800;color:#fff;line-height:1">H</span>
                 </span>
-                <span style="font-weight:800;font-size:19px;letter-spacing:-.035em">HayHome</span>
+                <span style="font-weight:800;font-size:20px;letter-spacing:-.035em">HayHome</span>
               </div>
               <div style="margin-top:12px;font-size:13px;color:#6f6d68;max-width:44ch;line-height:1.55">{t().footNote}</div>
             </div>
 
-            <div style="display:flex;gap:40px;flex-wrap:wrap;font-size:13.5px">
+            <div style="display:flex;gap:40px;flex-wrap:wrap;font-size:14px">
               <div style="display:flex;flex-direction:column;gap:8px">
-                <span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
+                <span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
                   {t().searchW}
                 </span>
                 <button type="button" class="bn-tap" onClick={() => go('search')} style="text-align:left">
@@ -130,7 +130,7 @@ export default function App() {
                 </button>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px">
-                <span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
+                <span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
                   {t().forOwners}
                 </span>
                 <button type="button" class="bn-tap" onClick={guard('post')} style="text-align:left">
@@ -144,7 +144,7 @@ export default function App() {
                 </button>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px">
-                <span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
+                <span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
                   {t().rules}
                 </span>
                 <button type="button" class="bn-tap" onClick={() => setState('howOpen', true)} style="text-align:left">
@@ -159,7 +159,7 @@ export default function App() {
                   type="button"
                   class="bn-tap"
                   onClick={() => openLegal(null)}
-                  style="text-align:left;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793"
+                  style="text-align:left;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793"
                 >
                   {t().legalTitle}
                 </button>

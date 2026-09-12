@@ -8,7 +8,7 @@ export default function ChatEmptyState() {
         <Icon name="chat" size={26} stroke="#9a9793" weight={1.7} />
       </span>
       <div style="font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:16px">{t().chatEmptyT}</div>
-      <div style="font-size:14.5px;color:#6f6d68;margin-top:7px;max-width:38ch">{t().chatEmptyS}</div>
+      <div style="font-size:15px;color:#6f6d68;margin-top:7px;max-width:38ch">{t().chatEmptyS}</div>
       <button
         type="button"
         class="bn-tap"

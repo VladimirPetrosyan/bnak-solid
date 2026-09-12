@@ -215,7 +215,7 @@ export default function Auth() {
         onKeyDown={(e) => e.key === 'Enter' && onEnter()}
         placeholder={t().pwPh}
       />
-      <button type="button" class="bn-tap" onClick={() => setShowPw(!showPw())} aria-pressed={showPw()} style="flex:0 0 auto;font-size:12.5px;font-weight:600;color:#6f6d68">
+      <button type="button" class="bn-tap" onClick={() => setShowPw(!showPw())} aria-pressed={showPw()} style="flex:0 0 auto;font-size:13px;font-weight:600;color:#6f6d68">
         {showPw() ? t().pwHide : t().pwShow}
       </button>
     </div>
@@ -268,7 +268,7 @@ export default function Auth() {
         <Icon name="down" size={11} stroke="#9a9793" weight={2.2} />
       </button>
       <span style="flex:0 0 auto;width:1px;align-self:stretch;background:#e8e7e4;margin:10px 0" />
-      <span style="flex:0 0 auto;font-size:15.5px;font-weight:700;color:#4a4844;padding:16px 0 16px 12px">+{country().cc}</span>
+      <span style="flex:0 0 auto;font-size:16px;font-weight:700;color:#4a4844;padding:16px 0 16px 12px">+{country().cc}</span>
       <input
         value={a().phone}
         onInput={(e) => {
@@ -297,7 +297,7 @@ export default function Auth() {
                   type="button"
                   class="bn-tap"
                   onClick={() => pickCountry(c.code)}
-                  style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;width:100%;font-size:13.5px;font-weight:${c.code === a().country ? 700 : 600};background:${c.code === a().country ? '#e8f4f2' : 'transparent'}`}
+                  style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;width:100%;font-size:14px;font-weight:${c.code === a().country ? 700 : 600};background:${c.code === a().country ? '#e8f4f2' : 'transparent'}`}
                 >
                   <Flag code={c.code} />
                   <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{countryName(c)}</span>
@@ -316,7 +316,7 @@ export default function Auth() {
       <div style="flex:1 1 400px;min-width:280px;background:#0e7c73;color:#fff;padding:clamp(20px,min(5vw,6vh),56px);display:flex;flex-direction:column;justify-content:space-between;gap:36px">
         <div style="display:flex;align-items:center;gap:12px">
           <span style="width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">
-            <span style="font-family:Manrope,sans-serif;font-size:19px;font-weight:800;color:#fff;line-height:1">H</span>
+            <span style="font-family:Manrope,sans-serif;font-size:20px;font-weight:800;color:#fff;line-height:1">H</span>
           </span>
           <span style="font-size:22px;font-weight:800;letter-spacing:-.035em">HayHome</span>
         </div>
@@ -324,7 +324,7 @@ export default function Auth() {
           <div style="font-size:clamp(26px,3.6vw,38px);font-weight:800;letter-spacing:-.035em;line-height:1.15;max-width:18ch">
             {t().authHero}
           </div>
-          <div style="margin-top:16px;font-size:15.5px;line-height:1.6;opacity:.85;max-width:44ch">{t().authHeroSub}</div>
+          <div style="margin-top:16px;font-size:16px;line-height:1.6;opacity:.85;max-width:44ch">{t().authHeroSub}</div>
           <div style="margin-top:28px;display:flex;flex-direction:column;gap:12px">
             <For each={[t().authFact1, t().authFact2, t().authFact3]}>
               {(fact) => (
@@ -332,13 +332,13 @@ export default function Auth() {
                   <span style="width:22px;height:22px;border-radius:999px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex:0 0 auto">
                     <Icon name="check" size={12} stroke="#fff" weight={3} />
                   </span>
-                  <span style="font-size:14.5px;line-height:1.5;opacity:.92">{fact}</span>
+                  <span style="font-size:15px;line-height:1.5;opacity:.92">{fact}</span>
                 </div>
               )}
             </For>
           </div>
         </div>
-        <div style="font-size:12.5px;opacity:.7">{t().authFoot}</div>
+        <div style="font-size:13px;opacity:.7">{t().authFoot}</div>
       </div>
 
       <div style="flex:1 1 400px;min-width:280px;display:flex;align-items:center;justify-content:center;padding:clamp(20px,min(5vw,6vh),56px)">
@@ -346,9 +346,9 @@ export default function Auth() {
           <Show when={a().step === 'entry'}>
             <div style="animation:bnUp .2s ease both">
               <div style="font-size:26px;font-weight:800;letter-spacing:-.03em;text-align:center">{t().entryTitle}</div>
-              <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().phoneLbl}</div>
+              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().phoneLbl}</div>
               {phoneField(toSignIn)}
-              <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:20px 0 8px">{t().pwLbl}</div>
+              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:20px 0 8px">{t().pwLbl}</div>
               {pwField(toSignIn)}
               <button
                 type="button"
@@ -363,7 +363,7 @@ export default function Auth() {
                   {t().forgotPw}
                 </button>
               </div>
-              <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eeedea;text-align:center;font-size:13.5px;color:#6f6d68">
+              <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eeedea;text-align:center;font-size:14px;color:#6f6d68">
                 {t().noAccountQ}{' '}
                 <button type="button" class="bn-tap" onClick={toRegister} style="color:#0e7c73;font-weight:700">
                   {t().registerLink}
@@ -384,7 +384,7 @@ export default function Auth() {
             <div style="animation:bnUp .2s ease both">
               <div style="font-size:26px;font-weight:800;letter-spacing:-.03em">{t().phoneTitle}</div>
               <div style="font-size:14px;color:#6f6d68;margin-top:8px;line-height:1.55">{t().phoneSub}</div>
-              <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().phoneLbl}</div>
+              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().phoneLbl}</div>
               {phoneField(toCode)}
               <button
                 type="button"
@@ -394,7 +394,7 @@ export default function Auth() {
               >
                 {t().getCode}
               </button>
-              <div style="margin-top:16px;text-align:center;font-size:13.5px;color:#6f6d68">
+              <div style="margin-top:16px;text-align:center;font-size:14px;color:#6f6d68">
                 {t().haveAccountQ}{' '}
                 <button
                   type="button"
@@ -423,7 +423,7 @@ export default function Auth() {
             <div style="animation:bnUp .2s ease both">
               <div style="font-size:26px;font-weight:800;letter-spacing:-.03em">{t().loginTitle}</div>
               <div style="font-size:14px;color:#6f6d68;margin-top:8px;line-height:1.55">{txt('loginSub', { p: phoneFull() })}</div>
-              <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().pwLbl}</div>
+              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().pwLbl}</div>
               {pwField(toLogin)}
               <button
                 type="button"
@@ -455,7 +455,7 @@ export default function Auth() {
             <div style="animation:bnUp .2s ease both">
               <div style="font-size:26px;font-weight:800;letter-spacing:-.03em">{t().forgotTitle}</div>
               <div style="font-size:14px;color:#6f6d68;margin-top:8px;line-height:1.55">{t().forgotSub}</div>
-              <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().phoneLbl}</div>
+              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().phoneLbl}</div>
               {phoneField(toForgotCode)}
               <button
                 type="button"
@@ -483,7 +483,7 @@ export default function Auth() {
             <div style="animation:bnUp .2s ease both">
               <div style="font-size:26px;font-weight:800;letter-spacing:-.03em">{t().codeTitle}</div>
               <div style="font-size:14px;color:#6f6d68;margin-top:8px;line-height:1.55">{txt('codeSub', { p: phoneFull() })}</div>
-              <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().codeLbl}</div>
+              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().codeLbl}</div>
               <div class="bn-field bn-field-code" style={errStyle('code')}>
                 <input
                   value={a().code}
@@ -525,10 +525,10 @@ export default function Auth() {
             <div style="animation:bnUp .2s ease both">
               <div style="font-size:26px;font-weight:800;letter-spacing:-.03em">{t().pwTitle}</div>
               <div style="font-size:14px;color:#6f6d68;margin-top:8px;line-height:1.55">{t().pwSub}</div>
-              <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().pwLbl}</div>
+              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().pwLbl}</div>
               {pwField(toPassword)}
               {pwStrengthMeter()}
-              <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:20px 0 8px">{t().pwConfirmLbl}</div>
+              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:20px 0 8px">{t().pwConfirmLbl}</div>
               {pwConfirmField(toPassword)}
               <button
                 type="button"
@@ -545,9 +545,9 @@ export default function Auth() {
             <div style="animation:bnUp .2s ease both">
               <div style="font-size:26px;font-weight:800;letter-spacing:-.03em">{t().resetTitle}</div>
               <div style="font-size:14px;color:#6f6d68;margin-top:8px;line-height:1.55">{txt('resetSub', { p: phoneFull() })}</div>
-              <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().pwLbl}</div>
+              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().pwLbl}</div>
               {pwField(toReset)}
-              <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:20px 0 8px">{t().pwConfirmLbl}</div>
+              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:20px 0 8px">{t().pwConfirmLbl}</div>
               {pwConfirmField(toReset)}
               <button
                 type="button"
@@ -583,15 +583,15 @@ export default function Auth() {
                           <span style={`width:8px;height:8px;border-radius:999px;background:${r().inner};display:block`} />
                         </span>
                         <div style="flex:1">
-                          <div style="font-size:14.5px;font-weight:700">{role.label}</div>
-                          <div style="font-size:12.5px;color:#6f6d68;margin-top:2px">{role.note}</div>
+                          <div style="font-size:15px;font-weight:700">{role.label}</div>
+                          <div style="font-size:13px;color:#6f6d68;margin-top:2px">{role.note}</div>
                         </div>
                       </button>
                     );
                   }}
                 </For>
               </div>
-              <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:14px 0 8px">
+              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:14px 0 8px">
                 {a().role === 'agency' ? t().agencyLbl : t().nameLbl}
               </div>
               <div class="bn-field">

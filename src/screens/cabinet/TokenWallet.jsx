@@ -37,7 +37,7 @@ export default function TokenWallet() {
             type="button"
             class="bn-tap"
             onClick={refreshTokenWallet}
-            style="padding:9px 14px;border-radius:10px;background:#fff;font-size:12.5px;font-weight:700"
+            style="padding:9px 14px;border-radius:10px;background:#fff;font-size:13px;font-weight:700"
           >
             {t().retryW}
           </button>
@@ -48,7 +48,7 @@ export default function TokenWallet() {
         <Show when={data()} fallback={<div style="margin-top:16px;font-size:13px;color:#9a9793">{t().walletEmpty}</div>}>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;flex-wrap:wrap">
             <div style="display:flex;align-items:baseline;gap:8px">
-              <span style="font-size:34px;font-weight:800;letter-spacing:-.03em">{nf(balance())}</span>
+              <span style="font-size:36px;font-weight:800;letter-spacing:-.03em">{nf(balance())}</span>
               <span style="font-size:13px;color:#6f6d68;font-weight:600">{t().walletBalanceLabel}</span>
             </div>
             <Show when={cost() > 0}>
@@ -62,9 +62,9 @@ export default function TokenWallet() {
           <div style="margin-top:14px;height:9px;border-radius:999px;background:#f2f1ee;overflow:hidden">
             <div style={`width:${progress()}%;height:100%;border-radius:999px;background:${TEAL};transition:width .3s ease`} />
           </div>
-          <div style="margin-top:10px;font-size:12.5px;color:#6f6d68">{txt('walletPrice', { cost: nf(cost()), days: days() })}</div>
+          <div style="margin-top:10px;font-size:13px;color:#6f6d68">{txt('walletPrice', { cost: nf(cost()), days: days() })}</div>
 
-          <div style="margin-top:20px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
+          <div style="margin-top:20px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
             {t().walletHistory}
           </div>
           <Show when={txs().length > 0} fallback={<div style="margin-top:10px;font-size:13px;color:#9a9793">{t().walletNoTx}</div>}>

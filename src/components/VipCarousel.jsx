@@ -47,7 +47,7 @@ export default function VipCarousel(props) {
     <section style="margin-top:22px;background:#fff;border-radius:20px;padding:clamp(16px,2.4vw,22px);box-shadow:0 1px 2px rgba(28,27,25,.05)">
       <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap">
         <div>
-          <h2 style="margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em">{t().vipTitle}</h2>
+          <h2 style="margin:0;font-size:20px;font-weight:800;letter-spacing:-.02em">{t().vipTitle}</h2>
           <div style="font-size:13px;color:#6f6d68;margin-top:4px">{t().vipSub}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
@@ -97,12 +97,12 @@ export default function VipCarousel(props) {
               >
                 <div style="position:relative;height:150px;background:#f2f1ee">
                   <PhotoSlot id={'vip-' + c().id} label={c().addr} src={c().photo} />
-                  <span style="position:absolute;top:8px;left:8px;padding:4px 9px;border-radius:999px;background:#0e7c73;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.03em">
+                  <span style="position:absolute;top:8px;left:8px;padding:4px 9px;border-radius:999px;background:#0e7c73;color:#fff;font-size:11px;font-weight:800;letter-spacing:.03em">
                     VIP
                   </span>
                 </div>
                 <div style="padding:12px 13px 14px">
-                  <div style="font-size:16.5px;font-weight:800;letter-spacing:-.02em">{c().price}</div>
+                  <div style="font-size:16px;font-weight:800;letter-spacing:-.02em">{c().price}</div>
                   <div style="font-size:12px;color:#6f6d68;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                     {c().addr}
                   </div>

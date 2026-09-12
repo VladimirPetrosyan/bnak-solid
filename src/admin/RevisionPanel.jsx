@@ -57,7 +57,7 @@ function RevisionCard(props) {
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <Show when={listing()} fallback={<span style="font-size:13px;color:#9a9793">Объявление удалено</span>}>
           <div>
-            <div style="font-size:15.5px;font-weight:800;letter-spacing:-.01em">
+            <div style="font-size:16px;font-weight:800;letter-spacing:-.01em">
               {roomsLabel(listing())}, {listing().area} m²
             </div>
             <div style="font-size:13px;color:#6f6d68;margin-top:4px">
@@ -79,7 +79,7 @@ function RevisionCard(props) {
             <For each={diff()}>
               {(d) => (
                 <div style="padding:10px 12px;border-radius:10px;background:#f7f7f6">
-                  <div style="font-size:11.5px;font-weight:700;color:#6f6d68">{FIELD_LABEL[d.key] || d.key}</div>
+                  <div style="font-size:12px;font-weight:700;color:#6f6d68">{FIELD_LABEL[d.key] || d.key}</div>
                   <div style="margin-top:4px;font-size:13px;line-height:1.5">
                     <span style="color:#9a9793;text-decoration:line-through">{fmtVal(d.before, d.key)}</span>
                     {' → '}
@@ -101,7 +101,7 @@ function RevisionCard(props) {
               class="bn-tap"
               disabled={busy()}
               onClick={() => props.onResolve(rv().id, 'approve')}
-              style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;background:${TEAL_T};color:${TEAL_TX};white-space:nowrap`}
+              style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:13px;font-weight:700;background:${TEAL_T};color:${TEAL_TX};white-space:nowrap`}
             >
               {busy() ? 'Применяем…' : 'Одобрить'}
             </button>
@@ -110,7 +110,7 @@ function RevisionCard(props) {
               class="bn-tap"
               disabled={busy()}
               onClick={() => setRejecting(true)}
-              style="display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;background:#f2f1ee;color:#6f6d68;white-space:nowrap"
+              style="display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:13px;font-weight:700;background:#f2f1ee;color:#6f6d68;white-space:nowrap"
             >
               Отклонить
             </button>
@@ -122,7 +122,7 @@ function RevisionCard(props) {
             value={reason()}
             onInput={(e) => setReason(e.currentTarget.value)}
             placeholder="Причина отклонения (обязательно, до 500 символов)"
-            style="width:100%;min-height:72px;padding:12px 14px;border-radius:12px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:13.5px;resize:vertical"
+            style="width:100%;min-height:72px;padding:12px 14px;border-radius:12px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:14px;resize:vertical"
           />
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
             <button
@@ -130,7 +130,7 @@ function RevisionCard(props) {
               class="bn-tap"
               disabled={busy() || !reason().trim()}
               onClick={() => props.onResolve(rv().id, 'reject', reason())}
-              style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;background:${RED_T};color:${RED_TX}`}
+              style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:13px;font-weight:700;background:${RED_T};color:${RED_TX}`}
             >
               Подтвердить отклонение
             </button>
@@ -138,7 +138,7 @@ function RevisionCard(props) {
               type="button"
               class="bn-tap"
               onClick={() => setRejecting(false)}
-              style="display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;background:#f2f1ee;color:#6f6d68"
+              style="display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:13px;font-weight:700;background:#f2f1ee;color:#6f6d68"
             >
               Отмена
             </button>
@@ -201,12 +201,12 @@ export default function RevisionPanel(props) {
         </div>
       </Show>
       <Show when={loading()}>
-        <div style="background:#fff;border-radius:18px;padding:32px 20px;text-align:center;font-size:13.5px;color:#9a9793;box-shadow:0 1px 2px rgba(28,27,25,.05)">
+        <div style="background:#fff;border-radius:18px;padding:32px 20px;text-align:center;font-size:14px;color:#9a9793;box-shadow:0 1px 2px rgba(28,27,25,.05)">
           Загружаем…
         </div>
       </Show>
       <Show when={!loading() && items().length === 0}>
-        <div style="background:#fff;border-radius:18px;padding:32px 20px;text-align:center;font-size:13.5px;color:#9a9793;box-shadow:0 1px 2px rgba(28,27,25,.05)">
+        <div style="background:#fff;border-radius:18px;padding:32px 20px;text-align:center;font-size:14px;color:#9a9793;box-shadow:0 1px 2px rgba(28,27,25,.05)">
           Правок на рассмотрении нет
         </div>
       </Show>
