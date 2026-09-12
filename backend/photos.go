@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -12,19 +13,49 @@ import (
 
 const maxUploadSize = 12 << 20 // 12 МБ на файл
 
-// saveUploadedFile сохраняет один файл из multipart-формы в uploadsDir/subdir
-// и возвращает публичный URL вида /uploads/<subdir>/<имя>.
-func saveUploadedFile(r *http.Request, field, subdir string) (string, error) {
-	file, header, err := r.FormFile(field)
+var errUploadBadType = errors.New("upload type not allowed")
+
+var allowedImageUploadMIME = map[string]string{
+	"image/jpeg": ".jpg",
+	"image/png":  ".png",
+	"image/webp": ".webp",
+	"image/gif":  ".gif",
+}
+
+var allowedChatUploadMIME = map[string]string{
+	"image/jpeg":      ".jpg",
+	"image/png":       ".png",
+	"image/webp":      ".webp",
+	"image/gif":       ".gif",
+	"video/mp4":       ".mp4",
+	"video/webm":      ".webm",
+	"video/quicktime": ".mov",
+}
+
+// saveUploadedFile сохраняет один файл из multipart-формы в uploadsDir/subdir и
+// возвращает публичный URL вида /uploads/<subdir>/<имя>. Тип файла определяется
+// по содержимому (не по расширению/заголовку клиента) и сверяется с allowed —
+// иначе загруженный файл мог бы отдаться браузеру как HTML/SVG того же origin.
+func saveUploadedFile(r *http.Request, field, subdir string, allowed map[string]string) (string, error) {
+	file, _, err := r.FormFile(field)
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 
-	ext := strings.ToLower(filepath.Ext(header.Filename))
-	if ext == "" {
-		ext = ".bin"
+	sniff := make([]byte, 512)
+	n, err := io.ReadFull(file, sniff)
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
+		return "", err
 	}
+	sniff = sniff[:n]
+
+	mimeType := strings.SplitN(http.DetectContentType(sniff), ";", 2)[0]
+	ext, ok := allowed[mimeType]
+	if !ok {
+		return "", errUploadBadType
+	}
+
 	name := newID() + ext
 	dir := filepath.Join(uploadsDir, subdir)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -36,10 +67,36 @@ func saveUploadedFile(r *http.Request, field, subdir string) (string, error) {
 	}
 	defer dst.Close()
 
+	if _, err := dst.Write(sniff); err != nil {
+		os.Remove(filepath.Join(dir, name))
+		return "", err
+	}
 	if _, err := io.Copy(dst, io.LimitReader(file, maxUploadSize)); err != nil {
+		os.Remove(filepath.Join(dir, name))
 		return "", err
 	}
 	return "/uploads/" + subdir + "/" + name, nil
+}
+
+// removeUploadedFile удаляет файл, ранее сохранённый saveUploadedFile, по его
+// публичному URL. Путь всегда проверяется на принадлежность uploadsDir, чтобы
+// значение из клиентского запроса не могло удалить файл за пределами каталога.
+func removeUploadedFile(publicURL string) {
+	rel := strings.TrimPrefix(publicURL, "/uploads/")
+	if rel == publicURL || rel == "" {
+		return
+	}
+	root, err := filepath.Abs(uploadsDir)
+	if err != nil {
+		return
+	}
+	full, err := filepath.Abs(filepath.Join(root, rel))
+	if err != nil || (full != root && !strings.HasPrefix(full, root+string(filepath.Separator))) {
+		return
+	}
+	if err := os.Remove(full); err != nil && !os.IsNotExist(err) {
+		logf("delete uploaded file %s: %v", full, err)
+	}
 }
 
 // ---------- POST /api/listings/{id}/photos ----------
@@ -57,8 +114,12 @@ func handleUploadListingPhoto(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad multipart form")
 		return
 	}
-	url, err := saveUploadedFile(r, "photo", "listings/"+l.ID)
+	url, err := saveUploadedFile(r, "photo", "listings/"+l.ID, allowedImageUploadMIME)
 	if err != nil {
+		if errors.Is(err, errUploadBadType) {
+			writeErr(w, http.StatusBadRequest, "unsupported image type")
+			return
+		}
 		writeErr(w, http.StatusBadRequest, "no photo file (field 'photo')")
 		return
 	}
@@ -125,13 +186,21 @@ func handleDeleteListingPhoto(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "missing url")
 		return
 	}
-	db.Exec(`DELETE FROM listing_photos WHERE listing_id = ? AND url = ?`, l.ID, url)
-	os.Remove(filepath.Join(".", url))
+	res, err := db.Exec(`DELETE FROM listing_photos WHERE listing_id = ? AND url = ?`, l.ID, url)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	// Файл трогаем только если строка реально принадлежала этому объявлению —
+	// иначе произвольный url в query мог бы указать на файл вне каталога.
+	if n, _ := res.RowsAffected(); n > 0 {
+		removeUploadedFile(url)
+	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 // ---------- POST /api/uploads ----------
-// Универсальная загрузка для вложений чата (фото, видео, документы). Поле формы: "file".
+// Универсальная загрузка для вложений чата (фото, видео). Поле формы: "file".
 
 func handleGenericUpload(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
@@ -143,8 +212,12 @@ func handleGenericUpload(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "no file (field 'file')")
 		return
 	}
-	url, err := saveUploadedFile(r, "file", "chat")
+	url, err := saveUploadedFile(r, "file", "chat", allowedChatUploadMIME)
 	if err != nil {
+		if errors.Is(err, errUploadBadType) {
+			writeErr(w, http.StatusBadRequest, "unsupported file type")
+			return
+		}
 		writeErr(w, http.StatusInternalServerError, "save failed")
 		return
 	}

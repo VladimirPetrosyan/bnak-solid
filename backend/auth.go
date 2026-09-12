@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type ctxKey string
@@ -155,8 +157,8 @@ func sendCode(phone string) (map[string]any, error) {
 		code = "1111" // в деве код всегда одинаковый — удобно для ручного тестирования
 	}
 	now := time.Now()
-	_, err = db.Exec(`INSERT INTO otp_codes(phone, code, verified, expires_at, requested_at) VALUES (?, ?, 0, ?, ?)
-		ON CONFLICT(phone) DO UPDATE SET code=excluded.code, verified=0, expires_at=excluded.expires_at, requested_at=excluded.requested_at`,
+	_, err = db.Exec(`INSERT INTO otp_codes(phone, code, verified, expires_at, requested_at, attempts) VALUES (?, ?, 0, ?, ?, 0)
+		ON CONFLICT(phone) DO UPDATE SET code=excluded.code, verified=0, expires_at=excluded.expires_at, requested_at=excluded.requested_at, attempts=0`,
 		phone, code, now.Add(5*time.Minute), now)
 	if err != nil {
 		log.Println("request-code:", err)
@@ -187,6 +189,11 @@ type verifyCodeReq struct {
 	Code  string `json:"code"`
 }
 
+// otpMaxAttempts — сколько раз подряд можно ошибиться с кодом, прежде чем его нужно
+// запросить заново (attempts сбрасывается при новой отправке, см. sendCode). Без этого
+// лимита 4-значный код (10000 вариантов) можно перебрать простым скриптом.
+const otpMaxAttempts = 5
+
 func handleVerifyCode(w http.ResponseWriter, r *http.Request) {
 	var req verifyCodeReq
 	if err := readJSON(r, &req); err != nil {
@@ -197,7 +204,9 @@ func handleVerifyCode(w http.ResponseWriter, r *http.Request) {
 
 	var storedCode string
 	var expiresAt time.Time
-	err := db.QueryRow(`SELECT code, expires_at FROM otp_codes WHERE phone = ?`, phone).Scan(&storedCode, &expiresAt)
+	var attempts int
+	err := db.QueryRow(`SELECT code, expires_at, attempts FROM otp_codes WHERE phone = ?`, phone).
+		Scan(&storedCode, &expiresAt, &attempts)
 	if errors.Is(err, sql.ErrNoRows) {
 		writeErr(w, http.StatusBadRequest, "code not requested")
 		return
@@ -210,12 +219,17 @@ func handleVerifyCode(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "code expired")
 		return
 	}
-	if req.Code != storedCode {
+	if attempts >= otpMaxAttempts {
+		writeErr(w, http.StatusTooManyRequests, "too many attempts, request a new code")
+		return
+	}
+	if subtle.ConstantTimeCompare([]byte(req.Code), []byte(storedCode)) != 1 {
+		db.Exec(`UPDATE otp_codes SET attempts = attempts + 1 WHERE phone = ?`, phone)
 		writeErr(w, http.StatusBadRequest, "wrong code")
 		return
 	}
 	// код верный — помечаем подтверждённым и продлеваем окно на время придумывания пароля
-	if _, err := db.Exec(`UPDATE otp_codes SET verified = 1, expires_at = ? WHERE phone = ?`,
+	if _, err := db.Exec(`UPDATE otp_codes SET verified = 1, expires_at = ?, attempts = 0 WHERE phone = ?`,
 		time.Now().Add(10*time.Minute), phone); err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
@@ -254,6 +268,40 @@ func validPassword(p string) bool {
 
 var errPhoneTaken = errors.New("phone_taken")
 
+// Пароли пользователей хешируются bcrypt (в отличие от админки, где для внутреннего
+// однопользовательского инструмента достаточно salt+SHA-256, см. admin_auth.go) —
+// это реальные учётные записи с номерами телефонов, и при утечке базы такой хеш
+// на порядки дороже перебирать. password_salt для новых записей не используется
+// (bcrypt хранит соль внутри самого хеша), но остаётся в схеме ради старых записей —
+// verifyUserPassword ниже понимает оба формата и незаметно переводит логин на bcrypt.
+
+// newUserPasswordHash хеширует пароль bcrypt для сохранения в users.password_hash.
+func newUserPasswordHash(password string) (string, error) {
+	b, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func isBcryptHash(hash string) bool {
+	return strings.HasPrefix(hash, "$2a$") || strings.HasPrefix(hash, "$2b$") || strings.HasPrefix(hash, "$2y$")
+}
+
+// verifyUserPassword сверяет пароль с сохранённым хешем. legacy=true означает, что
+// хеш ещё в старом формате (salt+SHA-256) и его стоит перевести на bcrypt прямо
+// сейчас, пока пароль в открытом виде всё равно есть под рукой.
+func verifyUserPassword(password, hash, salt string) (ok bool, legacy bool) {
+	if hash == "" {
+		return false, false
+	}
+	if isBcryptHash(hash) {
+		return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil, false
+	}
+	got := hashPassword(password, salt)
+	return subtle.ConstantTimeCompare([]byte(got), []byte(hash)) == 1, true
+}
+
 func registerUser(phone, password, name, role, legalLanguage string, now time.Time) (*User, string, error) {
 	trimmedName := strings.TrimSpace(name)
 	profileComplete := trimmedName != "" && (role == "owner" || role == "agency" || role == "tenant")
@@ -267,8 +315,10 @@ func registerUser(phone, password, name, role, legalLanguage string, now time.Ti
 		finalName = "HayHome"
 	}
 	ini := initialsOf(finalName)
-	salt := newSalt()
-	hash := hashPassword(password, salt)
+	hash, err := newUserPasswordHash(password)
+	if err != nil {
+		return nil, "", err
+	}
 	id := newID()
 
 	tx, err := db.Begin()
@@ -279,7 +329,7 @@ func registerUser(phone, password, name, role, legalLanguage string, now time.Ti
 
 	if _, err := tx.Exec(`INSERT INTO users(id, phone, name, role, ini, password_hash, password_salt, legal_version, legal_accepted_at, legal_language)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		id, phone, finalName, finalRole, ini, hash, salt, currentLegalVersion, now, legalLanguage); err != nil {
+		id, phone, finalName, finalRole, ini, hash, "", currentLegalVersion, now, legalLanguage); err != nil {
 		return nil, "", errPhoneTaken
 	}
 	tx.Exec(`DELETE FROM otp_codes WHERE phone = ?`, phone)
@@ -380,10 +430,15 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		t := legalAcceptedAt.Time
 		u.LegalAcceptedAt = &t
 	}
-	got := hashPassword(req.Password, u.PasswordSalt)
-	if u.PasswordHash == "" || subtle.ConstantTimeCompare([]byte(got), []byte(u.PasswordHash)) != 1 {
+	ok, legacy := verifyUserPassword(req.Password, u.PasswordHash, u.PasswordSalt)
+	if !ok {
 		writeErr(w, http.StatusUnauthorized, "invalid credentials")
 		return
+	}
+	if legacy {
+		if newHash, err := newUserPasswordHash(req.Password); err == nil {
+			db.Exec(`UPDATE users SET password_hash=?, password_salt='' WHERE id=?`, newHash, u.ID)
+		}
 	}
 	token, err := createSession(u.ID)
 	if err != nil {
@@ -432,9 +487,12 @@ func handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		t := legalAcceptedAt.Time
 		u.LegalAcceptedAt = &t
 	}
-	salt := newSalt()
-	hash := hashPassword(req.Password, salt)
-	if _, err := db.Exec(`UPDATE users SET password_hash=?, password_salt=? WHERE id=?`, hash, salt, u.ID); err != nil {
+	hash, err := newUserPasswordHash(req.Password)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if _, err := db.Exec(`UPDATE users SET password_hash=?, password_salt='' WHERE id=?`, hash, u.ID); err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}

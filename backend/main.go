@@ -189,11 +189,28 @@ func main() {
 	// раздача загруженных файлов
 	mux.Handle("GET /uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir))))
 
-	handler := withCORS(corsOrigin, mux)
+	handler := withSecurityHeaders(withCORS(corsOrigin, mux))
 
 	log.Printf("hayhome-backend слушает на :%s (dev=%v, db=%s, uploads=%s, publicBaseURL=%s)", port, devMode, dbPath, uploadsDir, publicBaseURL)
 	log.Printf("operator contact: %s (%s)", operatorEmail, operatorCity)
 	log.Fatal(http.ListenAndServe(":"+port, handler))
+}
+
+// withSecurityHeaders выставляет базовые защитные заголовки на все ответы: чистый
+// JSON API плюс статика /uploads/ (пользовательские фото/вложения) сама по себе не
+// рендерит HTML, поэтому эти значения безопасно ставить глобально, без исключений
+// под конкретные роуты. nosniff и CSP — вторая линия обороны на случай, если через
+// /uploads/ всё же окажется файл, который браузер попробует исполнить как HTML/SVG.
+func withSecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "no-referrer")
+		h.Set("Content-Security-Policy", "default-src 'none'")
+		h.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func withCORS(rawOrigins string, next http.Handler) http.Handler {

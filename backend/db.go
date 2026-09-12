@@ -33,12 +33,15 @@ CREATE TABLE IF NOT EXISTS users (
 -- requested_at: когда код в последний раз отправлен — им же ограничивается повторная
 -- отправка (см. otpResendCooldown в auth.go), не путать с expires_at, который после
 -- verify продлевается на окно ввода пароля.
+-- attempts: сколько раз подряд ввели неверный код для текущего code/expires_at —
+-- см. otpMaxAttempts в auth.go. Сбрасывается в 0 при каждой новой отправке кода.
 CREATE TABLE IF NOT EXISTS otp_codes (
 	phone        TEXT PRIMARY KEY,
 	code         TEXT NOT NULL,
 	verified     INTEGER NOT NULL DEFAULT 0,
 	expires_at   DATETIME NOT NULL,
-	requested_at DATETIME
+	requested_at DATETIME,
+	attempts     INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -281,6 +284,7 @@ func migrate(conn *sql.DB) error {
 		`ALTER TABLE users ADD COLUMN legal_accepted_at DATETIME`,
 		`ALTER TABLE users ADD COLUMN legal_language TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE otp_codes ADD COLUMN requested_at DATETIME`,
+		`ALTER TABLE otp_codes ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0`,
 	}
 	for _, a := range alters {
 		if _, err := conn.Exec(a); err != nil && !isIgnorableMigrationErr(err) {
