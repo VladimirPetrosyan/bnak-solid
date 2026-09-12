@@ -13,29 +13,247 @@ import (
 // пользователями (`users`/`sessions`) — только через отдельный логин/пароль администратора,
 // см. admin_auth.go.
 
+// adminUserOut добавляет к User поля, которых нет в основной таблице пользователей,
+// но нужны панели администратора: онлайн ли пользователь прямо сейчас (по наличию
+// живого realtime-соединения в хабе, см. realtime_hub.go).
+type adminUserOut struct {
+	User
+	Online bool `json:"online"`
+}
+
+func onlineSet() map[string]bool {
+	m := map[string]bool{}
+	for _, id := range realtimeHubInstance.onlineUserIDs() {
+		m[id] = true
+	}
+	return m
+}
+
 // ---------- GET /api/admin/users ----------
 
+func scanAdminUser(scan func(dest ...any) error) (User, error) {
+	var u User
+	var legalAcceptedAt sql.NullTime
+	err := scan(&u.ID, &u.Phone, &u.Name, &u.Role, &u.Status, &u.Ini, &u.CreatedAt, &u.LegalVersion, &legalAcceptedAt, &u.LegalLanguage)
+	if err != nil {
+		return u, err
+	}
+	if legalAcceptedAt.Valid {
+		t := legalAcceptedAt.Time
+		u.LegalAcceptedAt = &t
+	}
+	return u, nil
+}
+
+const adminUserCols = `id, phone, name, role, status, ini, created_at, legal_version, legal_accepted_at, legal_language`
+
 func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query(`SELECT id, phone, name, role, ini, created_at, legal_version, legal_accepted_at, legal_language
-		FROM users ORDER BY created_at DESC`)
+	rows, err := db.Query(`SELECT ` + adminUserCols + ` FROM users ORDER BY created_at DESC`)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
 	defer rows.Close()
-	out := []User{}
+	online := onlineSet()
+	out := []adminUserOut{}
 	for rows.Next() {
-		var u User
-		var legalAcceptedAt sql.NullTime
-		if rows.Scan(&u.ID, &u.Phone, &u.Name, &u.Role, &u.Ini, &u.CreatedAt, &u.LegalVersion, &legalAcceptedAt, &u.LegalLanguage) == nil {
-			if legalAcceptedAt.Valid {
-				t := legalAcceptedAt.Time
-				u.LegalAcceptedAt = &t
-			}
-			out = append(out, u)
+		u, err := scanAdminUser(rows.Scan)
+		if err == nil {
+			out = append(out, adminUserOut{User: u, Online: online[u.ID]})
 		}
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// ---------- GET /api/admin/users/{id} ----------
+
+func handleAdminUserDetail(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	u, err := scanAdminUser(db.QueryRow(`SELECT `+adminUserCols+` FROM users WHERE id = ?`, id).Scan)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeErr(w, http.StatusNotFound, "not found")
+		return
+	}
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	rows, err := db.Query(`SELECT `+listingCols+` FROM listings WHERE owner_id = ? ORDER BY created_at DESC`, id)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	listings, err := drainListings(rows)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	var complaintsFiled, messagesCount int
+	db.QueryRow(`SELECT COUNT(*) FROM reports WHERE reporter_id = ?`, id).Scan(&complaintsFiled)
+	db.QueryRow(`SELECT COUNT(*) FROM support_messages sm JOIN support_threads st ON st.id = sm.thread_id WHERE st.user_id = ?`, id).Scan(&messagesCount)
+
+	online := onlineSet()
+	writeJSON(w, http.StatusOK, map[string]any{
+		"user":            adminUserOut{User: u, Online: online[u.ID]},
+		"listings":        listings,
+		"complaintsFiled": complaintsFiled,
+		"messagesCount":   messagesCount,
+	})
+}
+
+// ---------- PUT /api/admin/users/{id} ----------
+
+type adminUpdateUserInput struct {
+	Name   string `json:"name"`
+	Phone  string `json:"phone"`
+	Role   string `json:"role"`
+	Status string `json:"status"`
+}
+
+func handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var in adminUpdateUserInput
+	if err := readJSON(r, &in); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad json")
+		return
+	}
+	name := strings.TrimSpace(in.Name)
+	phone := normalizePhone(in.Phone)
+	if name == "" || !validPhone(phone) {
+		writeErr(w, http.StatusBadRequest, "invalid input")
+		return
+	}
+	if in.Role != "tenant" && in.Role != "owner" && in.Role != "agency" {
+		writeErr(w, http.StatusBadRequest, "invalid role")
+		return
+	}
+	if in.Status != "active" && in.Status != "blocked" {
+		writeErr(w, http.StatusBadRequest, "invalid status")
+		return
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	defer tx.Rollback()
+
+	var oldStatus string
+	if err := tx.QueryRow(`SELECT status FROM users WHERE id = ?`, id).Scan(&oldStatus); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeErr(w, http.StatusNotFound, "not found")
+			return
+		}
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	var conflict string
+	err = tx.QueryRow(`SELECT id FROM users WHERE phone = ? AND id != ?`, phone, id).Scan(&conflict)
+	if err == nil {
+		writeErr(w, http.StatusConflict, "phone_taken")
+		return
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	ini := initialsOf(name)
+	if _, err := tx.Exec(`UPDATE users SET name=?, phone=?, role=?, status=?, ini=? WHERE id=?`,
+		name, phone, in.Role, in.Status, ini, id); err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if in.Status == "blocked" && oldStatus != "blocked" {
+		if _, err := tx.Exec(`DELETE FROM sessions WHERE user_id = ?`, id); err != nil {
+			writeErr(w, http.StatusInternalServerError, "db error")
+			return
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	u, err := scanAdminUser(db.QueryRow(`SELECT `+adminUserCols+` FROM users WHERE id = ?`, id).Scan)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	writeJSON(w, http.StatusOK, adminUserOut{User: u, Online: onlineSet()[u.ID]})
+}
+
+// ---------- DELETE /api/admin/users/{id} ----------
+// Аккаунт удаляется навсегда: его объявления уходят в архив (а не удаляются — история
+// сделок и жалоб на них должна остаться), тред поддержки стирается вместе с сообщениями,
+// сессии обрываются.
+
+func handleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	tx, err := db.Begin()
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	defer tx.Rollback()
+
+	var one int
+	if err := tx.QueryRow(`SELECT 1 FROM users WHERE id = ?`, id).Scan(&one); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeErr(w, http.StatusNotFound, "not found")
+			return
+		}
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	now := time.Now()
+	if _, err := tx.Exec(`UPDATE listings SET status='archived', updated_at=? WHERE owner_id=? AND status!='archived'`, now, id); err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if _, err := tx.Exec(`DELETE FROM support_messages WHERE thread_id IN (SELECT id FROM support_threads WHERE user_id=?)`, id); err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if _, err := tx.Exec(`DELETE FROM support_threads WHERE user_id=?`, id); err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if _, err := tx.Exec(`DELETE FROM sessions WHERE user_id=?`, id); err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if _, err := tx.Exec(`DELETE FROM users WHERE id=?`, id); err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+// ---------- GET /api/admin/online ----------
+
+func handleAdminOnline(w http.ResponseWriter, r *http.Request) {
+	ids := realtimeHubInstance.onlineUserIDs()
+	var count int
+	if len(ids) > 0 {
+		placeholders := make([]string, len(ids))
+		args := make([]any, len(ids))
+		for i, id := range ids {
+			placeholders[i] = "?"
+			args[i] = id
+		}
+		db.QueryRow(`SELECT COUNT(*) FROM users WHERE id IN (`+strings.Join(placeholders, ",")+`)`, args...).Scan(&count)
+	}
+	writeJSON(w, http.StatusOK, map[string]int{"count": count})
 }
 
 // ---------- GET /api/admin/reports?status= ----------

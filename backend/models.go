@@ -8,7 +8,8 @@ type User struct {
 	ID              string     `json:"id"`
 	Phone           string     `json:"phone"`
 	Name            string     `json:"name"`
-	Role            string     `json:"role"` // tenant | owner | agency
+	Role            string     `json:"role"`   // tenant | owner | agency
+	Status          string     `json:"status"` // active | blocked
 	Ini             string     `json:"ini"`
 	CreatedAt       time.Time  `json:"createdAt"`
 	PasswordHash    string     `json:"-"`

@@ -172,6 +172,7 @@ const API_ERR_KEYS = {
   'legal version outdated': 'errLegalVersion',
   'invalid legal language': 'errLegalLanguage',
   'invalid credentials': 'errInvalidCredentials',
+  'account blocked': 'errAccountBlocked',
   'user not found': 'errUserNotFound',
   'not authenticated': 'errNotAuthenticated',
   'not found': 'errNotFound',

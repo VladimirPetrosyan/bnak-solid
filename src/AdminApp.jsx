@@ -3,31 +3,61 @@ import { For, Show, createSignal as sig, createEffect, onMount, onCleanup } from
 import { api, setAuthToken, ApiError } from './api';
 import { connectRealtime, disconnectRealtime } from './realtime';
 import { readMigrated, safeSet, safeRemove } from './storage';
-import { TEAL, TEAL_T, TEAL_TX, RED_T, RED_TX, SOFT, FAINT, MUTED, INK } from './theme';
 import Icon from './components/Icon';
 import RevisionPanel from './admin/RevisionPanel';
-import { addrLine, roomsLabel, priceOf, dateTime, PersonLine } from './admin/adminFormat';
-
-function timeOf(iso) {
-  const d = new Date(iso);
-  if (isNaN(d)) return '';
-  const p = (n) => String(n).padStart(2, '0');
-  return p(d.getHours()) + ':' + p(d.getMinutes());
-}
+import Sidebar from './admin/Sidebar';
+import Donut from './admin/Donut';
+import { plural, UNIT } from './admin/plural';
+import { roomsLabel, priceOf } from './admin/adminFormat';
+import { CITY, nf } from './data';
+import {
+  ACCENT,
+  ACCENT_SOFT,
+  ACCENT_ROW,
+  SURFACE_ALT,
+  FEED_BG,
+  BORDER,
+  BORDER_SOFT,
+  DIVIDER,
+  INK,
+  TEXT,
+  TEXT_MUTED,
+  TEXT_FAINT,
+  TEXT_GHOST,
+  DANGER,
+  DANGER_SOFT,
+  DANGER_BORDER,
+  WARN,
+  WARN_SOFT,
+  WARN_BORDER,
+  WARN_ACCENT,
+  NEUTRAL_SOFT,
+  NEUTRAL_ACCENT,
+  ONLINE,
+  OVERLAY,
+  MONO,
+  rampColor
+} from './admin/theme';
 
 const TOKEN_KEY = 'hayhome.admin.token';
 const LEGACY_TOKEN_KEY = 'bnak.admin.token';
 
-function apiErrText(e) {
-  if (e instanceof ApiError) {
-    if (e.code === 'network') return 'Сервер недоступен, проверьте подключение';
-    if (e.code === 'invalid credentials') return 'Неверный логин или пароль';
-    return e.code;
-  }
-  return String((e && e.message) || e);
-}
+const ROLE_LABEL = { tenant: 'Ищет жильё', owner: 'Сдаёт своё жильё', agency: 'Агентство' };
+const DEAL_LABEL = { rent: 'Аренда', daily: 'Посуточно', sale: 'Продажа', newb: 'Новостройки', comm: 'Коммерческая' };
 
-const LISTING_STATUS_LABEL = { pending: 'Первичная модерация', active: 'Сегодня', flagged: 'Жалобы', archived: 'Архив', rented: 'Архив' };
+const LISTING_STATUS = {
+  pending: { label: 'Первичная модерация', bg: WARN_SOFT, fg: WARN },
+  active: { label: 'Сегодня', bg: ACCENT_SOFT, fg: ACCENT },
+  flagged: { label: 'Жалобы', bg: DANGER_SOFT, fg: DANGER },
+  archived: { label: 'Архив', bg: NEUTRAL_SOFT, fg: TEXT_MUTED },
+  rented: { label: 'Архив', bg: NEUTRAL_SOFT, fg: TEXT_MUTED }
+};
+
+const RESOLUTION = {
+  pending: { label: 'На рассмотрении', bg: WARN_SOFT, fg: WARN, accent: WARN_ACCENT },
+  dismissed: { label: 'Отклонено', bg: NEUTRAL_SOFT, fg: TEXT_MUTED, accent: NEUTRAL_ACCENT },
+  upheld: { label: 'Подтверждено', bg: ACCENT_SOFT, fg: ACCENT, accent: ACCENT }
+};
 
 const REASON_LABEL = {
   rs1: 'Сказали, что квартира уже сдана, и предложили другой вариант',
@@ -36,6 +66,66 @@ const REASON_LABEL = {
   rs4: 'Фото не от этой квартиры'
 };
 const reasonText = (code) => REASON_LABEL[code] || code || '—';
+
+const SECTION_META = {
+  overview: { title: 'Обзор', sub: 'Сводка по объявлениям, пользователям и жалобам' },
+  listings: { title: 'Объявления', sub: 'Модерация, типы сделок и география' },
+  complaints: { title: 'Жалобы', sub: 'Разбор обращений: подтвердить, отклонить, написать автору' },
+  users: { title: 'Пользователи', sub: 'Профили, роли, блокировка и удаление аккаунта' },
+  agencies: { title: 'Агентства', sub: 'Объявления и статистика агентств недвижимости' },
+  revisions: { title: 'Правки', sub: 'Изменения объявлений, ожидающие проверки' },
+  support: { title: 'Поддержка', sub: 'Личный чат поддержки с каждым пользователем' }
+};
+
+function timeOf(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+function dateOnly(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear();
+}
+
+function shortId(id) {
+  return id ? id.slice(0, 8).toUpperCase() : '—';
+}
+
+function cityLabel(city) {
+  return CITY[city] ? CITY[city].n[1] : city;
+}
+
+function daysAgo(iso, days) {
+  const d = new Date(iso);
+  return !isNaN(d) && Date.now() - d.getTime() <= days * 86400000;
+}
+
+function countBy(arr, keyFn) {
+  const m = new Map();
+  for (const x of arr) {
+    const k = keyFn(x);
+    if (k == null) continue;
+    m.set(k, (m.get(k) || 0) + 1);
+  }
+  return m;
+}
+
+function apiErrText(e) {
+  if (e instanceof ApiError) {
+    if (e.code === 'network') return 'Сервер недоступен, проверьте подключение';
+    if (e.code === 'invalid credentials') return 'Неверный логин или пароль';
+    if (e.code === 'phone_taken') return 'Этот номер уже используется другим аккаунтом';
+    if (e.code === 'invalid input') return 'Заполните имя и телефон';
+    if (e.code === 'invalid role' || e.code === 'invalid status') return 'Некорректные данные';
+    if (e.code === 'not found') return 'Не найдено';
+    return e.code;
+  }
+  return String((e && e.message) || e);
+}
 
 async function openPrivateDocument(listingId) {
   const blob = await api.blob('/api/admin/listings/' + listingId + '/document');
@@ -68,18 +158,18 @@ function Login(props) {
   };
 
   return (
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px">
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#fbfbfa">
       <form
         onSubmit={submit}
-        style="width:100%;max-width:360px;background:#fff;border-radius:20px;padding:32px;box-shadow:0 1px 2px rgba(28,27,25,.05);animation:bnIn .2s ease"
+        style="width:100%;max-width:360px;background:#fff;border:1px solid #e3e3e0;border-radius:5px;padding:32px;animation:bnIn .2s ease"
       >
         <div style="display:flex;align-items:center;gap:10px">
-          <span style="width:40px;height:40px;border-radius:13px;background:#1c1b19;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+          <span style="width:40px;height:40px;border-radius:10px;background:#16171a;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
             <Icon name="shield" size={19} stroke="#fff" weight={1.8} />
           </span>
           <div>
-            <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">Панель управления</div>
-            <div style="font-size:13px;color:#6f6d68;margin-top:2px">Только для администратора</div>
+            <div style="font-size:18px;font-weight:700;letter-spacing:-.02em">Панель управления</div>
+            <div style="font-size:13px;color:#6e7075;margin-top:2px">Только для администратора</div>
           </div>
         </div>
 
@@ -90,7 +180,7 @@ function Login(props) {
             value={username()}
             onInput={(e) => setUsername(e.currentTarget.value)}
             placeholder="Логин"
-            style="width:100%;padding:13px 16px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:15px"
+            style="width:100%;padding:11px 14px;border-radius:3px;border:1px solid #e3e3e0;background:#fbfbfa;font-size:14px"
           />
           <input
             type="password"
@@ -98,12 +188,12 @@ function Login(props) {
             value={password()}
             onInput={(e) => setPassword(e.currentTarget.value)}
             placeholder="Пароль"
-            style="width:100%;padding:13px 16px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:15px"
+            style="width:100%;padding:11px 14px;border-radius:3px;border:1px solid #e3e3e0;background:#fbfbfa;font-size:14px"
           />
         </div>
 
         <Show when={err()}>
-          <div style="margin-top:12px;padding:12px 14px;border-radius:12px;background:#fceeeb;color:#93331f;font-size:13px;font-weight:600">
+          <div style="margin-top:12px;padding:11px 13px;border-radius:3px;background:#fdf0eb;color:#9a3412;font-size:13px;font-weight:600">
             {err()}
           </div>
         </Show>
@@ -111,7 +201,8 @@ function Login(props) {
         <button
           type="submit"
           disabled={busy()}
-          style={`margin-top:16px;width:100%;display:flex;align-items:center;justify-content:center;padding:14px;border-radius:13px;border:none;background:${busy() ? '#9ecbc5' : TEAL};color:#fff;font-size:15px;font-weight:700;cursor:${busy() ? 'default' : 'pointer'}`}
+          class="bn-tap"
+          style={`margin-top:16px;width:100%;display:flex;align-items:center;justify-content:center;padding:12px;border-radius:3px;border:none;background:${busy() ? '#9ecbc5' : ACCENT};color:#fff;font-size:14px;font-weight:600;cursor:${busy() ? 'default' : 'pointer'}`}
         >
           Войти
         </button>
@@ -120,228 +211,133 @@ function Login(props) {
   );
 }
 
-const ROLE_LABEL = { tenant: 'Ищет жильё', owner: 'Сдаёт своё жильё', agency: 'Агентство' };
+function Badge(props) {
+  return (
+    <span style={`display:inline-block;padding:2px 7px;border-radius:2px;font-size:11px;background:${props.bg};color:${props.fg};white-space:nowrap`}>
+      {props.children}
+    </span>
+  );
+}
 
-function Tab(props) {
+function Dot(props) {
+  return <span style={`width:6px;height:6px;border-radius:50%;background:${props.on ? ONLINE : BORDER};flex:0 0 auto`} />;
+}
+
+const ACT_VARIANTS = {
+  primary: `background:${ACCENT};color:#fff;border-color:${ACCENT}`,
+  neutral: `background:#fff;color:${TEXT};border-color:${BORDER}`,
+  danger: `background:#fff;color:${DANGER};border-color:${DANGER_BORDER}`,
+  warn: `background:#fff;color:${WARN};border-color:${WARN_BORDER}`
+};
+
+function ActBtn(props) {
   return (
     <button
       type="button"
       class="bn-tap"
-      aria-pressed={props.on}
       onClick={props.onClick}
-      style={`padding:12px 16px;border-radius:999px;font-size:13px;font-weight:700;box-shadow:0 1px 2px rgba(28,27,25,.05);background:${props.on ? INK : '#fff'};color:${props.on ? '#fff' : MUTED}`}
+      style={`border:1px solid;cursor:pointer;font-size:11.5px;font-weight:500;padding:${props.big ? '7px 12px' : '4px 9px'};border-radius:3px;white-space:nowrap;${ACT_VARIANTS[props.variant || 'neutral']}`}
     >
-      {props.label}
+      {props.children}
     </button>
   );
 }
 
-function Kpi(props) {
+function KpiStrip(props) {
+  const pct = () => 100 / props.items.length;
   return (
-    <div style={`padding:20px;border-radius:16px;box-shadow:0 1px 2px rgba(28,27,25,.05);background:${props.bg || '#fff'}`}>
-      <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6f6d68">{props.label}</div>
-      <div style={`font-size:32px;font-weight:800;letter-spacing:-.03em;margin-top:8px;color:${props.fg || INK}`}>{props.value}</div>
-    </div>
-  );
-}
-
-function UserRow(props) {
-  const u = () => props.user;
-
-  return (
-    <div style="display:grid;grid-template-columns:2fr 1.2fr 1fr;border-bottom:1px solid #f4f3f0;align-items:center">
-      <div style="padding:16px 20px;display:flex;align-items:center;gap:10px;min-width:0">
-        <span style="width:32px;height:32px;border-radius:999px;background:#e8f4f2;color:#0a5f59;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
-          {u().ini}
-        </span>
-        <div style="min-width:0">
-          <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{u().name}</div>
-          <div style="font-size:12px;color:#9a9793;margin-top:2px">{ROLE_LABEL[u().role] || u().role}</div>
-        </div>
-      </div>
-      <div style="padding:16px 20px;font-size:13px;color:#4a4844;font-variant-numeric:tabular-nums">{u().phone}</div>
-      <div style="padding:16px 20px;font-size:13px;color:#9a9793;font-variant-numeric:tabular-nums">{dateTime(u().createdAt)}</div>
-    </div>
-  );
-}
-
-function ReportRow(props) {
-  const r = () => props.item;
-  const pending = () => r().report.status === 'pending';
-  const statusChip = () =>
-    ({
-      pending: ['На рассмотрении', SOFT, MUTED],
-      dismissed: ['Отклонена', SOFT, FAINT],
-      upheld: ['Подтверждена', RED_T, RED_TX]
-    })[r().report.status] || [r().report.status, SOFT, MUTED];
-
-  return (
-    <div style={`padding:20px;border-radius:16px;box-shadow:0 1px 2px rgba(28,27,25,.05);background:${pending() ? '#fffaf9' : '#fff'}`}>
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <span
-          style={`display:inline-flex;align-items:center;padding:8px 12px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;background:${statusChip()[1]};color:${statusChip()[2]}`}
-        >
-          {statusChip()[0]}
-        </span>
-        <span style="font-size:12px;color:#9a9793;font-variant-numeric:tabular-nums">
-          №{r().report.id} · {dateTime(r().report.createdAt)}
-        </span>
-      </div>
-
-      <div style="margin-top:14px">
-        <Show when={r().listing} fallback={<span style="font-size:13px;color:#9a9793">Объявление удалено</span>}>
-          <div style="font-size:16px;font-weight:800;letter-spacing:-.01em">
-            {roomsLabel(r().listing)}, {r().listing.area} m²
-          </div>
-          <div style="font-size:13px;color:#6f6d68;margin-top:4px">
-            {addrLine(r().listing)} · {priceOf(r().listing)}
-          </div>
-          <Show when={r().listing.cadastreCode}>
-            <div style="font-size:12px;color:#9a9793;margin-top:4px">
-              Кадастровый код:{' '}
-              <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#4a4844">{r().listing.cadastreCode}</span>
+    <section style={`display:flex;flex-wrap:wrap;gap:1px;border:1px solid ${BORDER};border-radius:4px;background:${DIVIDER};margin-top:22px;overflow:hidden`}>
+      <For each={props.items}>
+        {(k) => (
+          <div style={`flex:1 1 calc(${pct()}% - 1px);min-width:140px;background:#fff;padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px`}>
+            <div style={`font-size:12px;font-weight:500;color:${TEXT_MUTED}`}>{k.label}</div>
+            <div style={`font-family:${MONO};font-size:26px;font-weight:500;letter-spacing:-.02em;line-height:1;color:${k.danger ? DANGER : INK}`}>
+              {k.value}
             </div>
-          </Show>
-        </Show>
-      </div>
-
-      <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:16px;padding:14px 16px;border-radius:12px;background:#f7f7f6">
-        <PersonLine label="Пожаловался" person={r().reporter} />
-        <PersonLine label="Владелец объявления" person={r().owner} />
-      </div>
-
-      <div style="margin-top:14px">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9a9793">Причина</div>
-        <div style="margin-top:4px;font-size:14px;font-weight:700;line-height:1.4">{reasonText(r().report.reason)}</div>
-        <Show when={r().report.text}>
-          <div style="margin-top:6px;font-size:13px;color:#4a4844;line-height:1.5;padding:10px 12px;border-radius:10px;background:#f7f7f6">
-            «{r().report.text}»
           </div>
-        </Show>
-      </div>
-
-      <Show when={pending()}>
-        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-          <button
-            type="button"
-            class="bn-tap"
-            onClick={() => props.onResolve(r().report.id, 'dismiss')}
-            style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:13px;font-weight:700;background:${TEAL_T};color:${TEAL_TX};white-space:nowrap`}
-          >
-            Отклонить — вернуть в выдачу
-          </button>
-          <button
-            type="button"
-            class="bn-tap"
-            onClick={() => props.onResolve(r().report.id, 'uphold')}
-            style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:13px;font-weight:700;background:${RED_T};color:${RED_TX};white-space:nowrap`}
-          >
-            Подтвердить — снять объявление
-          </button>
-        </div>
-      </Show>
-    </div>
+        )}
+      </For>
+    </section>
   );
 }
 
-function ListingRow(props) {
-  const l = () => props.item.listing;
-  const owner = () => props.item.owner || {};
-  const st = () => l().status;
-
+function PageHeader(props) {
+  const meta = () => SECTION_META[props.section()];
   return (
-    <div style="display:grid;grid-template-columns:2fr 1.3fr 1.3fr 1fr 1.6fr;border-bottom:1px solid #f4f3f0;align-items:center">
-      <div style="padding:16px 20px;min-width:0">
-        <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-          {roomsLabel(l())}, {l().area} m²
-        </div>
-        <div style="font-size:12px;color:#6f6d68;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-          {addrLine(l())} · {priceOf(l())}
-        </div>
+    <header
+      style={`display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:1px solid ${BORDER}`}
+    >
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+        <h1 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.02em">{meta().title}</h1>
+        <div style={`font-size:13px;color:${TEXT_MUTED}`}>{meta().sub}</div>
       </div>
-      <div style="padding:16px 20px;min-width:0">
-        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{owner().name || '—'}</div>
-        <div style="font-size:12px;color:#9a9793;margin-top:2px">Владелец</div>
+      <div style={`display:flex;align-items:center;gap:8px;font-family:${MONO};font-size:11px;color:${TEXT_MUTED};text-transform:uppercase;letter-spacing:.06em`}>
+        <span style={`width:6px;height:6px;border-radius:50%;background:${ACCENT}`} />
+        <span>данные актуальны</span>
       </div>
-      <div style="padding:16px 20px;min-width:0">
-        <Show when={l().cadastreCode} fallback={<span style="font-size:13px;color:#9a9793">не указан</span>}>
-          <div style="font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            {l().cadastreCode}
-          </div>
-          <a
-            href="https://www.cadastre.am"
-            target="_blank"
-            rel="noopener noreferrer"
-            style="font-size:12px;color:#0e7c73;font-weight:700;margin-top:2px;display:inline-block"
-          >
-            Проверить →
-          </a>
-        </Show>
-      </div>
-      <div style="padding:16px 20px">
-        <span style="display:inline-flex;align-items:center;padding:8px 12px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;background:#f2f1ee;color:#6f6d68">
-          {LISTING_STATUS_LABEL[st()] || st()}
-        </span>
-      </div>
-      <div style="padding:12px 20px;display:flex;gap:8px;flex-wrap:wrap">
-        <Show when={st() === 'pending'}>
-          <button
-            type="button"
-            class="bn-tap"
-            onClick={() => openPrivateDocument(l().id)}
-            style="display:inline-flex;align-items:center;gap:6px;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;background:#f2f1ee;color:#4a4844;white-space:nowrap"
-          >
-            <Icon name="doc" size={13} weight={2} />
-            Документ
-          </button>
-        </Show>
-        <Show when={st() !== 'active'}>
-          <button
-            type="button"
-            class="bn-tap"
-            onClick={() => props.onStatus(l().id, 'active')}
-            style={`display:inline-flex;align-items:center;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;background:${TEAL_T};color:${TEAL_TX};white-space:nowrap`}
-          >
-            Вернуть в выдачу
-          </button>
-        </Show>
-        <Show when={st() === 'active' || st() === 'flagged'}>
-          <button
-            type="button"
-            class="bn-tap"
-            onClick={() => props.onStatus(l().id, 'archived')}
-            style="display:inline-flex;align-items:center;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;background:#f2f1ee;color:#4a4844;white-space:nowrap"
-          >
-            Снять с публикации
-          </button>
-        </Show>
-        <button
-          type="button"
-          class="bn-tap"
-          onClick={() => props.onDelete(l().id)}
-          style={`display:inline-flex;align-items:center;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;background:${RED_T};color:${RED_TX};white-space:nowrap`}
+    </header>
+  );
+}
+
+function ListingsTable(props) {
+  const cols = 'grid-template-columns:92px 108px 100px 122px 122px 74px minmax(0,1fr) 210px';
+  return (
+    <section style={`border:1px solid ${BORDER};border-radius:4px;background:#fff;margin-top:16px;overflow-x:auto`}>
+      <div style="min-width:920px">
+        <div
+          style={`display:grid;${cols};gap:12px;padding:10px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}
         >
-          Удалить
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function SupportMessageBubble(props) {
-  const m = () => props.m;
-  const mine = () => m().sender === 'admin';
-  return (
-    <div style={`display:flex;justify-content:${mine() ? 'flex-end' : 'flex-start'}`}>
-      <div
-        style={`max-width:78%;padding:12px;font-size:14px;line-height:1.5;box-shadow:0 1px 2px rgba(28,27,25,.05);border-radius:${mine() ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};background:${mine() ? TEAL : '#fff'};color:${mine() ? '#fff' : INK}`}
-      >
-        <div style="padding:0 2px;white-space:pre-wrap;word-break:break-word">{m().text}</div>
-        <div style={`font-size:11px;margin-top:4px;padding:0 2px;color:${mine() ? 'rgba(255,255,255,.7)' : FAINT}`}>
-          {timeOf(m().createdAt)}
+          <div>ID</div>
+          <div>Сделка</div>
+          <div>Город</div>
+          <div>Цена</div>
+          <div>Статус</div>
+          <div>Кадастр</div>
+          <div>Владелец</div>
+          <div>Действия</div>
         </div>
+        <Show when={props.rows.length === 0}>
+          <div style={`padding:32px 20px;text-align:center;font-size:13px;color:${TEXT_GHOST}`}>Объявлений нет</div>
+        </Show>
+        <For each={props.rows}>
+          {(item) => {
+            const l = item.listing;
+            const st = LISTING_STATUS[l.status] || LISTING_STATUS.archived;
+            const acts = [];
+            if (l.status === 'pending') acts.push({ label: 'Документ', variant: 'neutral', onClick: () => openPrivateDocument(l.id) });
+            if (l.status === 'pending' || l.status === 'flagged')
+              acts.push({ label: 'Одобрить', variant: 'primary', onClick: () => props.onStatus(l.id, 'active') });
+            if (l.status === 'active' || l.status === 'flagged')
+              acts.push({ label: 'В архив', variant: 'neutral', onClick: () => props.onStatus(l.id, 'archived') });
+            if (l.status === 'archived' || l.status === 'rented')
+              acts.push({ label: 'Вернуть в выдачу', variant: 'primary', onClick: () => props.onStatus(l.id, 'active') });
+            acts.push({ label: 'Удалить', variant: 'danger', onClick: () => props.onDelete(l.id) });
+            return (
+              <div
+                style={`display:grid;${cols};gap:12px;padding:11px 16px;border-bottom:1px solid ${BORDER_SOFT};align-items:center;font-size:12.5px`}
+              >
+                <div style={`font-family:${MONO};font-size:11px;color:${TEXT_MUTED}`} title={l.id}>
+                  {shortId(l.id)}
+                </div>
+                <div>{DEAL_LABEL[l.deal] || l.deal}</div>
+                <div>{cityLabel(l.city)}</div>
+                <div style={`font-family:${MONO};font-size:12px`}>{priceOf(l)}</div>
+                <div>
+                  <Badge bg={st.bg} fg={st.fg}>
+                    {st.label}
+                  </Badge>
+                </div>
+                <div style={`font-size:11.5px;color:${l.cadastreCode ? TEXT_MUTED : DANGER}`}>{l.cadastreCode ? 'есть' : 'нет'}</div>
+                <div style={`overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${TEXT}`}>{item.owner?.name || '—'}</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <For each={acts}>{(a) => <ActBtn variant={a.variant} onClick={a.onClick}>{a.label}</ActBtn>}</For>
+                </div>
+              </div>
+            );
+          }}
+        </For>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -390,6 +386,22 @@ function SupportPanel(props) {
     loadThreads();
   });
 
+  createEffect(() => {
+    const uid = props.focusUserId();
+    if (!uid) return;
+    (async () => {
+      try {
+        const { threadId } = await api.post('/api/admin/users/' + uid + '/support-thread');
+        await loadThreads();
+        await openThread(threadId);
+      } catch (e) {
+        if (e.status === 401) props.onUnauthorized();
+      } finally {
+        props.onFocusHandled();
+      }
+    })();
+  });
+
   const send = async (e) => {
     e.preventDefault();
     const text = draft().trim();
@@ -406,73 +418,350 @@ function SupportPanel(props) {
   };
 
   const active = () => threads().find((t) => t.threadId === activeId());
+  const onlineOf = (userId) => props.users().find((u) => u.id === userId)?.online;
+  const canSend = () => !!draft().trim() && !!activeId();
 
   return (
-    <div style="margin-top:16px;display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:16px;align-items:start">
-      <div style="background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(28,27,25,.05);overflow:hidden">
+    <section style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;align-items:stretch">
+      <div style={`flex:1 1 300px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;overflow:hidden;align-self:flex-start`}>
+        <div style={`padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};font-size:13px;font-weight:600`}>
+          Диалоги с поддержкой
+        </div>
         <Show when={threads().length === 0}>
-          <div style="padding:32px 20px;text-align:center;font-size:14px;color:#9a9793">Обращений нет</div>
+          <div style={`padding:32px 20px;text-align:center;font-size:13px;color:${TEXT_GHOST}`}>Обращений нет</div>
         </Show>
         <For each={threads()}>
-          {(th) => (
-            <button
-              type="button"
-              onClick={() => openThread(th.threadId)}
-              style={`width:100%;text-align:left;padding:14px 16px;border-bottom:1px solid #f4f3f0;display:flex;gap:10px;align-items:center;background:${activeId() === th.threadId ? '#f7f7f6' : 'transparent'}`}
-            >
-              <span style="width:32px;height:32px;border-radius:999px;background:#e8f4f2;color:#0a5f59;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
-                {th.user.ini || '?'}
-              </span>
-              <div style="min-width:0;flex:1">
-                <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                  {th.user.name || th.user.phone}
-                </div>
-                <div style="font-size:12px;color:#9a9793;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                  {th.lastMessage ? th.lastMessage.text : '—'}
-                </div>
-              </div>
-              <Show when={th.unread > 0}>
-                <span style="min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#e5484d;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
-                  {th.unread}
+          {(th) => {
+            const active_ = () => th.threadId === activeId();
+            const unread = () => th.unread > 0;
+            return (
+              <button
+                type="button"
+                onClick={() => openThread(th.threadId)}
+                style={`width:100%;text-align:left;border:0;border-bottom:1px solid ${BORDER_SOFT};border-left:3px solid ${active_() ? ACCENT : unread() ? DANGER : 'transparent'};background:${active_() ? ACCENT_ROW : '#fff'};cursor:pointer;padding:11px 14px;display:flex;flex-direction:column;gap:4px`}
+              >
+                <span style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <span style="display:flex;align-items:center;gap:7px;min-width:0">
+                    <Dot on={onlineOf(th.user.id)} />
+                    <span
+                      style={`font-size:13px;font-weight:${unread() ? 600 : 400};overflow:hidden;text-overflow:ellipsis;white-space:nowrap`}
+                    >
+                      {th.user.name || th.user.phone}
+                    </span>
+                  </span>
+                  <span style={`font-family:${MONO};font-size:10.5px;color:${TEXT_GHOST}`}>
+                    {th.lastMessage ? dateOnly(th.lastMessage.createdAt) : ''}
+                  </span>
                 </span>
-              </Show>
-            </button>
-          )}
+                <span style={`font-size:11.5px;color:${TEXT_MUTED};overflow:hidden;text-overflow:ellipsis;white-space:nowrap`}>
+                  {th.lastMessage ? (th.lastMessage.sender === 'admin' ? 'Вы: ' : '') + th.lastMessage.text : 'Нет сообщений'}
+                </span>
+              </button>
+            );
+          }}
         </For>
       </div>
 
-      <div style="background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(28,27,25,.05);display:flex;flex-direction:column;height:min(600px,70vh)">
-        <Show when={activeId()} fallback={<div style="margin:auto;font-size:14px;color:#9a9793">Выберите обращение слева</div>}>
-          <div style="padding:16px 20px;border-bottom:1px solid #f4f3f0;font-size:15px;font-weight:800">
-            {active() ? active().user.name || active().user.phone : ''}
+      <div style={`flex:1 1 420px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;display:flex;flex-direction:column`}>
+        <Show
+          when={activeId()}
+          fallback={<div style={`margin:auto;padding:26px 18px;font-size:12.5px;color:${TEXT_FAINT}`}>Выберите диалог слева.</div>}
+        >
+          <div style="display:flex;flex-direction:column;min-height:520px">
+            <div style={`padding:13px 16px;border-bottom:1px solid ${BORDER};display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap`}>
+              <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                <div style="font-size:14px;font-weight:600">{active() ? active().user.name || active().user.phone : ''}</div>
+                <div style={`font-family:${MONO};font-size:11px;color:${TEXT_FAINT}`}>{active() ? active().user.phone : ''}</div>
+              </div>
+              <button
+                type="button"
+                class="bn-tap"
+                onClick={() => props.onOpenUser(active().user.id)}
+                style={`border:1px solid ${BORDER};background:#fff;color:${ACCENT};cursor:pointer;font-size:12px;font-weight:500;padding:6px 11px;border-radius:3px`}
+              >
+                Профиль
+              </button>
+            </div>
+            <div ref={listRef} style={`flex:1;padding:16px;display:flex;flex-direction:column;gap:10px;background:${FEED_BG}`}>
+              <For each={messages()}>
+                {(m) => {
+                  const mine = m.sender === 'admin';
+                  return (
+                    <div style={`max-width:76%;align-self:${mine ? 'flex-end' : 'flex-start'};background:${mine ? ACCENT : '#fff'};color:${mine ? '#fff' : INK};border:1px solid ${mine ? ACCENT : BORDER};border-radius:6px;padding:9px 12px;display:flex;flex-direction:column;gap:4px`}>
+                      <span style="font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word">{m.text}</span>
+                      <span style={`font-family:${MONO};font-size:10px;color:${mine ? 'rgba(255,255,255,.7)' : TEXT_GHOST};align-self:flex-end`}>
+                        {timeOf(m.createdAt)}
+                      </span>
+                    </div>
+                  );
+                }}
+              </For>
+            </div>
+            <form onSubmit={send} style={`border-top:1px solid ${BORDER};padding:12px 16px;display:flex;gap:10px;align-items:flex-end`}>
+              <textarea
+                value={draft()}
+                onInput={(e) => setDraft(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    send(e);
+                  }
+                }}
+                placeholder="Ответ пользователю… (Enter — отправить)"
+                rows="2"
+                style={`flex:1;min-width:0;resize:vertical;border:1px solid ${BORDER};border-radius:3px;padding:9px 10px;font-size:13px;line-height:1.45;background:#fff;color:${INK}`}
+              />
+              <button
+                type="submit"
+                disabled={!canSend()}
+                class="bn-tap"
+                style={`border:1px solid;font-size:12.5px;font-weight:500;padding:9px 15px;border-radius:3px;white-space:nowrap;${canSend() ? `background:${ACCENT};color:#fff;border-color:${ACCENT};cursor:pointer` : `background:${NEUTRAL_SOFT};color:${TEXT_GHOST};border-color:${BORDER};cursor:default`}`}
+              >
+                Отправить
+              </button>
+            </form>
           </div>
-          <div ref={listRef} style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:10px">
-            <For each={messages()}>{(m) => <SupportMessageBubble m={m} />}</For>
-          </div>
-          <form onSubmit={send} style="display:flex;gap:10px;padding:14px;border-top:1px solid #f4f3f0">
-            <input
-              value={draft()}
-              onInput={(e) => setDraft(e.currentTarget.value)}
-              placeholder="Ответ пользователю…"
-              style="flex:1;border:none;background:#f7f7f6;border-radius:12px;padding:12px 16px;font-size:14px;outline:none"
-            />
-            <button
-              type="submit"
-              disabled={!draft().trim()}
-              style={`padding:0 20px;border-radius:12px;font-size:14px;font-weight:700;background:${TEAL};color:#fff;opacity:${draft().trim() ? 1 : 0.4}`}
-            >
-              Отправить
-            </button>
-          </form>
         </Show>
       </div>
-    </div>
+    </section>
+  );
+}
+
+function UserRow(props) {
+  const u = () => props.user;
+  const active = () => u().id === props.selectedId;
+  const blocked = () => u().status === 'blocked';
+  return (
+    <button
+      type="button"
+      onClick={() => props.onSelect(u().id)}
+      style={`width:100%;text-align:left;border:0;border-bottom:1px solid ${BORDER_SOFT};border-left:3px solid ${active() ? ACCENT : 'transparent'};background:${active() ? ACCENT_ROW : '#fff'};cursor:pointer;padding:11px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center`}
+    >
+      <span style="display:flex;flex-direction:column;gap:3px;min-width:0">
+        <span style="display:flex;align-items:center;gap:7px;min-width:0">
+          <Dot on={u().online} />
+          <span style="font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{u().name}</span>
+        </span>
+        <span style={`font-size:11.5px;color:${TEXT_MUTED};overflow:hidden;text-overflow:ellipsis;white-space:nowrap`}>
+          {(ROLE_LABEL[u().role] || u().role) + ' · ' + u().phone}
+        </span>
+      </span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <Badge bg={blocked() ? DANGER_SOFT : ACCENT_SOFT} fg={blocked() ? DANGER : ACCENT}>
+          {blocked() ? 'Заблокирован' : 'Активен'}
+        </Badge>
+      </span>
+    </button>
+  );
+}
+
+function UserDetail(props) {
+  const detail = () => props.detail;
+  const u = () => detail()?.user;
+  const draft = () => props.draft;
+  const dirty = () => !!draft();
+  const field = (key) => draft() ? draft()[key] : u()[key];
+  const setField = (key, val) => props.onDraft({ ...(draft() || { name: u().name, phone: u().phone, role: u().role, status: u().status }), [key]: val });
+
+  return (
+    <Show when={u()} fallback={<div style={`padding:26px 18px;font-size:12.5px;color:${TEXT_FAINT};line-height:1.5`}>Выберите пользователя слева, чтобы отредактировать профиль, написать в чат или удалить аккаунт.</div>}>
+      <div style="display:flex;flex-direction:column">
+        <div style={`padding:16px;border-bottom:1px solid ${BORDER};display:flex;flex-direction:column;gap:3px`}>
+          <div style="display:flex;align-items:center;gap:8px">
+            <Dot on={u().online} />
+            <div style="font-size:16px;font-weight:600;letter-spacing:-.01em">{u().name}</div>
+          </div>
+          <div style={`font-family:${MONO};font-size:11px;color:${TEXT_FAINT}`}>
+            {shortId(u().id)} · {u().phone} · с {dateOnly(u().createdAt)}
+          </div>
+        </div>
+
+        <div style={`padding:16px;display:flex;flex-direction:column;gap:14px;border-bottom:1px solid ${BORDER}`}>
+          <label style="display:flex;flex-direction:column;gap:5px">
+            <span style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>Имя</span>
+            <input
+              value={field('name')}
+              onInput={(e) => setField('name', e.currentTarget.value)}
+              style={`border:1px solid ${BORDER};border-radius:3px;padding:7px 9px;font-size:13px;background:#fff;color:${INK}`}
+            />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:5px">
+            <span style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>Телефон</span>
+            <input
+              value={field('phone')}
+              onInput={(e) => setField('phone', e.currentTarget.value)}
+              style={`border:1px solid ${BORDER};border-radius:3px;padding:7px 9px;font-size:13px;background:#fff;color:${INK}`}
+            />
+          </label>
+
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>Роль</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <For each={Object.keys(ROLE_LABEL)}>
+                {(k) => {
+                  const on = () => field('role') === k;
+                  return (
+                    <button
+                      type="button"
+                      class="bn-tap"
+                      onClick={() => setField('role', k)}
+                      style={`border:1px solid ${on() ? ACCENT : BORDER};background:${on() ? ACCENT : '#fff'};color:${on() ? '#fff' : TEXT};cursor:pointer;font-size:12px;padding:5px 10px;border-radius:3px`}
+                    >
+                      {ROLE_LABEL[k]}
+                    </button>
+                  );
+                }}
+              </For>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>Статус</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              {[
+                ['active', 'Активен'],
+                ['blocked', 'Заблокирован']
+              ].map(([k, label]) => {
+                const on = () => field('status') === k;
+                const activeColor = k === 'blocked' ? DANGER : ACCENT;
+                return (
+                  <button
+                    type="button"
+                    class="bn-tap"
+                    onClick={() => setField('status', k)}
+                    style={`border:1px solid ${on() ? activeColor : BORDER};background:${on() ? activeColor : '#fff'};color:${on() ? '#fff' : TEXT};cursor:pointer;font-size:12px;padding:5px 10px;border-radius:3px`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div style={`padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-bottom:1px solid ${BORDER}`}>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button
+              type="button"
+              class="bn-tap"
+              disabled={!dirty()}
+              onClick={() => props.onSave()}
+              style={`border:1px solid ${dirty() ? ACCENT : BORDER};background:${dirty() ? ACCENT : NEUTRAL_SOFT};color:${dirty() ? '#fff' : TEXT_GHOST};cursor:${dirty() ? 'pointer' : 'default'};font-size:12.5px;font-weight:500;padding:7px 13px;border-radius:3px`}
+            >
+              {dirty() ? 'Сохранить' : 'Сохранено'}
+            </button>
+            <button
+              type="button"
+              class="bn-tap"
+              onClick={() => props.onDraft(null)}
+              style={`border:1px solid ${BORDER};background:#fff;color:${TEXT};cursor:pointer;font-size:12.5px;padding:7px 13px;border-radius:3px`}
+            >
+              Отмена
+            </button>
+          </div>
+          <button
+            type="button"
+            class="bn-tap"
+            onClick={() => props.onChat()}
+            style={`border:1px solid ${BORDER};background:#fff;color:${ACCENT};cursor:pointer;font-size:12.5px;font-weight:500;padding:7px 13px;border-radius:3px`}
+          >
+            Чат с поддержкой
+          </button>
+        </div>
+
+        <div style={`padding:14px 16px;border-bottom:1px solid ${BORDER};display:flex;flex-direction:column;gap:4px`}>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:4px">
+            <span style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>
+              Объявления пользователя
+            </span>
+            <span style={`font-family:${MONO};font-size:10.5px;color:${TEXT_GHOST}`}>
+              {detail().listings.length} {plural(detail().listings.length, UNIT.listing)}
+            </span>
+          </div>
+          <Show
+            when={detail().listings.length}
+            fallback={<div style={`font-size:12px;color:${TEXT_GHOST};padding:4px 0`}>У пользователя нет объявлений</div>}
+          >
+            <For each={detail().listings}>
+              {(l) => {
+                const st = LISTING_STATUS[l.status] || LISTING_STATUS.archived;
+                const off = l.status === 'archived' || l.status === 'rented';
+                return (
+                  <div style={`display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border-top:1px solid ${BORDER_SOFT};padding:8px 0`}>
+                    <div style="display:flex;flex-direction:column;gap:3px;min-width:0">
+                      <span style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                        {roomsLabel(l)}, {l.area} m² · {DEAL_LABEL[l.deal]} · {cityLabel(l.city)}
+                      </span>
+                      <span style="display:flex;align-items:center;gap:7px">
+                        <span style={`font-family:${MONO};font-size:11px;color:${TEXT_MUTED}`}>{priceOf(l)}</span>
+                        <Badge bg={st.bg} fg={st.fg}>
+                          {st.label}
+                        </Badge>
+                      </span>
+                    </div>
+                    <ActBtn variant={off ? 'primary' : 'danger'} onClick={() => props.onListingStatus(l.id, off ? 'active' : 'archived')}>
+                      {off ? 'Вернуть' : 'Снять'}
+                    </ActBtn>
+                  </div>
+                );
+              }}
+            </For>
+          </Show>
+        </div>
+
+        <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px">
+            {[
+              [detail().listings.length, 'объявлений'],
+              [detail().complaintsFiled, 'жалоб подано'],
+              [detail().messagesCount, 'сообщений']
+            ].map(([value, label]) => (
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <span style={`font-family:${MONO};font-size:18px`}>{value}</span>
+                <span style={`font-size:11px;color:${TEXT_FAINT};line-height:1.25`}>{label}</span>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            class="bn-tap"
+            onClick={() => props.onDeleteRequest(u())}
+            style={`align-self:flex-start;border:1px solid ${DANGER_BORDER};background:#fff;color:${DANGER};cursor:pointer;font-size:12.5px;padding:7px 13px;border-radius:3px`}
+          >
+            Удалить аккаунт
+          </button>
+        </div>
+      </div>
+    </Show>
   );
 }
 
 function Panel(props) {
-  const [tab, setTab] = sig('reports');
+  const [section, setSection] = sig('overview');
   const [data, setData] = createStore({ users: [], reports: [], listings: [] });
+  const [sel, setSel] = createStore({ status: null, deal: null, city: null, role: null, resolution: null });
+  const [revisionsCount, setRevisionsCount] = sig(0);
+  const [supportUnread, setSupportUnread] = sig(0);
+  const [supportEvent, setSupportEvent] = sig(null);
+  const [onlineCount, setOnlineCount] = sig(0);
+  const [toast, setToast] = sig(null);
+
+  const [userQuery, setUserQuery] = sig('');
+  const [selectedUserId, setSelectedUserId] = sig(null);
+  const [userDetail, setUserDetail] = sig(null);
+  const [userDraft, setUserDraft] = sig(null);
+  const [confirmDeleteUser, setConfirmDeleteUser] = sig(null);
+  const [focusSupportUserId, setFocusSupportUserId] = sig(null);
+
+  const [complaintFilter, setComplaintFilter] = sig('all');
+  const [selectedComplaintId, setSelectedComplaintId] = sig(null);
+
+  let toastTimer;
+  const flash = (msg) => {
+    clearTimeout(toastTimer);
+    setToast(msg);
+    toastTimer = setTimeout(() => setToast(null), 2200);
+  };
 
   const loadUsers = async () => {
     try {
@@ -503,44 +792,32 @@ function Panel(props) {
       if (e.status === 401) props.onUnauthorized();
     }
   };
+  const loadOnline = async () => {
+    try {
+      const { count } = await api.get('/api/admin/online');
+      setOnlineCount(count);
+    } catch {}
+  };
   const loadAll = () => {
     loadUsers();
     loadReports();
     loadListings();
     loadRevisionsCount();
+    loadOnline();
   };
 
   onMount(loadAll);
+  onMount(() => {
+    const t = setInterval(() => {
+      loadUsers();
+      loadOnline();
+    }, 15000);
+    onCleanup(() => clearInterval(t));
+  });
 
-  const resolveReport = async (id, action) => {
-    try {
-      await api.post('/api/admin/reports/' + id + '/resolve', { action });
-      await Promise.all([loadReports(), loadListings()]);
-    } catch (e) {
-      if (e.status === 401) props.onUnauthorized();
-    }
-  };
-  const setListingStatus = async (id, status) => {
-    try {
-      await api.post('/api/admin/listings/' + id + '/status', { status });
-      await loadListings();
-    } catch (e) {
-      if (e.status === 401) props.onUnauthorized();
-    }
-  };
-  const deleteListing = async (id) => {
-    try {
-      await api.del('/api/admin/listings/' + id);
-      await Promise.all([loadListings(), loadReports()]);
-    } catch (e) {
-      if (e.status === 401) props.onUnauthorized();
-    }
-  };
-
-  const pendingCount = () => data.reports.filter((r) => r.report.status === 'pending').length;
-  const [revisionsCount, setRevisionsCount] = sig(0);
-  const [supportUnread, setSupportUnread] = sig(0);
-  const [supportEvent, setSupportEvent] = sig(null);
+  createEffect(() => {
+    if (!selectedComplaintId() && data.reports.length) setSelectedComplaintId(data.reports[0].report.id);
+  });
 
   onMount(() => {
     connectRealtime({
@@ -553,6 +830,78 @@ function Panel(props) {
   });
   onCleanup(disconnectRealtime);
 
+  const resolveReport = async (id, action) => {
+    try {
+      await api.post('/api/admin/reports/' + id + '/resolve', { action });
+      await Promise.all([loadReports(), loadListings()]);
+      flash(action === 'uphold' ? 'Жалоба подтверждена' : 'Жалоба отклонена');
+    } catch (e) {
+      if (e.status === 401) props.onUnauthorized();
+    }
+  };
+  const setListingStatus = async (id, status) => {
+    try {
+      await api.post('/api/admin/listings/' + id + '/status', { status });
+      await loadListings();
+      if (selectedUserId()) selectUser(selectedUserId());
+      flash('Статус обновлён');
+    } catch (e) {
+      if (e.status === 401) props.onUnauthorized();
+    }
+  };
+  const deleteListing = async (id) => {
+    try {
+      await api.del('/api/admin/listings/' + id);
+      await Promise.all([loadListings(), loadReports()]);
+      flash('Объявление удалено');
+    } catch (e) {
+      if (e.status === 401) props.onUnauthorized();
+    }
+  };
+
+  const selectUser = async (id) => {
+    setSelectedUserId(id);
+    setUserDraft(null);
+    try {
+      setUserDetail(await api.get('/api/admin/users/' + id));
+    } catch (e) {
+      if (e.status === 401) props.onUnauthorized();
+    }
+  };
+  const openUser = (id) => {
+    setSection('users');
+    selectUser(id);
+  };
+  const saveUser = async () => {
+    const id = selectedUserId();
+    const draft = userDraft();
+    if (!id || !draft) return;
+    try {
+      await api.put('/api/admin/users/' + id, draft);
+      await Promise.all([loadUsers(), selectUser(id)]);
+      setUserDraft(null);
+      flash('Сохранено');
+    } catch (e) {
+      flash(apiErrText(e));
+    }
+  };
+  const confirmDelete = async () => {
+    const u = confirmDeleteUser();
+    if (!u) return;
+    try {
+      await api.del('/api/admin/users/' + u.id);
+      setConfirmDeleteUser(null);
+      if (selectedUserId() === u.id) {
+        setSelectedUserId(null);
+        setUserDetail(null);
+      }
+      await Promise.all([loadUsers(), loadListings()]);
+      flash('Аккаунт ' + u.name + ' удалён');
+    } catch (e) {
+      flash(apiErrText(e));
+    }
+  };
+
   const logout = async () => {
     try {
       await api.post('/api/admin/logout');
@@ -564,101 +913,385 @@ function Panel(props) {
     props.onUnauthorized();
   };
 
+  const listingsArr = () => data.listings.map((it) => it.listing);
+
+  const statusItems = () => {
+    const buckets = { pending: 0, active: 0, flagged: 0, archived: 0 };
+    listingsArr().forEach((l) => {
+      if (l.status === 'rented') buckets.archived++;
+      else if (buckets[l.status] !== undefined) buckets[l.status]++;
+    });
+    return Object.keys(buckets)
+      .filter((k) => buckets[k] > 0)
+      .map((k, i) => ({ key: k, label: LISTING_STATUS[k].label, value: buckets[k], color: rampColor(i) }));
+  };
+  const dealItems = () => {
+    const m = countBy(listingsArr(), (l) => l.deal);
+    return Object.keys(DEAL_LABEL)
+      .filter((k) => m.has(k))
+      .map((k, i) => ({ key: k, label: DEAL_LABEL[k], value: m.get(k), color: rampColor(i) }));
+  };
+  const cityItems = () => {
+    const m = countBy(listingsArr(), (l) => l.city);
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([k, v], i) => ({ key: k, label: cityLabel(k), value: v, color: rampColor(i) }));
+  };
+  const roleItems = () => {
+    const m = countBy(data.users, (u) => u.role);
+    return Object.keys(ROLE_LABEL)
+      .filter((k) => m.has(k))
+      .map((k, i) => ({ key: k, label: ROLE_LABEL[k], value: m.get(k), color: rampColor(i) }));
+  };
+  const resolutionItems = () => {
+    const m = countBy(data.reports, (r) => r.report.status);
+    return Object.keys(RESOLUTION)
+      .filter((k) => m.has(k))
+      .map((k, i) => ({ key: k, label: RESOLUTION[k].label, value: m.get(k), color: rampColor(i) }));
+  };
+
+  const noCadastreCount = () => listingsArr().filter((l) => !l.cadastreCode).length;
+  const avgPrice = () => {
+    const prices = listingsArr()
+      .map((l) => l.price)
+      .filter((p) => typeof p === 'number' && p > 0);
+    return prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
+  };
+  const newListings7d = () => listingsArr().filter((l) => daysAgo(l.createdAt, 7)).length;
+  const newUsers7d = () => data.users.filter((u) => daysAgo(u.createdAt, 7)).length;
+  const kpiBase = () => [
+    { label: 'Без кадастра', value: String(noCadastreCount()), danger: noCadastreCount() > 0 },
+    { label: 'Средняя цена', value: avgPrice() ? nf(avgPrice()) + ' ֏' : '—' },
+    { label: 'Объявлений за 7 дней', value: String(newListings7d()) },
+    { label: 'Пользователей за 7 дней', value: String(newUsers7d()) }
+  ];
+
+  const navCounts = () => ({
+    overview: data.reports.filter((r) => r.report.status === 'pending').length + listingsArr().filter((l) => l.status === 'pending').length,
+    listings: listingsArr().length,
+    complaints: data.reports.filter((r) => r.report.status === 'pending').length,
+    users: data.users.length,
+    agencies: data.users.filter((u) => u.role === 'agency').length,
+    revisions: revisionsCount(),
+    support: supportUnread()
+  });
+
   return (
-    <div style="width:100%;max-width:1400px;margin:0 auto;padding:32px clamp(16px,3vw,28px) 48px;animation:bnIn .2s ease">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <span style="width:44px;height:44px;border-radius:14px;background:#1c1b19;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
-          <Icon name="shield" size={20} stroke="#fff" weight={1.8} />
-        </span>
-        <div style="flex:1">
-          <h1 style="margin:0;font-size:clamp(22px,4vw,28px);font-weight:800;letter-spacing:-.03em">Панель администратора</h1>
-          <div style="font-size:14px;color:#6f6d68;margin-top:2px">Пользователи, жалобы и объявления в одном месте.</div>
+    <div style="min-height:100vh;display:grid;grid-template-columns:232px minmax(0,1fr);font-family:inherit;color:#16171a;background:#fbfbfa">
+      <Sidebar section={section} onSelect={setSection} counts={navCounts()} />
+
+      <main style="min-width:0;padding:28px 32px 72px">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:-6px">
+          <button
+            type="button"
+            class="bn-tap"
+            onClick={logout}
+            style={`padding:8px 13px;border-radius:3px;border:1px solid ${BORDER};font-size:12px;font-weight:500;color:${TEXT_MUTED};white-space:nowrap;background:#fff;cursor:pointer`}
+          >
+            Выйти
+          </button>
         </div>
-        <button
-          type="button"
-          class="bn-tap"
-          onClick={logout}
-          style="padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:14px;font-weight:700;color:#6f6d68;white-space:nowrap"
-        >
-          Выйти
-        </button>
-      </div>
+        <PageHeader section={section} />
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:16px;margin-top:24px">
-        <Kpi label="Жалобы" value={String(pendingCount())} fg={pendingCount() ? RED_TX : INK} bg={pendingCount() ? RED_T : '#fff'} />
-        <Kpi
-          label="Правки"
-          value={String(revisionsCount())}
-          fg={revisionsCount() ? TEAL_TX : INK}
-          bg={revisionsCount() ? TEAL_T : '#fff'}
-        />
-        <Kpi label="Пользователи" value={String(data.users.length)} />
-        <Kpi label="Объявления" value={String(data.listings.length)} />
-        <Kpi label="Поддержка" value={String(supportUnread())} fg={supportUnread() ? RED_TX : INK} bg={supportUnread() ? RED_T : '#fff'} />
-      </div>
+        <Show when={section() === 'overview'}>
+          <KpiStrip items={[{ label: 'Онлайн сейчас', value: String(onlineCount()) }, ...kpiBase()]} />
+          <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;margin-top:16px">
+            <Donut title="Объявления · статус" items={statusItems()} unit={UNIT.listing} selected={() => sel.status} onToggle={(k) => setSel('status', k)} />
+            <Donut title="Объявления · тип сделки" items={dealItems()} unit={UNIT.listing} selected={() => sel.deal} onToggle={(k) => setSel('deal', k)} />
+            <Donut title="Объявления · город" items={cityItems()} unit={UNIT.listing} selected={() => sel.city} onToggle={(k) => setSel('city', k)} />
+            <Donut
+              title="Жалобы · решение"
+              items={resolutionItems()}
+              unit={UNIT.complaint}
+              selected={() => sel.resolution}
+              onToggle={(k) => setSel('resolution', k)}
+            />
+          </section>
+        </Show>
 
-      <div style="display:flex;gap:8px;margin-top:24px;flex-wrap:wrap">
-        <Tab label="Жалобы" on={tab() === 'reports'} onClick={() => setTab('reports')} />
-        <Tab label="Правки" on={tab() === 'revisions'} onClick={() => setTab('revisions')} />
-        <Tab label="Пользователи" on={tab() === 'users'} onClick={() => setTab('users')} />
-        <Tab label="Объявления" on={tab() === 'listings'} onClick={() => setTab('listings')} />
-        <Tab label="Поддержка" on={tab() === 'support'} onClick={() => setTab('support')} />
-      </div>
+        <Show when={section() === 'listings'}>
+          <KpiStrip items={kpiBase()} />
+          <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;margin-top:16px">
+            <Donut title="Объявления · статус" items={statusItems()} unit={UNIT.listing} selected={() => sel.status} onToggle={(k) => setSel('status', k)} />
+            <Donut title="Объявления · тип сделки" items={dealItems()} unit={UNIT.listing} selected={() => sel.deal} onToggle={(k) => setSel('deal', k)} />
+            <Donut title="Объявления · город" items={cityItems()} unit={UNIT.listing} selected={() => sel.city} onToggle={(k) => setSel('city', k)} />
+          </section>
+          <ListingsTable rows={data.listings} onStatus={setListingStatus} onDelete={deleteListing} />
+        </Show>
 
-      <Show when={tab() === 'support'}>
-        <SupportPanel onUnauthorized={props.onUnauthorized} onCountChange={setSupportUnread} event={supportEvent} />
-      </Show>
+        <Show when={section() === 'complaints'}>
+          {(() => {
+            const filters = [
+              ['all', 'Все'],
+              ['pending', 'На рассмотрении'],
+              ['upheld', 'Подтверждено'],
+              ['dismissed', 'Отклонено']
+            ];
+            const visible = () => data.reports.filter((r) => complaintFilter() === 'all' || r.report.status === complaintFilter());
+            const selected = () => data.reports.find((r) => r.report.id === selectedComplaintId()) || null;
+            return (
+              <section style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;align-items:flex-start">
+                <div style={`flex:1 1 440px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;overflow:hidden`}>
+                  <div style={`display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT}`}>
+                    <div style="font-size:13px;font-weight:600">Очередь жалоб</div>
+                    <div style="display:flex;gap:4px;flex-wrap:wrap">
+                      <For each={filters}>
+                        {([k, label]) => {
+                          const on = () => complaintFilter() === k;
+                          return (
+                            <button
+                              type="button"
+                              class="bn-tap"
+                              onClick={() => setComplaintFilter(k)}
+                              style={`border:1px solid ${on() ? ACCENT : BORDER};background:${on() ? ACCENT : '#fff'};color:${on() ? '#fff' : TEXT};cursor:pointer;font-size:11.5px;padding:3px 9px;border-radius:3px`}
+                            >
+                              {label}
+                            </button>
+                          );
+                        }}
+                      </For>
+                    </div>
+                  </div>
+                  <Show when={visible().length === 0}>
+                    <div style={`padding:26px 18px;font-size:12.5px;color:${TEXT_FAINT}`}>Жалоб нет</div>
+                  </Show>
+                  <For each={visible()}>
+                    {(item) => {
+                      const r = RESOLUTION[item.report.status];
+                      const isSel = () => item.report.id === selectedComplaintId();
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedComplaintId(item.report.id)}
+                          style={`width:100%;text-align:left;border:0;border-bottom:1px solid ${BORDER_SOFT};border-left:3px solid ${isSel() ? ACCENT : r.accent};background:${isSel() ? ACCENT_ROW : '#fff'};cursor:pointer;padding:12px 16px;display:flex;flex-direction:column;gap:6px`}
+                        >
+                          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                            <span style={`font-family:${MONO};font-size:11px;color:${TEXT_FAINT}`}>
+                              #{item.report.id} · {item.listing ? shortId(item.listing.id) : '—'} · {dateOnly(item.report.createdAt)}
+                            </span>
+                            <Badge bg={r.bg} fg={r.fg}>
+                              {r.label}
+                            </Badge>
+                          </div>
+                          <div style="font-size:13px;line-height:1.4;color:#16171a">{reasonText(item.report.reason)}</div>
+                          <div style={`font-size:11.5px;color:${TEXT_MUTED}`}>Пожаловался: {item.reporter?.name || '—'}</div>
+                        </button>
+                      );
+                    }}
+                  </For>
+                </div>
 
-      <Show when={tab() === 'revisions'}>
-        <RevisionPanel onUnauthorized={props.onUnauthorized} onCountChange={setRevisionsCount} />
-      </Show>
+                <aside style={`flex:1 1 336px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;position:sticky;top:20px`}>
+                  <Show
+                    when={selected()}
+                    fallback={<div style={`padding:26px 18px;font-size:12.5px;color:${TEXT_FAINT};line-height:1.5`}>Выберите жалобу слева, чтобы увидеть объявление, автора и принять решение.</div>}
+                  >
+                    <div style="display:flex;flex-direction:column">
+                      <div style={`padding:16px;border-bottom:1px solid ${BORDER};display:flex;flex-direction:column;gap:6px`}>
+                        <div style={`font-family:${MONO};font-size:11px;color:${TEXT_FAINT};text-transform:uppercase;letter-spacing:.06em`}>
+                          Жалоба
+                        </div>
+                        <div style="font-size:14.5px;font-weight:600;line-height:1.35">{reasonText(selected().report.reason)}</div>
+                      </div>
+                      <div style={`padding:14px 16px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid ${BORDER}`}>
+                        {[
+                          [
+                            'Объявление',
+                            selected().listing ? `${shortId(selected().listing.id)} · ${DEAL_LABEL[selected().listing.deal]} · ${cityLabel(selected().listing.city)}` : 'Удалено'
+                          ],
+                          ['Владелец', selected().owner?.name || '—'],
+                          ['Пожаловался', selected().reporter?.name || '—'],
+                          ['Дата', dateOnly(selected().report.createdAt)],
+                          ['Статус объявления', selected().listing ? LISTING_STATUS[selected().listing.status]?.label : '—']
+                        ].map(([label, value]) => (
+                          <div style="display:grid;grid-template-columns:112px minmax(0,1fr);gap:10px;font-size:12.5px">
+                            <span style={`color:${TEXT_FAINT}`}>{label}</span>
+                            <span>{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+                        <div style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>Решение</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap">
+                          <Show when={selected().report.status === 'pending'}>
+                            <ActBtn big variant="primary" onClick={() => resolveReport(selected().report.id, 'uphold')}>
+                              Подтвердить
+                            </ActBtn>
+                            <ActBtn big variant="neutral" onClick={() => resolveReport(selected().report.id, 'dismiss')}>
+                              Отклонить
+                            </ActBtn>
+                          </Show>
+                          <ActBtn
+                            big
+                            variant="neutral"
+                            onClick={() => {
+                              setSection('support');
+                              setFocusSupportUserId(selected().report.reporterId);
+                            }}
+                          >
+                            Написать автору
+                          </ActBtn>
+                        </div>
+                      </div>
+                    </div>
+                  </Show>
+                </aside>
+              </section>
+            );
+          })()}
+        </Show>
 
-      <Show when={tab() === 'reports'}>
-        <Show when={data.reports.length === 0}>
-          <div style="margin-top:16px;background:#fff;border-radius:18px;padding:32px 20px;text-align:center;font-size:14px;color:#9a9793;box-shadow:0 1px 2px rgba(28,27,25,.05)">
-            Жалоб нет
+        <Show when={section() === 'users'}>
+          {(() => {
+            const q = () => userQuery().trim().toLowerCase();
+            const rows = () => data.users.filter((u) => !q() || (u.name + u.phone).toLowerCase().includes(q()));
+            return (
+              <section style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;align-items:flex-start">
+                <div style={`flex:1 1 400px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;overflow:hidden`}>
+                  <div style={`padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};display:flex;align-items:center;justify-content:space-between;gap:10px`}>
+                    <div style="font-size:13px;font-weight:600">Пользователи</div>
+                    <input
+                      value={userQuery()}
+                      onInput={(e) => setUserQuery(e.currentTarget.value)}
+                      placeholder="Поиск по имени, телефону"
+                      style={`border:1px solid ${BORDER};border-radius:3px;padding:5px 9px;font-size:12px;width:160px;background:#fff;color:${INK}`}
+                    />
+                  </div>
+                  <Show when={rows().length === 0}>
+                    <div style={`padding:32px 20px;text-align:center;font-size:13px;color:${TEXT_GHOST}`}>Пользователей нет</div>
+                  </Show>
+                  <For each={rows()}>{(u) => <UserRow user={u} selectedId={selectedUserId()} onSelect={selectUser} />}</For>
+                </div>
+
+                <aside style={`flex:1 1 360px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff`}>
+                  <UserDetail
+                    detail={userDetail()}
+                    draft={userDraft()}
+                    onDraft={setUserDraft}
+                    onSave={saveUser}
+                    onChat={() => {
+                      setSection('support');
+                      setFocusSupportUserId(selectedUserId());
+                    }}
+                    onListingStatus={setListingStatus}
+                    onDeleteRequest={setConfirmDeleteUser}
+                  />
+                </aside>
+              </section>
+            );
+          })()}
+        </Show>
+
+        <Show when={section() === 'agencies'}>
+          {(() => {
+            const agencies = () => data.users.filter((u) => u.role === 'agency');
+            const statsOf = (id) => {
+              const items = data.listings.filter((it) => it.listing.ownerId === id).map((it) => it.listing);
+              return {
+                total: items.length,
+                active: items.filter((l) => l.status === 'active').length,
+                flagged: items.filter((l) => l.status === 'flagged').length,
+                archived: items.filter((l) => l.status === 'archived' || l.status === 'rented').length
+              };
+            };
+            return (
+              <section style={`border:1px solid ${BORDER};border-radius:4px;background:#fff;margin-top:16px;overflow-x:auto`}>
+                <div style="min-width:760px">
+                  <div
+                    style={`display:grid;grid-template-columns:minmax(0,1fr) 150px 90px 90px 90px 110px 140px;gap:12px;padding:10px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}
+                  >
+                    <div>Агентство</div>
+                    <div>Телефон</div>
+                    <div>Всего</div>
+                    <div>Активно</div>
+                    <div>Жалобы</div>
+                    <div>Статус</div>
+                    <div>Действие</div>
+                  </div>
+                  <Show when={agencies().length === 0}>
+                    <div style={`padding:32px 20px;text-align:center;font-size:13px;color:${TEXT_GHOST}`}>Агентств нет</div>
+                  </Show>
+                  <For each={agencies()}>
+                    {(u) => (
+                      <div
+                        style={`display:grid;grid-template-columns:minmax(0,1fr) 150px 90px 90px 90px 110px 140px;gap:12px;padding:11px 16px;border-bottom:1px solid ${BORDER_SOFT};align-items:center;font-size:12.5px`}
+                      >
+                        <div style="display:flex;align-items:center;gap:7px;min-width:0">
+                          <Dot on={u.online} />
+                          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{u.name}</span>
+                        </div>
+                        <div style={`font-family:${MONO};font-size:11.5px;color:${TEXT_MUTED}`}>{u.phone}</div>
+                        <div style={`font-family:${MONO}`}>{statsOf(u.id).total}</div>
+                        <div style={`font-family:${MONO};color:${ACCENT}`}>{statsOf(u.id).active}</div>
+                        <div style={`font-family:${MONO};color:${statsOf(u.id).flagged ? DANGER : TEXT_GHOST}`}>{statsOf(u.id).flagged}</div>
+                        <div>
+                          <Badge bg={u.status === 'blocked' ? DANGER_SOFT : ACCENT_SOFT} fg={u.status === 'blocked' ? DANGER : ACCENT}>
+                            {u.status === 'blocked' ? 'Заблокирован' : 'Активен'}
+                          </Badge>
+                        </div>
+                        <div>
+                          <ActBtn variant="neutral" onClick={() => openUser(u.id)}>
+                            Профиль
+                          </ActBtn>
+                        </div>
+                      </div>
+                    )}
+                  </For>
+                </div>
+              </section>
+            );
+          })()}
+        </Show>
+
+        <Show when={section() === 'revisions'}>
+          <div style={`border:1px solid ${BORDER};border-radius:4px;background:#fff;margin-top:16px;padding:4px 16px 16px`}>
+            <RevisionPanel onUnauthorized={props.onUnauthorized} onCountChange={setRevisionsCount} />
           </div>
         </Show>
-        <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
-          <For each={data.reports}>{(item) => <ReportRow item={item} onResolve={resolveReport} />}</For>
-        </div>
-      </Show>
 
-      <Show when={tab() === 'users'}>
-        <div style="margin-top:16px;background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(28,27,25,.05);overflow:hidden">
-          <div style="overflow-x:auto">
-            <div style="min-width:900px">
-              <div style="display:grid;grid-template-columns:2fr 1.2fr 1fr;background:#fbfbfa;border-bottom:1px solid #f0efec;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6f6d68;white-space:nowrap">
-                <div style="padding:16px 20px">Пользователь</div>
-                <div style="padding:16px 20px">Телефон</div>
-                <div style="padding:16px 20px">Регистрация</div>
-              </div>
-              <Show when={data.users.length === 0}>
-                <div style="padding:32px 20px;text-align:center;font-size:14px;color:#9a9793">Пользователей нет</div>
-              </Show>
-              <For each={data.users}>{(u) => <UserRow user={u} />}</For>
+        <Show when={section() === 'support'}>
+          <SupportPanel
+            onUnauthorized={props.onUnauthorized}
+            onCountChange={setSupportUnread}
+            event={supportEvent}
+            users={() => data.users}
+            focusUserId={focusSupportUserId}
+            onFocusHandled={() => setFocusSupportUserId(null)}
+            onOpenUser={openUser}
+          />
+        </Show>
+      </main>
+
+      <Show when={confirmDeleteUser()}>
+        <div style={`position:fixed;inset:0;background:${OVERLAY};display:flex;align-items:center;justify-content:center;padding:24px;z-index:40`}>
+          <div style="width:100%;max-width:400px;background:#fff;border:1px solid #e3e3e0;border-radius:5px;padding:22px;display:flex;flex-direction:column;gap:14px">
+            <div style="font-size:16px;font-weight:600;letter-spacing:-.01em">Удалить аккаунт?</div>
+            <div style="font-size:13px;line-height:1.5;color:#4a4c50">
+              {confirmDeleteUser().name} будет удалён навсегда. Его объявления уйдут в архив, чат с поддержкой будет стёрт.
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+              <button
+                type="button"
+                class="bn-tap"
+                onClick={() => setConfirmDeleteUser(null)}
+                style="border:1px solid #e3e3e0;background:#fff;color:#4a4c50;cursor:pointer;font-size:12.5px;padding:8px 14px;border-radius:3px"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                class="bn-tap"
+                onClick={confirmDelete}
+                style="border:1px solid #9a3412;background:#9a3412;color:#fff;cursor:pointer;font-size:12.5px;font-weight:500;padding:8px 14px;border-radius:3px"
+              >
+                Удалить
+              </button>
             </div>
           </div>
         </div>
       </Show>
 
-      <Show when={tab() === 'listings'}>
-        <div style="margin-top:16px;background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(28,27,25,.05);overflow:hidden">
-          <div style="overflow-x:auto">
-            <div style="min-width:1080px">
-              <div style="display:grid;grid-template-columns:2fr 1.3fr 1.3fr 1fr 1.6fr;background:#fbfbfa;border-bottom:1px solid #f0efec;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6f6d68;white-space:nowrap">
-                <div style="padding:16px 20px">Объект</div>
-                <div style="padding:16px 20px">Владелец</div>
-                <div style="padding:16px 20px">Кадастровый код</div>
-                <div style="padding:16px 20px">Статус</div>
-                <div style="padding:16px 20px">Действие</div>
-              </div>
-              <Show when={data.listings.length === 0}>
-                <div style="padding:32px 20px;text-align:center;font-size:14px;color:#9a9793">Объявлений нет</div>
-              </Show>
-              <For each={data.listings}>{(item) => <ListingRow item={item} onStatus={setListingStatus} onDelete={deleteListing} />}</For>
-            </div>
-          </div>
+      <Show when={toast()}>
+        <div style="position:fixed;right:22px;bottom:22px;background:#16171a;color:#fff;font-size:12.5px;padding:10px 15px;border-radius:3px;z-index:50">
+          {toast()}
         </div>
       </Show>
     </div>
@@ -697,12 +1330,10 @@ export default function AdminApp() {
   };
 
   return (
-    <div style="min-height:100vh;background:#f7f7f6">
-      <Show when={ready()}>
-        <Show when={loggedIn()} fallback={<Login onLogin={() => setLoggedIn(true)} />}>
-          <Panel onUnauthorized={onUnauthorized} />
-        </Show>
+    <Show when={ready()}>
+      <Show when={loggedIn()} fallback={<Login onLogin={() => setLoggedIn(true)} />}>
+        <Panel onUnauthorized={onUnauthorized} />
       </Show>
-    </div>
+    </Show>
   );
 }

@@ -82,6 +82,18 @@ func (h *realtimeHub) removeWatcherLocked(listingID string, c *realtimeConn) {
 	}
 }
 
+func (h *realtimeHub) onlineUserIDs() []string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	ids := make([]string, 0, len(h.conns))
+	for id, set := range h.conns {
+		if len(set) > 0 {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
 func (h *realtimeHub) sendToUser(userID string, raw []byte) {
 	h.mu.Lock()
 	targets := make([]*realtimeConn, 0, len(h.conns[userID]))

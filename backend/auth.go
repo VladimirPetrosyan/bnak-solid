@@ -415,9 +415,9 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	u := &User{}
 	var legalAcceptedAt sql.NullTime
-	err := db.QueryRow(`SELECT id, phone, name, role, ini, created_at, password_hash, password_salt, legal_version, legal_accepted_at, legal_language
+	err := db.QueryRow(`SELECT id, phone, name, role, status, ini, created_at, password_hash, password_salt, legal_version, legal_accepted_at, legal_language
 		FROM users WHERE phone = ?`, phone).
-		Scan(&u.ID, &u.Phone, &u.Name, &u.Role, &u.Ini, &u.CreatedAt, &u.PasswordHash, &u.PasswordSalt, &u.LegalVersion, &legalAcceptedAt, &u.LegalLanguage)
+		Scan(&u.ID, &u.Phone, &u.Name, &u.Role, &u.Status, &u.Ini, &u.CreatedAt, &u.PasswordHash, &u.PasswordSalt, &u.LegalVersion, &legalAcceptedAt, &u.LegalLanguage)
 	if errors.Is(err, sql.ErrNoRows) {
 		writeErr(w, http.StatusUnauthorized, "invalid credentials")
 		return
@@ -433,6 +433,10 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	ok, legacy := verifyUserPassword(req.Password, u.PasswordHash, u.PasswordSalt)
 	if !ok {
 		writeErr(w, http.StatusUnauthorized, "invalid credentials")
+		return
+	}
+	if u.Status == "blocked" {
+		writeErr(w, http.StatusForbidden, "account blocked")
 		return
 	}
 	if legacy {

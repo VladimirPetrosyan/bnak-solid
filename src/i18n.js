@@ -800,6 +800,7 @@ Object.assign(T, {
     'Incorrect phone number or password'
   ],
   errUserNotFound: ['Օգտատերը չի գտնվել', 'Пользователь не найден', 'User not found'],
+  errAccountBlocked: ['Հաշիվն արգելափակված է', 'Аккаунт заблокирован', 'This account has been blocked'],
   errNotAuthenticated: ['Անհրաժեշտ է մուտք գործել', 'Нужно войти в аккаунт', 'Please sign in'],
   errNotFound: ['Չի գտնվել', 'Не найдено', 'Not found'],
   errInvalidStatus: ['Անվավեր կարգավիճակ', 'Некорректный статус', 'Invalid status'],

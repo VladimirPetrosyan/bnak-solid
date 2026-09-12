@@ -137,6 +137,26 @@ func handleSendSupportMessage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ---------- POST /api/admin/users/{id}/support-thread ----------
+// Отдаёт id треда поддержки для этого пользователя, создавая тред, если пользователь ещё
+// никогда не писал в поддержку — так админ может первым начать переписку из карточки
+// пользователя или из разбора жалобы.
+
+func handleAdminOpenUserThread(w http.ResponseWriter, r *http.Request) {
+	userID := r.PathValue("id")
+	var one int
+	if err := db.QueryRow(`SELECT 1 FROM users WHERE id = ?`, userID).Scan(&one); err != nil {
+		writeErr(w, http.StatusNotFound, "not found")
+		return
+	}
+	threadID, err := getOrCreateSupportThread(userID)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"threadId": threadID})
+}
+
 // ---------- GET /api/admin/support/threads ----------
 
 func handleAdminSupportThreads(w http.ResponseWriter, r *http.Request) {

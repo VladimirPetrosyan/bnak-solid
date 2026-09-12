@@ -285,6 +285,7 @@ func migrate(conn *sql.DB) error {
 		`ALTER TABLE users ADD COLUMN legal_language TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE otp_codes ADD COLUMN requested_at DATETIME`,
 		`ALTER TABLE otp_codes ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active'`,
 	}
 	for _, a := range alters {
 		if _, err := conn.Exec(a); err != nil && !isIgnorableMigrationErr(err) {

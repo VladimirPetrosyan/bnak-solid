@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
     <title>HayHome — control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <style>
       * {
         box-sizing: border-box;
@@ -20,27 +26,46 @@
       }
       body {
         margin: 0;
-        background: #f7f7f6;
-        color: #1c1b19;
-        font-family: Manrope, system-ui, sans-serif;
+        background: #fbfbfa;
+        color: #16171a;
+        font-family: 'Space Grotesk', Helvetica, sans-serif;
         font-size: 15px;
         line-height: 1.55;
         -webkit-font-smoothing: antialiased;
       }
       input,
-      button {
+      button,
+      textarea {
         font: inherit;
         color: inherit;
       }
-      input::placeholder {
-        color: #9a9793;
+      input::placeholder,
+      textarea::placeholder {
+        color: #a0a2a6;
       }
       :focus {
         outline: none;
       }
       :focus-visible {
-        outline: 2px solid #0e7c73;
+        outline: 2px solid #1f5c4a;
         outline-offset: 2px;
+      }
+      .bn-tap {
+        transition:
+          transform 0.12s ease,
+          opacity 0.12s ease;
+      }
+      .bn-tap:hover {
+        opacity: 0.82;
+      }
+      .bn-tap:active {
+        transform: scale(0.96);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .bn-tap {
+          transition: none !important;
+          transform: none !important;
+        }
       }
       @keyframes bnIn {
         from {
