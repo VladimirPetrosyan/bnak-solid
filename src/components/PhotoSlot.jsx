@@ -44,7 +44,9 @@ export default function PhotoSlot(props) {
   }
 
   return (
-    <div
+    <button
+      type="button"
+      aria-label={props.label}
       onClick={() => fileInput.click()}
       onDragOver={(e) => {
         e.preventDefault();
@@ -56,7 +58,7 @@ export default function PhotoSlot(props) {
         setOver(false);
         take(e.dataTransfer.files[0]);
       }}
-      style={`position:absolute;inset:0;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:${over() ? '#e8f4f2' : 'repeating-linear-gradient(135deg,#e6e5e1 0 9px,#eeedea 9px 18px)'}`}
+      style={`position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:${over() ? '#e8f4f2' : 'repeating-linear-gradient(135deg,#e6e5e1 0 9px,#eeedea 9px 18px)'}`}
     >
       <input ref={fileInput} type="file" accept="image/*" style="display:none" onChange={(e) => take(e.currentTarget.files[0])} />
       <Show
@@ -72,6 +74,7 @@ export default function PhotoSlot(props) {
       >
         <img src={url()} alt={props.label} style={`width:100%;height:100%;object-fit:${props.fit || 'cover'}`} />
       </Show>
-    </div>
+    </button>
   );
 }
+

@@ -13,12 +13,15 @@ export default function VipAction(props) {
       <Show
         when={r().vipActive()}
         fallback={
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={r().onVip}
-            style={`display:${disp()};align-items:center;text-align:center;padding:${pad()};border-radius:${radius()};font-size:${fontSize()};font-weight:700;transition:opacity .18s,transform .12s;background:${TEAL_T};color:${TEAL_TX};${r().vipDisabled() ? 'opacity:.6;cursor:default' : 'cursor:pointer'}`}
+            disabled={r().vipDisabled()}
+            style={`display:${disp()};align-items:center;text-align:center;padding:${pad()};border-radius:${radius()};font-size:${fontSize()};font-weight:700;background:${TEAL_T};color:${TEAL_TX}`}
           >
             {r().vipLabel()}
-          </div>
+          </button>
         }
       >
         <div

@@ -51,12 +51,14 @@ export default function Profile() {
           <div style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">{t().levelW}</div>
           <div style="font-size:23px;font-weight:800;margin-top:4px;letter-spacing:-.02em">{state.docVerified ? 3 : 2} / 3</div>
         </div>
-        <div
+        <button
+          type="button"
+          class="bn-tap"
           onClick={signOut}
-          style="padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:13.5px;font-weight:700;color:#6f6d68;cursor:pointer"
+          style="padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:13.5px;font-weight:700;color:#6f6d68"
         >
           {t().signOutW}
-        </div>
+        </button>
       </div>
 
       <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
@@ -74,17 +76,19 @@ export default function Profile() {
                 <div style="font-size:15px;font-weight:700">{step.title}</div>
                 <div style="font-size:12.5px;color:#6f6d68;margin-top:4px">{step.note}</div>
               </div>
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={() => {
                   if (step.ok === false && step.key) {
                     setState(step.key, true);
                     say(txt('docToast'));
                   }
                 }}
-                style={`align-self:center;padding:12px 16px;border-radius:12px;font-size:12.5px;font-weight:700;cursor:pointer;background:${step.ok === false ? TEAL : SOFT};color:${step.ok === false ? '#fff' : MUTED}`}
+                style={`align-self:center;padding:12px 16px;border-radius:12px;font-size:12.5px;font-weight:700;background:${step.ok === false ? TEAL : SOFT};color:${step.ok === false ? '#fff' : MUTED}`}
               >
                 {step.ok ? t().doneW : step.ok === false ? t().uploadW : t().notReq}
-              </div>
+              </button>
             </div>
           )}
         </For>
@@ -111,9 +115,12 @@ export default function Profile() {
               {([code, name]) => {
                 const r = () => radio(state.lang === code);
                 return (
-                  <div
+                  <button
+                    type="button"
+                    class="bn-tap"
+                    aria-pressed={state.lang === code}
                     onClick={() => setLang(code)}
-                    style={`display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:13px;cursor:pointer;background:${r().bg};border:1px solid ${r().bd}`}
+                    style={`display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:13px;width:100%;text-align:left;background:${r().bg};border:1px solid ${r().bd}`}
                   >
                     <span
                       style={`width:18px;height:18px;border-radius:999px;border:2px solid ${r().box};display:flex;align-items:center;justify-content:center;flex:0 0 auto`}
@@ -122,7 +129,7 @@ export default function Profile() {
                     </span>
                     <span style="font-size:14.5px;font-weight:600;flex:1">{name}</span>
                     <span style="font-size:12px;color:#9a9793">{code}</span>
-                  </div>
+                  </button>
                 );
               }}
             </For>
@@ -130,9 +137,11 @@ export default function Profile() {
           <div style="margin-top:16px;font-size:12.5px;color:#6f6d68;line-height:1.5">{t().langNote}</div>
         </div>
 
-        <div
+        <button
+          type="button"
+          class="bn-tap"
           onClick={openSupport}
-          style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px"
+          style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05);display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left"
         >
           <div>
             <div style="font-size:15.5px;font-weight:800">{t().supportW}</div>
@@ -141,7 +150,7 @@ export default function Profile() {
           <Show when={state.unread[SUPPORT_KEY]}>
             <span style="width:10px;height:10px;border-radius:999px;background:#e5484d;flex:0 0 auto" />
           </Show>
-        </div>
+        </button>
 
         <Show when={state.user}>
           <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
@@ -158,9 +167,12 @@ export default function Profile() {
                 {([key, text]) => {
                   const r = () => radio(user().role === key);
                   return (
-                    <div
+                    <button
+                      type="button"
+                      class="bn-tap"
+                      aria-pressed={user().role === key}
                       onClick={() => setRole(key)}
-                      style={`display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:13px;cursor:pointer;background:${r().bg};border:1px solid ${r().bd}`}
+                      style={`display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:13px;width:100%;text-align:left;background:${r().bg};border:1px solid ${r().bd}`}
                     >
                       <span
                         style={`width:18px;height:18px;border-radius:999px;border:2px solid ${r().box};display:flex;align-items:center;justify-content:center;flex:0 0 auto`}
@@ -168,7 +180,7 @@ export default function Profile() {
                         <span style={`width:8px;height:8px;border-radius:999px;background:${r().inner};display:block`} />
                       </span>
                       <span style="font-size:14.5px;font-weight:600;flex:1">{text}</span>
-                    </div>
+                    </button>
                   );
                 }}
               </For>

@@ -9,12 +9,14 @@ export default function ChatEmptyState() {
       </span>
       <div style="font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:16px">{t().chatEmptyT}</div>
       <div style="font-size:14.5px;color:#6f6d68;margin-top:7px;max-width:38ch">{t().chatEmptyS}</div>
-      <div
+      <button
+        type="button"
+        class="bn-tap"
         onClick={() => go('search')}
-        style="display:inline-flex;margin-top:20px;padding:13px 20px;border-radius:13px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700;cursor:pointer"
+        style="display:inline-flex;margin-top:20px;padding:13px 20px;border-radius:13px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700"
       >
         {t().searchW}
-      </div>
+      </button>
     </div>
   );
 }

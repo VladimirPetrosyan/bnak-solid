@@ -21,7 +21,7 @@ export const pill = (on) => ({
 
 export const pillStyle = (on) => {
   const p = pill(on);
-  return `padding:8px 16px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;background:${p.bg};color:${p.fg};border:1px solid ${p.bd}`;
+  return `padding:8px 16px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;background:${p.bg};color:${p.fg};border:1px solid ${p.bd}`;
 };
 
 export const radio = (on) => ({

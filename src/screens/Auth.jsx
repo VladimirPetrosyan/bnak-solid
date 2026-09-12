@@ -200,7 +200,7 @@ export default function Auth() {
   };
 
   const errStyle = (name) => (errField() === name ? `border-color:${RED}` : '');
-  const legalLinkStyle = 'background:none;border:0;padding:0;font:inherit;color:#0e7c73;text-decoration:underline;cursor:pointer';
+  const legalLinkStyle = 'font:inherit;color:#0e7c73;text-decoration:underline';
 
   const pwField = (onEnter) => (
     <div class="bn-field" style={errStyle('password')}>
@@ -215,9 +215,9 @@ export default function Auth() {
         onKeyDown={(e) => e.key === 'Enter' && onEnter()}
         placeholder={t().pwPh}
       />
-      <span onClick={() => setShowPw(!showPw())} style="flex:0 0 auto;font-size:12.5px;font-weight:600;color:#6f6d68;cursor:pointer">
+      <button type="button" class="bn-tap" onClick={() => setShowPw(!showPw())} aria-pressed={showPw()} style="flex:0 0 auto;font-size:12.5px;font-weight:600;color:#6f6d68">
         {showPw() ? t().pwHide : t().pwShow}
-      </span>
+      </button>
     </div>
   );
 
@@ -255,10 +255,18 @@ export default function Auth() {
 
   const phoneField = (onEnter) => (
     <div class="bn-field" style={`position:relative;${errStyle('phone')}`}>
-      <div onClick={() => setCcOpen(!ccOpen())} style="flex:0 0 auto;display:flex;align-items:center;gap:6px;cursor:pointer;padding:16px 0">
+      <button
+        type="button"
+        class="bn-tap"
+        onClick={() => setCcOpen(!ccOpen())}
+        aria-label={t().selectCountry}
+        aria-haspopup="listbox"
+        aria-expanded={ccOpen()}
+        style="flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:16px 0"
+      >
         <Flag code={country().code} />
         <Icon name="down" size={11} stroke="#9a9793" weight={2.2} />
-      </div>
+      </button>
       <span style="flex:0 0 auto;width:1px;align-self:stretch;background:#e8e7e4;margin:10px 0" />
       <span style="flex:0 0 auto;font-size:15.5px;font-weight:700;color:#4a4844;padding:16px 0 16px 12px">+{country().cc}</span>
       <input
@@ -285,14 +293,16 @@ export default function Auth() {
           <div style="max-height:260px;overflow-y:auto">
             <For each={filteredCountries()}>
               {(c) => (
-                <div
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={() => pickCountry(c.code)}
-                  style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;cursor:pointer;font-size:13.5px;font-weight:${c.code === a().country ? 700 : 600};background:${c.code === a().country ? '#e8f4f2' : 'transparent'}`}
+                  style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;width:100%;font-size:13.5px;font-weight:${c.code === a().country ? 700 : 600};background:${c.code === a().country ? '#e8f4f2' : 'transparent'}`}
                 >
                   <Flag code={c.code} />
                   <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{countryName(c)}</span>
                   <span style="color:#9a9793;font-weight:600">+{c.cc}</span>
-                </div>
+                </button>
               )}
             </For>
           </div>
@@ -340,29 +350,33 @@ export default function Auth() {
               {phoneField(toSignIn)}
               <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:20px 0 8px">{t().pwLbl}</div>
               {pwField(toSignIn)}
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={toSignIn}
-                style={`margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;background:${phoneOk() && (a().password || '').length ? TEAL : '#eeedea'};color:${phoneOk() && (a().password || '').length ? '#fff' : FAINT}`}
+                style={`width:100%;margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;background:${phoneOk() && (a().password || '').length ? TEAL : '#eeedea'};color:${phoneOk() && (a().password || '').length ? '#fff' : FAINT}`}
               >
                 {t().loginBtn}
-              </div>
+              </button>
               <div style="margin-top:16px;text-align:center;font-size:13px;font-weight:600;color:#6f6d68">
-                <span onClick={toForgotPhone} style="cursor:pointer">
+                <button type="button" class="bn-tap" onClick={toForgotPhone}>
                   {t().forgotPw}
-                </span>
+                </button>
               </div>
               <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eeedea;text-align:center;font-size:13.5px;color:#6f6d68">
                 {t().noAccountQ}{' '}
-                <span onClick={toRegister} style="color:#0e7c73;font-weight:700;cursor:pointer">
+                <button type="button" class="bn-tap" onClick={toRegister} style="color:#0e7c73;font-weight:700">
                   {t().registerLink}
-                </span>
+                </button>
               </div>
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={() => go('search')}
-                style="margin-top:16px;text-align:center;font-size:13px;font-weight:600;color:#0e7c73;text-decoration:underline;cursor:pointer"
+                style="width:100%;margin-top:16px;text-align:center;font-size:13px;font-weight:600;color:#0e7c73;text-decoration:underline"
               >
                 {t().searchW}
-              </div>
+              </button>
             </div>
           </Show>
 
@@ -372,30 +386,36 @@ export default function Auth() {
               <div style="font-size:14px;color:#6f6d68;margin-top:8px;line-height:1.55">{t().phoneSub}</div>
               <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().phoneLbl}</div>
               {phoneField(toCode)}
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={toCode}
-                style={`margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;background:${phoneOk() ? TEAL : '#eeedea'};color:${phoneOk() ? '#fff' : FAINT}`}
+                style={`width:100%;margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;background:${phoneOk() ? TEAL : '#eeedea'};color:${phoneOk() ? '#fff' : FAINT}`}
               >
                 {t().getCode}
-              </div>
+              </button>
               <div style="margin-top:16px;text-align:center;font-size:13.5px;color:#6f6d68">
                 {t().haveAccountQ}{' '}
-                <span
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={() => {
                     setErrField('');
                     patch({ step: 'entry', code: '', password: '' });
                   }}
-                  style="color:#0e7c73;font-weight:700;cursor:pointer"
+                  style="color:#0e7c73;font-weight:700"
                 >
                   {t().loginBtn}
-                </span>
+                </button>
               </div>
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={() => go('search')}
-                style="margin-top:16px;text-align:center;font-size:13px;font-weight:600;color:#0e7c73;text-decoration:underline;cursor:pointer"
+                style="width:100%;margin-top:16px;text-align:center;font-size:13px;font-weight:600;color:#0e7c73;text-decoration:underline"
               >
                 {t().searchW}
-              </div>
+              </button>
             </div>
           </Show>
 
@@ -405,25 +425,28 @@ export default function Auth() {
               <div style="font-size:14px;color:#6f6d68;margin-top:8px;line-height:1.55">{txt('loginSub', { p: phoneFull() })}</div>
               <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().pwLbl}</div>
               {pwField(toLogin)}
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={toLogin}
-                style={`margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;background:${(a().password || '').length ? TEAL : '#eeedea'};color:${(a().password || '').length ? '#fff' : FAINT}`}
+                style={`width:100%;margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;background:${(a().password || '').length ? TEAL : '#eeedea'};color:${(a().password || '').length ? '#fff' : FAINT}`}
               >
                 {t().loginBtn}
-              </div>
+              </button>
               <div style="margin-top:16px;display:flex;gap:20px;justify-content:center;font-size:13px;font-weight:600;color:#6f6d68">
-                <span onClick={toForgotPhone} style="cursor:pointer">
+                <button type="button" class="bn-tap" onClick={toForgotPhone}>
                   {t().forgotPw}
-                </span>
-                <span
+                </button>
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={() => {
                     setErrField('');
                     patch({ step: 'entry', password: '' });
                   }}
-                  style="cursor:pointer"
                 >
                   {t().changeNum}
-                </span>
+                </button>
               </div>
             </div>
           </Show>
@@ -434,21 +457,25 @@ export default function Auth() {
               <div style="font-size:14px;color:#6f6d68;margin-top:8px;line-height:1.55">{t().forgotSub}</div>
               <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().phoneLbl}</div>
               {phoneField(toForgotCode)}
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={toForgotCode}
-                style={`margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;background:${phoneOk() ? TEAL : '#eeedea'};color:${phoneOk() ? '#fff' : FAINT}`}
+                style={`width:100%;margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;background:${phoneOk() ? TEAL : '#eeedea'};color:${phoneOk() ? '#fff' : FAINT}`}
               >
                 {t().getCode}
-              </div>
-              <div
+              </button>
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={() => {
                   setErrField('');
                   patch({ step: 'entry' });
                 }}
-                style="margin-top:16px;text-align:center;font-size:13px;font-weight:600;color:#6f6d68;cursor:pointer"
+                style="width:100%;margin-top:16px;text-align:center;font-size:13px;font-weight:600;color:#6f6d68"
               >
                 {t().backW}
-              </div>
+              </button>
             </div>
           </Show>
 
@@ -468,28 +495,28 @@ export default function Auth() {
                   placeholder="0000"
                 />
               </div>
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={toVerify}
-                style={`margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;background:${(a().code || '').length === 4 ? TEAL : '#eeedea'};color:${(a().code || '').length === 4 ? '#fff' : FAINT}`}
+                style={`width:100%;margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;background:${(a().code || '').length === 4 ? TEAL : '#eeedea'};color:${(a().code || '').length === 4 ? '#fff' : FAINT}`}
               >
                 {t().confirmW}
-              </div>
+              </button>
               <div style="margin-top:16px;display:flex;gap:20px;justify-content:center;font-size:13px;font-weight:600;color:#6f6d68">
-                <span
-                  onClick={() => resendWait() === 0 && requestCode()}
-                  style={`cursor:${resendWait() === 0 ? 'pointer' : 'default'};opacity:${resendWait() === 0 ? 1 : 0.5}`}
-                >
+                <button type="button" class="bn-tap" onClick={requestCode} disabled={resendWait() !== 0} style={`opacity:${resendWait() === 0 ? 1 : 0.5}`}>
                   {resendWait() === 0 ? t().resend : txt('resendIn', { n: resendWait() })}
-                </span>
-                <span
+                </button>
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={() => {
                     setErrField('');
                     patch({ step: a().forgot ? 'forgotPhone' : 'phone', code: '' });
                   }}
-                  style="cursor:pointer"
                 >
                   {t().changeNum}
-                </span>
+                </button>
               </div>
             </div>
           </Show>
@@ -503,12 +530,14 @@ export default function Auth() {
               {pwStrengthMeter()}
               <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:20px 0 8px">{t().pwConfirmLbl}</div>
               {pwConfirmField(toPassword)}
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={toPassword}
-                style={`margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;background:${pwOk() && confirmPw().length ? TEAL : '#eeedea'};color:${pwOk() && confirmPw().length ? '#fff' : FAINT}`}
+                style={`width:100%;margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;background:${pwOk() && confirmPw().length ? TEAL : '#eeedea'};color:${pwOk() && confirmPw().length ? '#fff' : FAINT}`}
               >
                 {t().nextW}
-              </div>
+              </button>
             </div>
           </Show>
 
@@ -520,12 +549,14 @@ export default function Auth() {
               {pwField(toReset)}
               <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin:20px 0 8px">{t().pwConfirmLbl}</div>
               {pwConfirmField(toReset)}
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={toReset}
-                style={`margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;background:${pwOk() && confirmPw().length ? TEAL : '#eeedea'};color:${pwOk() && confirmPw().length ? '#fff' : FAINT}`}
+                style={`width:100%;margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;background:${pwOk() && confirmPw().length ? TEAL : '#eeedea'};color:${pwOk() && confirmPw().length ? '#fff' : FAINT}`}
               >
                 {t().resetBtn}
-              </div>
+              </button>
             </div>
           </Show>
 
@@ -533,14 +564,18 @@ export default function Auth() {
             <div style="animation:bnUp .2s ease both">
               <div style="font-size:26px;font-weight:800;letter-spacing:-.03em">{t().roleTitle}</div>
               <div style="font-size:14px;color:#6f6d68;margin-top:8px;line-height:1.55">{t().roleSub}</div>
-              <div style="margin-top:16px;display:flex;flex-direction:column;gap:6px">
+              <div role="radiogroup" aria-label={t().roleTitle} style="margin-top:16px;display:flex;flex-direction:column;gap:6px">
                 <For each={roles()}>
                   {(role) => {
                     const r = () => radio(a().role === role.key);
                     return (
-                      <div
+                      <button
+                        type="button"
+                        class="bn-tap"
+                        role="radio"
+                        aria-checked={a().role === role.key}
                         onClick={() => patch({ role: role.key })}
-                        style={`display:flex;gap:12px;align-items:flex-start;padding:11px 14px;border-radius:14px;cursor:pointer;background:${r().bg};border:1px solid ${r().bd}`}
+                        style={`display:flex;gap:12px;align-items:flex-start;padding:11px 14px;border-radius:14px;width:100%;text-align:left;background:${r().bg};border:1px solid ${r().bd}`}
                       >
                         <span
                           style={`width:19px;height:19px;border-radius:999px;border:2px solid ${r().box};flex:0 0 auto;display:flex;align-items:center;justify-content:center`}
@@ -551,7 +586,7 @@ export default function Auth() {
                           <div style="font-size:14.5px;font-weight:700">{role.label}</div>
                           <div style="font-size:12.5px;color:#6f6d68;margin-top:2px">{role.note}</div>
                         </div>
-                      </div>
+                      </button>
                     );
                   }}
                 </For>
@@ -597,12 +632,14 @@ export default function Auth() {
                   .
                 </span>
               </label>
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={toFinish}
-                style={`margin-top:12px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;background:${a().legalAccepted && !a().busy ? '#0e7c73' : '#eeedea'};color:${a().legalAccepted && !a().busy ? '#fff' : FAINT}`}
+                style={`width:100%;margin-top:12px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;background:${a().legalAccepted && !a().busy ? '#0e7c73' : '#eeedea'};color:${a().legalAccepted && !a().busy ? '#fff' : FAINT}`}
               >
                 {t().finishW}
-              </div>
+              </button>
             </div>
           </Show>
         </div>

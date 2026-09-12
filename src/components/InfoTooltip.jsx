@@ -62,7 +62,7 @@ export default function InfoTooltip(props) {
         onMouseEnter={show}
         onMouseLeave={hide}
         onFocus={show}
-        style="width:18px;height:18px;border-radius:999px;border:1px solid #c9c7c2;background:#fff;color:#6f6d68;font-size:10.5px;font-weight:800;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:0 0 auto"
+        style="width:18px;height:18px;border-radius:999px;border:1px solid #c9c7c2;background:#fff;color:#6f6d68;font-size:10.5px;font-weight:800;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto"
       >
         i
       </button>

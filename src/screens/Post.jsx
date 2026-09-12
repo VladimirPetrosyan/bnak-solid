@@ -58,17 +58,20 @@ export default function Post() {
             const on = () => p().step === +n;
             const done = () => p().step > +n;
             return (
-              <div
+              <button
+                type="button"
+                class="bn-tap"
+                aria-current={on() ? 'step' : undefined}
                 onClick={() => {
                   if (+n <= p().step || valid(p().step)) setPost({ step: +n });
                 }}
-                style={`flex:1 1 170px;padding:16px 16px;border-radius:14px;cursor:pointer;background:${on() ? '#0e7c73' : done() ? '#e8f4f2' : '#fff'};color:${on() ? '#fff' : done() ? '#0a5f59' : '#6f6d68'};box-shadow:${on() ? '0 8px 20px -12px rgba(14,124,115,.7)' : '0 1px 2px rgba(28,27,25,.05)'}`}
+                style={`flex:1 1 170px;padding:16px 16px;border-radius:14px;background:${on() ? '#0e7c73' : done() ? '#e8f4f2' : '#fff'};color:${on() ? '#fff' : done() ? '#0a5f59' : '#6f6d68'};box-shadow:${on() ? '0 8px 20px -12px rgba(14,124,115,.7)' : '0 1px 2px rgba(28,27,25,.05)'}`}
               >
                 <div style="font-size:11px;font-weight:700;letter-spacing:.08em;opacity:.7">
                   {t().stepW} {n}
                 </div>
                 <div style="font-size:13.5px;font-weight:700;margin-top:4px">{t()[key]}</div>
-              </div>
+              </button>
             );
           }}
         </For>
@@ -82,38 +85,54 @@ export default function Post() {
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                 <For each={['rent', 'daily', 'sale', 'newb', 'comm']}>
                   {(key) => (
-                    <div onClick={() => setPost({ deal: key })} style={pillStyle(p().deal === key)}>
+                    <button
+                      type="button"
+                      class="bn-tap"
+                      aria-pressed={p().deal === key}
+                      onClick={() => setPost({ deal: key })}
+                      style={pillStyle(p().deal === key)}
+                    >
                       {t()[key]}
-                    </div>
+                    </button>
                   )}
                 </For>
               </div>
 
               <div style={`${labelStyle};margin-top:24px`}>{t().cityLbl}</div>
               <div style="position:relative;max-width:320px;margin-top:12px">
-                <div
+                <button
+                  type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded={cityOpen()}
                   onClick={() => setCityOpen(!cityOpen())}
-                  style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:13.5px;font-weight:600;cursor:pointer"
+                  style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:13.5px;font-weight:600"
                 >
                   <span>{CITY[p().city].n[li()]}</span>
                   <Icon name="down" size={13} stroke="#9a9793" weight={2.2} />
-                </div>
+                </button>
                 <Show when={cityOpen()}>
-                  <div style="position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;max-height:260px;overflow-y:auto;background:#fff;border-radius:14px;padding:6px;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7;animation:bnUp .16s ease both">
+                  <div
+                    role="listbox"
+                    style="position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;max-height:260px;overflow-y:auto;background:#fff;border-radius:14px;padding:6px;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7;animation:bnUp .16s ease both"
+                  >
                     <For each={Object.keys(CITY)}>
                       {(key) => {
                         const on = () => p().city === key;
                         return (
-                          <div
+                          <button
+                            type="button"
+                            class="bn-tap"
+                            role="option"
+                            aria-selected={on()}
                             onClick={() => {
                               setPost({ city: key });
                               setCityOpen(false);
                             }}
-                            style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:13.5px;cursor:pointer;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
+                            style={`width:100%;display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:13.5px;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
                           >
                             <span style={`width:7px;height:7px;border-radius:999px;display:block;background:${on() ? TEAL : '#dedcd7'}`} />
                             <span>{CITY[key].n[li()]}</span>
-                          </div>
+                          </button>
                         );
                       }}
                     </For>
@@ -125,9 +144,15 @@ export default function Post() {
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                 <For each={Object.keys(DIST).filter((k) => k !== 'center')}>
                   {(key) => (
-                    <div onClick={() => setPost({ dist: key })} style={pillStyle(p().dist === key)}>
+                    <button
+                      type="button"
+                      class="bn-tap"
+                      aria-pressed={p().dist === key}
+                      onClick={() => setPost({ dist: key })}
+                      style={pillStyle(p().dist === key)}
+                    >
                       {DIST[key][li()]}
-                    </div>
+                    </button>
                   )}
                 </For>
               </div>
@@ -180,9 +205,15 @@ export default function Post() {
                   ]}
                 >
                   {([key, text]) => (
-                    <div onClick={() => setPost({ rooms: +key })} style={pillStyle(String(p().rooms) === key)}>
+                    <button
+                      type="button"
+                      class="bn-tap"
+                      aria-pressed={String(p().rooms) === key}
+                      onClick={() => setPost({ rooms: +key })}
+                      style={pillStyle(String(p().rooms) === key)}
+                    >
                       {text}
-                    </div>
+                    </button>
                   )}
                 </For>
               </div>
@@ -206,9 +237,15 @@ export default function Post() {
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                 <For each={Object.keys(FEAT)}>
                   {(key) => (
-                    <div onClick={() => setPost({ feats: { ...p().feats, [key]: !p().feats[key] } })} style={pillStyle(!!p().feats[key])}>
+                    <button
+                      type="button"
+                      class="bn-tap"
+                      aria-pressed={!!p().feats[key]}
+                      onClick={() => setPost({ feats: { ...p().feats, [key]: !p().feats[key] } })}
+                      style={pillStyle(!!p().feats[key])}
+                    >
                       {FEAT[key][li()]}
-                    </div>
+                    </button>
                   )}
                 </For>
               </div>
@@ -231,9 +268,15 @@ export default function Post() {
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                 <For each={REPAIR_CONDITIONS}>
                   {(key) => (
-                    <div onClick={() => setPost({ repair: key })} style={pillStyle(p().repair === key)}>
+                    <button
+                      type="button"
+                      class="bn-tap"
+                      aria-pressed={p().repair === key}
+                      onClick={() => setPost({ repair: key })}
+                      style={pillStyle(p().repair === key)}
+                    >
                       {REPAIR_LABELS[key][li()]}
-                    </div>
+                    </button>
                   )}
                 </For>
               </div>
@@ -265,13 +308,15 @@ export default function Post() {
                     </div>
                     <div style="font-size:12.5px;color:#6f6d68;margin-top:8px">{txt('photosCount', { n: p().photos })}</div>
                   </div>
-                  <div
+                  <button
+                    type="button"
+                    class="bn-tap"
                     onClick={() => setPost({ photos: Math.min(12, p().photos + 1) })}
-                    style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:12px;background:#0e7c73;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer"
+                    style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:12px;background:#0e7c73;color:#fff;font-size:13.5px;font-weight:700"
                   >
                     <Icon name="plus" size={14} weight={2.4} />
                     <span>{t().addPhoto}</span>
-                  </div>
+                  </button>
                 </div>
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(140px,100%),1fr));gap:12px;margin-top:16px">
                   <For each={Array.from({ length: Math.max(5, p().photos) }, (_, i) => i)}>
@@ -341,9 +386,11 @@ export default function Post() {
                     setPost({ doc: true });
                   }}
                 />
-                <div
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={() => docInput.click()}
-                  style={`margin-top:16px;display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:13px;font-size:14px;font-weight:700;cursor:pointer;background:${p().doc ? '#e8f4f2' : '#0e7c73'};color:${p().doc ? '#0a5f59' : '#fff'}`}
+                  style={`margin-top:16px;display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:13px;font-size:14px;font-weight:700;background:${p().doc ? '#e8f4f2' : '#0e7c73'};color:${p().doc ? '#0a5f59' : '#fff'}`}
                 >
                   <Icon name="upload" size={15} weight={2.2} />
                   <span>
@@ -353,7 +400,7 @@ export default function Post() {
                         ? t().docOk
                         : t().uploadDoc}
                   </span>
-                </div>
+                </button>
 
                 <div style="margin-top:20px;padding-top:20px;border-top:1px solid #f0efec">
                   <div style="font-size:12.5px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().cadastreLbl}</div>
@@ -383,9 +430,12 @@ export default function Post() {
                   </div>
                 </div>
 
-                <div
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={p().agree}
                   onClick={() => setPost({ agree: !p().agree })}
-                  style="margin-top:16px;display:flex;gap:12px;align-items:center;min-height:44px;padding:8px 0;cursor:pointer"
+                  style="width:100%;margin-top:16px;display:flex;gap:12px;align-items:center;min-height:44px;padding:8px 0;text-align:left"
                 >
                   <span
                     style={`width:22px;height:22px;border-radius:7px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;border:2px solid ${p().agree ? '#0e7c73' : '#c9c7c2'};background:${p().agree ? '#0e7c73' : '#fff'}`}
@@ -393,24 +443,29 @@ export default function Post() {
                     <Icon name="check" size={12} stroke="#fff" weight={3.4} />
                   </span>
                   <span style="font-size:13.5px;line-height:1.5;color:#4a4844">{t().agreeW}</span>
-                </div>
+                </button>
               </div>
             </div>
           </Show>
 
           <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap">
-            <div
-              onClick={() => !state.remoteBusy && next()}
+            <button
+              type="button"
+              class="bn-tap"
+              disabled={state.remoteBusy}
+              onClick={next}
               style={`flex:1 1 220px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;background:#0e7c73;color:#fff;font-size:15px;font-weight:700;cursor:${state.remoteBusy ? 'wait' : 'pointer'};opacity:${state.remoteBusy ? 0.7 : 1}`}
             >
               {state.remoteBusy ? t().publishingW : p().step === 4 ? t().publishW : t().nextW}
-            </div>
-            <div
+            </button>
+            <button
+              type="button"
+              class="bn-tap"
               onClick={() => setPost({ step: Math.max(1, p().step - 1) })}
-              style="display:flex;align-items:center;padding:16px 20px;border-radius:14px;background:#f2f1ee;font-size:15px;font-weight:700;cursor:pointer"
+              style="display:flex;align-items:center;padding:16px 20px;border-radius:14px;background:#f2f1ee;font-size:15px;font-weight:700"
             >
               {t().backW}
-            </div>
+            </button>
           </div>
         </div>
 

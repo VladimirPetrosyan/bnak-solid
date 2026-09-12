@@ -124,12 +124,15 @@ const ROLE_LABEL = { tenant: 'Ищет жильё', owner: 'Сдаёт своё 
 
 function Tab(props) {
   return (
-    <div
+    <button
+      type="button"
+      class="bn-tap"
+      aria-pressed={props.on}
       onClick={props.onClick}
-      style={`padding:12px 16px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(28,27,25,.05);background:${props.on ? INK : '#fff'};color:${props.on ? '#fff' : MUTED}`}
+      style={`padding:12px 16px;border-radius:999px;font-size:13px;font-weight:700;box-shadow:0 1px 2px rgba(28,27,25,.05);background:${props.on ? INK : '#fff'};color:${props.on ? '#fff' : MUTED}`}
     >
       {props.label}
-    </div>
+    </button>
   );
 }
 
@@ -219,18 +222,22 @@ function ReportRow(props) {
 
       <Show when={pending()}>
         <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => props.onResolve(r().report.id, 'dismiss')}
-            style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;cursor:pointer;background:${TEAL_T};color:${TEAL_TX};white-space:nowrap`}
+            style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;background:${TEAL_T};color:${TEAL_TX};white-space:nowrap`}
           >
             Отклонить — вернуть в выдачу
-          </div>
-          <div
+          </button>
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => props.onResolve(r().report.id, 'uphold')}
-            style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;cursor:pointer;background:${RED_T};color:${RED_TX};white-space:nowrap`}
+            style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;background:${RED_T};color:${RED_TX};white-space:nowrap`}
           >
             Подтвердить — снять объявление
-          </div>
+          </button>
         </div>
       </Show>
     </div>
@@ -278,36 +285,44 @@ function ListingRow(props) {
       </div>
       <div style="padding:12px 20px;display:flex;gap:8px;flex-wrap:wrap">
         <Show when={st() === 'pending'}>
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => openPrivateDocument(l().id)}
-            style="display:inline-flex;align-items:center;gap:6px;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;background:#f2f1ee;color:#4a4844;white-space:nowrap"
+            style="display:inline-flex;align-items:center;gap:6px;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;background:#f2f1ee;color:#4a4844;white-space:nowrap"
           >
             <Icon name="doc" size={13} weight={2} />
             Документ
-          </div>
+          </button>
         </Show>
         <Show when={st() !== 'active'}>
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => props.onStatus(l().id, 'active')}
-            style={`display:inline-flex;align-items:center;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;background:${TEAL_T};color:${TEAL_TX};white-space:nowrap`}
+            style={`display:inline-flex;align-items:center;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;background:${TEAL_T};color:${TEAL_TX};white-space:nowrap`}
           >
             Вернуть в выдачу
-          </div>
+          </button>
         </Show>
         <Show when={st() === 'active' || st() === 'flagged'}>
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => props.onStatus(l().id, 'archived')}
-            style="display:inline-flex;align-items:center;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;background:#f2f1ee;color:#4a4844;white-space:nowrap"
+            style="display:inline-flex;align-items:center;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;background:#f2f1ee;color:#4a4844;white-space:nowrap"
           >
             Снять с публикации
-          </div>
+          </button>
         </Show>
-        <div
+        <button
+          type="button"
+          class="bn-tap"
           onClick={() => props.onDelete(l().id)}
-          style={`display:inline-flex;align-items:center;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;background:${RED_T};color:${RED_TX};white-space:nowrap`}
+          style={`display:inline-flex;align-items:center;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;background:${RED_T};color:${RED_TX};white-space:nowrap`}
         >
           Удалить
-        </div>
+        </button>
       </div>
     </div>
   );
@@ -400,9 +415,10 @@ function SupportPanel(props) {
         </Show>
         <For each={threads()}>
           {(th) => (
-            <div
+            <button
+              type="button"
               onClick={() => openThread(th.threadId)}
-              style={`padding:14px 16px;border-bottom:1px solid #f4f3f0;cursor:pointer;display:flex;gap:10px;align-items:center;background:${activeId() === th.threadId ? '#f7f7f6' : 'transparent'}`}
+              style={`width:100%;text-align:left;padding:14px 16px;border-bottom:1px solid #f4f3f0;display:flex;gap:10px;align-items:center;background:${activeId() === th.threadId ? '#f7f7f6' : 'transparent'}`}
             >
               <span style="width:32px;height:32px;border-radius:999px;background:#e8f4f2;color:#0a5f59;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
                 {th.user.ini || '?'}
@@ -420,7 +436,7 @@ function SupportPanel(props) {
                   {th.unread}
                 </span>
               </Show>
-            </div>
+            </button>
           )}
         </For>
       </div>
@@ -443,7 +459,7 @@ function SupportPanel(props) {
             <button
               type="submit"
               disabled={!draft().trim()}
-              style={`padding:0 20px;border-radius:12px;border:none;font-size:13.5px;font-weight:700;cursor:pointer;background:${TEAL};color:#fff;opacity:${draft().trim() ? 1 : 0.4}`}
+              style={`padding:0 20px;border-radius:12px;font-size:13.5px;font-weight:700;background:${TEAL};color:#fff;opacity:${draft().trim() ? 1 : 0.4}`}
             >
               Отправить
             </button>
@@ -558,12 +574,14 @@ function Panel(props) {
           <h1 style="margin:0;font-size:clamp(22px,4vw,28px);font-weight:800;letter-spacing:-.03em">Панель администратора</h1>
           <div style="font-size:13.5px;color:#6f6d68;margin-top:2px">Пользователи, жалобы и объявления в одном месте.</div>
         </div>
-        <div
+        <button
+          type="button"
+          class="bn-tap"
           onClick={logout}
-          style="padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:13.5px;font-weight:700;color:#6f6d68;cursor:pointer;white-space:nowrap"
+          style="padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:13.5px;font-weight:700;color:#6f6d68;white-space:nowrap"
         >
           Выйти
-        </div>
+        </button>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:16px;margin-top:24px">

@@ -72,7 +72,7 @@ export default function VipCarousel(props) {
           <button
             type="button"
             onClick={props.onAll}
-            style="margin-left:6px;padding:9px 16px;border-radius:999px;background:#0e7c73;color:#fff;font-size:13px;font-weight:700;cursor:pointer;border:0"
+            style="margin-left:6px;padding:9px 16px;border-radius:999px;background:#0e7c73;color:#fff;font-size:13px;font-weight:700"
           >
             {t().vipAll}
           </button>
@@ -93,7 +93,7 @@ export default function VipCarousel(props) {
                 onClick={() => openListing(c().id)}
                 aria-label={c().addr}
                 class="bn-vip-card"
-                style="flex:0 0 auto;width:230px;scroll-snap-align:start;text-align:left;background:#fff;border:1px solid #f0efec;border-radius:16px;overflow:hidden;cursor:pointer;padding:0"
+                style="flex:0 0 auto;width:230px;scroll-snap-align:start;text-align:left;background:#fff;border:1px solid #f0efec;border-radius:16px;overflow:hidden"
               >
                 <div style="position:relative;height:150px;background:#f2f1ee">
                   <PhotoSlot id={'vip-' + c().id} label={c().addr} src={c().photo} />

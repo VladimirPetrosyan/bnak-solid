@@ -26,12 +26,15 @@ export default function ThreadList(props) {
     >
       <div style="padding:20px;display:flex;align-items:center;gap:12px;flex:0 0 auto">
         <Show when={state.isMob}>
-          <div
+          <button
+            type="button"
+            class="bn-tap"
+            aria-label={t().backW}
             onClick={() => go('search')}
-            style="width:34px;height:34px;flex:0 0 auto;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#f7f7f6;cursor:pointer;margin-left:-4px"
+            style="width:34px;height:34px;flex:0 0 auto;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#f7f7f6;margin-left:-4px"
           >
             <Icon name="back" size={16} weight={2.2} />
-          </div>
+          </button>
         </Show>
         <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">{t().messages}</div>
       </div>
@@ -44,9 +47,12 @@ export default function ThreadList(props) {
               const item = () => byId(th().listing);
               const last = () => th().msgs[th().msgs.length - 1] || {};
               return (
-                <div
+                <button
+                  type="button"
+                  class="bn-tap"
+                  aria-current={key === props.currentKey() ? 'true' : undefined}
                   onClick={() => props.onSelect(key)}
-                  style={`padding:16px 20px;margin:0 12px 8px;border-radius:14px;cursor:pointer;background:${key === props.currentKey() ? '#f2f1ee' : 'transparent'}`}
+                  style={`width:100%;text-align:left;display:block;padding:16px 20px;margin:0 12px 8px;border-radius:14px;background:${key === props.currentKey() ? '#f2f1ee' : 'transparent'}`}
                 >
                   <div style="display:flex;align-items:center;gap:12px">
                     <span
@@ -70,7 +76,7 @@ export default function ThreadList(props) {
                   <div style="font-size:13px;color:#4a4844;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                     {lastPreview(last())}
                   </div>
-                </div>
+                </button>
               );
             }}
           </For>

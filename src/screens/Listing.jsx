@@ -89,30 +89,38 @@ export default function Listing() {
 
   return (
     <div style="width:100%;max-width:1400px;margin:0 auto;padding:20px clamp(14px,3vw,28px) 48px;animation:bnIn .2s ease">
-      <div
+      <button
+        type="button"
+        class="bn-tap"
         onClick={() => go('search')}
-        style="display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#6f6d68;cursor:pointer;margin-bottom:16px"
+        style="display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#6f6d68;margin-bottom:16px"
       >
         <Icon name="back" size={15} weight={2.2} />
         <span>{t().backAll}</span>
-      </div>
+      </button>
 
       <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);grid-template-rows:clamp(88px,15vw,172px) clamp(88px,15vw,172px);gap:10px">
-        <div
+        <button
+          type="button"
           onClick={() => setState('gallery', { id: l().id, i: galleryIndex(0, l().photos) })}
-          style="grid-column:span 1;grid-row:span 2;position:relative;border-radius:18px;overflow:hidden;background:#f2f1ee;cursor:pointer"
+          aria-label={t().openGallery}
+          style="grid-column:span 1;grid-row:span 2;position:relative;border-radius:18px;overflow:hidden;background:#f2f1ee;width:100%;height:100%"
         >
           <PhotoSlot id={`ph-${l().id}-0`} label={addrOf(l())} src={l().photos && l().photos[0]} />
-        </div>
-        <div
+        </button>
+        <button
+          type="button"
           onClick={() => setState('gallery', { id: l().id, i: galleryIndex(1, l().photos) })}
-          style="position:relative;border-radius:18px;overflow:hidden;background:#f2f1ee;cursor:pointer"
+          aria-label={`${t().openGallery} — ${t().galleryPhoto} 2`}
+          style="position:relative;border-radius:18px;overflow:hidden;background:#f2f1ee;width:100%;height:100%"
         >
           <PhotoSlot id={`ph-${l().id}-1`} label={addrOf(l())} src={l().photos && l().photos[1]} />
-        </div>
-        <div
+        </button>
+        <button
+          type="button"
           onClick={() => setState('gallery', { id: l().id, i: galleryIndex(2, l().photos) })}
-          style="position:relative;border-radius:18px;overflow:hidden;background:#f2f1ee;cursor:pointer"
+          aria-label={`${t().openGallery} — ${t().galleryPhoto} 3`}
+          style="position:relative;border-radius:18px;overflow:hidden;background:#f2f1ee;width:100%;height:100%"
         >
           <PhotoSlot id={`ph-${l().id}-2`} label={addrOf(l())} src={l().photos && l().photos[2]} />
           <Show when={remainingPhotos(l().ph) > 0}>
@@ -120,7 +128,7 @@ export default function Listing() {
               + {remainingPhotos(l().ph)}
             </span>
           </Show>
-        </div>
+        </button>
       </div>
 
       <div class="bn-listing-cols" style="margin-top:26px">
@@ -273,29 +281,36 @@ export default function Listing() {
               </div>
             </div>
             <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:9px">
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={revealPhone}
-                style="display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;border-radius:14px;background:#0e7c73;color:#fff;font-size:15px;font-weight:700;cursor:pointer"
+                style="display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;border-radius:14px;background:#0e7c73;color:#fff;font-size:15px;font-weight:700"
               >
                 <Icon name="phone" size={17} weight={1.9} />
                 <span>{state.phoneShown ? sel().ph : t().showPhone}</span>
-              </div>
-              <div
+              </button>
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={() => openThreadFor(l().id)}
-                style="display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;border-radius:14px;background:#f2f1ee;font-size:15px;font-weight:700;cursor:pointer"
+                style="display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;border-radius:14px;background:#f2f1ee;font-size:15px;font-weight:700"
               >
                 <Icon name="chat" size={17} weight={1.9} />
                 <span>{t().writeChat}</span>
-              </div>
-              <div
+              </button>
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={() => toggleFav(l().id)}
-                style="display:flex;padding:14px;border-radius:14px;border:1px solid #e8e7e4;font-size:14px;font-weight:600;color:#4a4844;cursor:pointer"
+                aria-pressed={c().fav}
+                style="display:flex;padding:14px;border-radius:14px;border:1px solid #e8e7e4;font-size:14px;font-weight:600;color:#4a4844"
               >
                 <div style="display:flex;align-items:center;gap:9px;width:max-content;max-width:100%;margin:auto;text-align:center">
                   <Icon name="heart" size={16} fill={c().fav ? TEAL : 'none'} stroke={c().fav ? TEAL : '#4a4844'} style="flex:0 0 auto" />
                   <span>{c().fav ? t().inFavW : t().saveWatch}</span>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
 
@@ -326,12 +341,14 @@ export default function Listing() {
           <div style="margin-top:16px;background:#fff;border-radius:18px;padding:20px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
             <div style="font-size:15px;font-weight:800;letter-spacing:-.01em">{t().reportBoxTitle}</div>
             <div style="margin-top:7px;font-size:13px;line-height:1.55;color:#4a4844">{t().reportBoxText}</div>
-            <div
+            <button
+              type="button"
+              class="bn-tap"
               onClick={() => setState({ reportOn: l().id, reason: null, reportSent: false })}
-              style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:9px;padding:13px;border-radius:13px;background:#fceeeb;color:#93331f;font-size:13.5px;font-weight:700;cursor:pointer;text-align:center"
+              style="width:100%;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:9px;padding:13px;border-radius:13px;background:#fceeeb;color:#93331f;font-size:13.5px;font-weight:700;text-align:center"
             >
               <span>{t().reportCta}</span>
-            </div>
+            </button>
             <div style="margin-top:10px;font-size:11.5px;color:#9a9793">{t().reportFine}</div>
           </div>
         </aside>
@@ -345,9 +362,11 @@ export default function Listing() {
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:16px">
             <For each={similar()}>
               {(x) => (
-                <div
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={() => openListing(x.id)}
-                  style="display:flex;gap:14px;padding:14px;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(28,27,25,.05);cursor:pointer"
+                  style="width:100%;display:flex;gap:14px;padding:14px;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(28,27,25,.05)"
                 >
                   <div style="flex:0 0 96px;height:76px;border-radius:12px;overflow:hidden;background:#f2f1ee;position:relative">
                     <PhotoSlot id={`ph-${x.id}`} label={addrOf(x)} src={x.photos && x.photos[0]} />
@@ -361,7 +380,7 @@ export default function Listing() {
                       {addrOf(x)}
                     </div>
                   </div>
-                </div>
+                </button>
               )}
             </For>
           </div>

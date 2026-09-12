@@ -29,12 +29,14 @@ export default function OwnerView() {
         <div style="margin-top:20px;background:#fff;border-radius:20px;padding:clamp(28px,5vw,48px);text-align:center;box-shadow:0 1px 2px rgba(28,27,25,.05)">
           <div style="font-size:20px;font-weight:800;letter-spacing:-.02em">{t().noListings}</div>
           <div style="font-size:14.5px;color:#6f6d68;margin-top:8px">{t().noListingsS}</div>
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => go('post')}
-            style="display:inline-flex;margin-top:20px;padding:12px 20px;border-radius:13px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700;cursor:pointer"
+            style="display:inline-flex;margin-top:20px;padding:12px 20px;border-radius:13px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700"
           >
             {t().post}
-          </div>
+          </button>
         </div>
       </Show>
 
@@ -60,9 +62,13 @@ export default function OwnerView() {
                     {t().pendingRevisionChip}
                   </span>
                 </Show>
-                <div onClick={() => openListing(r.listing.id)} style="font-size:15.5px;font-weight:700;margin-top:8px;cursor:pointer">
+                <button
+                  type="button"
+                  onClick={() => openListing(r.listing.id)}
+                  style="display:block;width:100%;text-align:left;font-size:15.5px;font-weight:700;margin-top:8px"
+                >
                   {roomsLabel(r.listing)}, {r.listing.area} m², {txt('floorN', { a: r.listing.fl, b: r.listing.fls })}
-                </div>
+                </button>
                 <div style="font-size:13px;color:#6f6d68;margin-top:4px">
                   {addrOf(r.listing)} · {priceOf(r.listing)} {perOf(r.listing)}
                 </div>
@@ -82,26 +88,33 @@ export default function OwnerView() {
                 </div>
               </div>
               <div style="flex:1 1 100%;display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-                <div
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={r.act}
-                  style={`flex:1 1 160px;display:flex;align-items:center;justify-content:center;padding:12px 16px;border-radius:12px;font-size:13.5px;font-weight:700;cursor:pointer;background:${r.btnBg()};color:${r.btnFg()};border:1px solid ${r.btnBd()}`}
+                  style={`flex:1 1 160px;display:flex;align-items:center;justify-content:center;padding:12px 16px;border-radius:12px;font-size:13.5px;font-weight:700;background:${r.btnBg()};color:${r.btnFg()};border:1px solid ${r.btnBd()}`}
                 >
                   {r.btnLabel()}
-                </div>
-                <div
+                </button>
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={() => editListing(r.listing.id)}
+                  disabled={r.hasPendingRevision()}
                   title={r.hasPendingRevision() ? t().editDisabledPending : ''}
-                  style={`display:flex;align-items:center;gap:7px;padding:12px 16px;border-radius:12px;background:#fff;border:1px solid #d9d7d2;font-size:13px;font-weight:700;cursor:pointer;transition:transform .12s;opacity:${r.hasPendingRevision() ? 0.5 : 1}`}
+                  style="display:flex;align-items:center;gap:7px;padding:12px 16px;border-radius:12px;background:#fff;border:1px solid #d9d7d2;font-size:13px;font-weight:700"
                 >
                   <Icon name="edit" size={15} weight={2} />
                   <span>{t().actEdit}</span>
-                </div>
-                <div
+                </button>
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={() => markRented(r.listing.id)}
-                  style="display:flex;align-items:center;padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:13px;font-weight:600;color:#6f6d68;cursor:pointer"
+                  style="display:flex;align-items:center;padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:13px;font-weight:600;color:#6f6d68"
                 >
                   {t().actRented}
-                </div>
+                </button>
                 <VipAction r={r} />
               </div>
             </div>

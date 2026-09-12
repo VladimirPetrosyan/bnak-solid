@@ -62,9 +62,37 @@
         font: inherit;
         color: inherit;
       }
+      button {
+        appearance: none;
+        background: none;
+        border: 0;
+        margin: 0;
+        padding: 0;
+        cursor: pointer;
+        text-align: inherit;
+      }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
       input::placeholder,
       textarea::placeholder {
         color: #9a9793;
+      }
+      .bn-tap {
+        transition:
+          transform 0.12s ease,
+          opacity 0.12s ease;
+      }
+      .bn-tap:hover {
+        opacity: 0.82;
+      }
+      .bn-tap:active {
+        transform: scale(0.96);
+      }
+      .bn-card:hover {
+        box-shadow: 0 8px 24px -12px rgba(28, 27, 25, 0.35);
+        transform: translateY(-2px);
       }
       ::-webkit-scrollbar {
         width: 10px;

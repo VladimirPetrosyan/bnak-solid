@@ -32,18 +32,17 @@ export default function SmsModal() {
             style="margin-top:16px;width:100%;padding:16px;border-radius:14px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:22px;font-weight:800;letter-spacing:.5em;text-align:center"
           />
           <div style="margin-top:16px;display:flex;gap:10px">
-            <div
+            <button
+              type="button"
+              class="bn-tap"
               onClick={submitSms}
-              style={`flex:1;display:flex;align-items:center;justify-content:center;padding:15px;border-radius:14px;background:${ready() ? TEAL : '#eeedea'};color:${ready() ? '#fff' : FAINT};font-size:14.5px;font-weight:700;cursor:pointer`}
+              style={`flex:1;display:flex;align-items:center;justify-content:center;padding:15px;border-radius:14px;background:${ready() ? TEAL : '#eeedea'};color:${ready() ? '#fff' : FAINT};font-size:14.5px;font-weight:700`}
             >
               {t().confirmW}
-            </div>
-            <div
-              onClick={close}
-              style="display:flex;align-items:center;padding:15px 18px;border-radius:14px;background:#f2f1ee;font-size:14.5px;font-weight:700;cursor:pointer"
-            >
+            </button>
+            <button type="button" class="bn-tap" onClick={close} style="display:flex;align-items:center;padding:15px 18px;border-radius:14px;background:#f2f1ee;font-size:14.5px;font-weight:700">
               {t().cancelW}
-            </div>
+            </button>
           </div>
         </div>
       </div>

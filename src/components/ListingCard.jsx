@@ -7,10 +7,15 @@ export default function ListingCard(props) {
   const c = () => cardOf(props.listing);
 
   return (
-    <article style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(28,27,25,.05);animation:bnUp .26s ease both;transition:box-shadow .18s,transform .18s;display:flex;flex-direction:column">
+    <article class="bn-card" style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(28,27,25,.05);animation:bnUp .26s ease both;transition:box-shadow .18s,transform .18s;display:flex;flex-direction:column">
       <div style="position:relative;height:212px;background:#f2f1ee">
         <PhotoSlot id={c().slot} label={c().addr} src={c().photo} />
-        <div onClick={() => openListing(c().id)} style="position:absolute;inset:0;cursor:pointer" />
+        <button
+          type="button"
+          onClick={() => openListing(c().id)}
+          aria-label={`${t().viewBtn}: ${c().addr}, ${c().price}`}
+          style="position:absolute;inset:0;width:100%;height:100%"
+        />
         <div style="position:absolute;bottom:10px;right:10px;padding:5px 10px;border-radius:999px;background:rgba(28,27,25,.62);color:#fff;font-size:11px;font-weight:600;pointer-events:none">
           {c().photosLabel}
         </div>
@@ -20,19 +25,22 @@ export default function ListingCard(props) {
           <span style={`width:7px;height:7px;border-radius:999px;background:${c().chipDot};display:block;animation:${c().chipAnim}`} />
           <span>{c().chipText}</span>
         </div>
-        <div
+        <button
+          type="button"
+          class="bn-tap"
           onClick={(e) => {
             e.stopPropagation();
             toggleFav(c().id);
           }}
-          title={t().favs}
-          style="position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.92);cursor:pointer"
+          aria-label={t().favs}
+          aria-pressed={c().fav}
+          style="position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.92)"
         >
           <Icon name="heart" size={17} fill={c().fav ? TEAL : 'none'} stroke={c().fav ? TEAL : '#4a4844'} />
-        </div>
+        </button>
       </div>
 
-      <div onClick={() => openListing(c().id)} style="padding:16px 18px 0;cursor:pointer">
+      <div style="padding:16px 18px 0;position:relative">
         <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
           <span style="font-size:23px;font-weight:800;letter-spacing:-.03em">{c().price}</span>
           <span style="font-size:13.5px;font-weight:600;color:#6f6d68">{c().per}</span>
@@ -73,21 +81,25 @@ export default function ListingCard(props) {
       </Show>
 
       <div style="display:flex;gap:8px;padding:14px 18px 18px;margin-top:auto">
-        <div
+        <button
+          type="button"
+          class="bn-tap"
           onClick={() => openListing(c().id)}
-          style="flex:1;display:flex;align-items:center;justify-content:center;padding:11px;border-radius:12px;background:#f2f1ee;font-size:13.5px;font-weight:700;cursor:pointer"
+          style="flex:1;display:flex;align-items:center;justify-content:center;padding:11px;border-radius:12px;background:#f2f1ee;font-size:13.5px;font-weight:700"
         >
           {t().viewBtn}
-        </div>
-        <div
+        </button>
+        <button
+          type="button"
+          class="bn-tap"
           onClick={(e) => {
             e.stopPropagation();
             openReport(c().id);
           }}
-          style="display:flex;align-items:center;padding:11px 14px;border-radius:12px;border:1px solid #e8e7e4;font-size:13px;font-weight:600;color:#6f6d68;cursor:pointer;white-space:nowrap"
+          style="display:flex;align-items:center;padding:11px 14px;border-radius:12px;border:1px solid #e8e7e4;font-size:13px;font-weight:600;color:#6f6d68;white-space:nowrap"
         >
           {t().alreadyTaken}
-        </div>
+        </button>
       </div>
     </article>
   );

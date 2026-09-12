@@ -29,22 +29,26 @@ export default function Cabinet() {
         </div>
 
         <Show when={user().role === 'agency'}>
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={confirmAll}
-            style="display:flex;align-items:center;gap:8px;padding:16px 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:14.5px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px -12px rgba(14,124,115,.7)"
+            style="display:flex;align-items:center;gap:8px;padding:16px 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:14.5px;font-weight:700;box-shadow:0 8px 20px -12px rgba(14,124,115,.7)"
           >
             <Icon name="check" size={17} weight={2.4} />
             <span>{dueLeft() ? t().confirmAll : t().allConfirmed}</span>
-          </div>
+          </button>
         </Show>
 
-        <div
+        <button
+          type="button"
+          class="bn-tap"
           onClick={() => requireAuth({ type: 'go', to: 'post' }) && go('post')}
-          style="display:flex;align-items:center;gap:8px;padding:16px 20px;border-radius:14px;background:#fff;border:1px solid #e8e7e4;font-size:14.5px;font-weight:700;cursor:pointer"
+          style="display:flex;align-items:center;gap:8px;padding:16px 20px;border-radius:14px;background:#fff;border:1px solid #e8e7e4;font-size:14.5px;font-weight:700"
         >
           <Icon name="plus" size={16} weight={2.2} />
           <span>{t().post}</span>
-        </div>
+        </button>
       </div>
 
       <div style="margin-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:20px 24px;border-radius:18px;background:#fff;box-shadow:0 1px 2px rgba(28,27,25,.05)">
@@ -55,12 +59,14 @@ export default function Cabinet() {
           <div style="font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{user().name}</div>
           <div style="font-size:12.5px;color:#6f6d68;margin-top:2px">{user().phone}</div>
         </div>
-        <div
+        <button
+          type="button"
+          class="bn-tap"
           onClick={signOut}
-          style="display:flex;align-items:center;padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:13.5px;font-weight:700;color:#6f6d68;cursor:pointer;white-space:nowrap"
+          style="display:flex;align-items:center;padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:13.5px;font-weight:700;color:#6f6d68;white-space:nowrap"
         >
           {t().signOutW}
-        </div>
+        </button>
       </div>
 
       <Show when={state.user}>

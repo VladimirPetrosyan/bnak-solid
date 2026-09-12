@@ -5,9 +5,11 @@ import Icon from '../components/Icon';
 
 function ListRow(props) {
   return (
-    <div
+    <button
+      type="button"
+      class="bn-tap"
       onClick={() => openLegal(props.id)}
-      style="display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(28,27,25,.05);cursor:pointer"
+      style="display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(28,27,25,.05);width:100%;text-align:left"
     >
       <span
         style={`width:38px;height:38px;border-radius:12px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:${TEAL_T};color:${TEAL_TX}`}
@@ -19,7 +21,7 @@ function ListRow(props) {
         <div style="font-size:13px;color:#6f6d68;margin-top:2px">{props.summary}</div>
       </div>
       <Icon name="next" size={16} stroke={FAINT} weight={2} style="flex:0 0 auto" />
-    </div>
+    </button>
   );
 }
 
@@ -58,13 +60,15 @@ export default function Legal() {
 
   return (
     <div style="width:100%;max-width:860px;margin:0 auto;padding:20px clamp(14px,3vw,28px) 56px;animation:bnIn .2s ease">
-      <div
+      <button
+        type="button"
+        class="bn-tap"
         onClick={legalBack}
-        style="display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#6f6d68;cursor:pointer;margin-bottom:16px"
+        style="display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#6f6d68;margin-bottom:16px"
       >
         <Icon name="back" size={15} weight={2.2} />
         <span>{backLabel()}</span>
-      </div>
+      </button>
 
       <Show when={doc()} fallback={<LegalList notFound={!!state.legalId} />}>
         {(d) => (

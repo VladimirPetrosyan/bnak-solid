@@ -96,18 +96,24 @@ function RevisionCard(props) {
         when={rejecting()}
         fallback={
           <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-            <div
-              onClick={() => !busy() && props.onResolve(rv().id, 'approve')}
-              style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;cursor:${busy() ? 'wait' : 'pointer'};background:${TEAL_T};color:${TEAL_TX};opacity:${busy() ? 0.6 : 1};white-space:nowrap`}
+            <button
+              type="button"
+              class="bn-tap"
+              disabled={busy()}
+              onClick={() => props.onResolve(rv().id, 'approve')}
+              style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;background:${TEAL_T};color:${TEAL_TX};white-space:nowrap`}
             >
               {busy() ? 'Применяем…' : 'Одобрить'}
-            </div>
-            <div
-              onClick={() => !busy() && setRejecting(true)}
-              style="display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;cursor:pointer;background:#f2f1ee;color:#6f6d68;white-space:nowrap"
+            </button>
+            <button
+              type="button"
+              class="bn-tap"
+              disabled={busy()}
+              onClick={() => setRejecting(true)}
+              style="display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;background:#f2f1ee;color:#6f6d68;white-space:nowrap"
             >
               Отклонить
-            </div>
+            </button>
           </div>
         }
       >
@@ -119,18 +125,23 @@ function RevisionCard(props) {
             style="width:100%;min-height:72px;padding:12px 14px;border-radius:12px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:13.5px;resize:vertical"
           />
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-            <div
-              onClick={() => !busy() && reason().trim() && props.onResolve(rv().id, 'reject', reason())}
-              style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;cursor:${busy() ? 'wait' : 'pointer'};background:${RED_T};color:${RED_TX};opacity:${busy() || !reason().trim() ? 0.6 : 1}`}
+            <button
+              type="button"
+              class="bn-tap"
+              disabled={busy() || !reason().trim()}
+              onClick={() => props.onResolve(rv().id, 'reject', reason())}
+              style={`display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;background:${RED_T};color:${RED_TX}`}
             >
               Подтвердить отклонение
-            </div>
-            <div
+            </button>
+            <button
+              type="button"
+              class="bn-tap"
               onClick={() => setRejecting(false)}
-              style="display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;cursor:pointer;background:#f2f1ee;color:#6f6d68"
+              style="display:inline-flex;align-items:center;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:700;background:#f2f1ee;color:#6f6d68"
             >
               Отмена
-            </div>
+            </button>
           </div>
         </div>
       </Show>

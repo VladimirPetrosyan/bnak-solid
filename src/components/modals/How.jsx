@@ -23,12 +23,15 @@ export default function HowModal() {
               </div>
               <div style="font-size:clamp(21px,3.4vw,25px);font-weight:800;margin-top:8px;letter-spacing:-.03em">{t().howTitle}</div>
             </div>
-            <div
+            <button
+              type="button"
+              class="bn-tap"
               onClick={close}
-              style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#f7f7f6;cursor:pointer;flex:0 0 auto"
+              aria-label={t().cancelW}
+              style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#f7f7f6;flex:0 0 auto"
             >
               <Icon name="close" size={15} stroke="#4a4844" weight={2} />
-            </div>
+            </button>
           </div>
           <div style="padding:20px 24px 24px;display:flex;flex-direction:column;gap:12px">
             <For each={steps()}>

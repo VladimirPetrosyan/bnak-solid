@@ -1,5 +1,5 @@
 export function bottomNavButtonStyle(active, on, off) {
-  return `flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px;min-height:54px;border-radius:12px;cursor:pointer;text-align:center;color:${active ? on : off}`;
+  return `flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px;min-height:54px;border-radius:12px;text-align:center;color:${active ? on : off}`;
 }
 
 export const bottomNavIconWrapStyle = 'position:relative;display:inline-flex';

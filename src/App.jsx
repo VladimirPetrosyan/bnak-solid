@@ -119,53 +119,55 @@ export default function App() {
                 <span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
                   {t().searchW}
                 </span>
-                <span onClick={() => go('search')} style="cursor:pointer">
+                <button type="button" class="bn-tap" onClick={() => go('search')} style="text-align:left">
                   {t().rent}
-                </span>
-                <span onClick={() => go('map')} style="cursor:pointer">
+                </button>
+                <button type="button" class="bn-tap" onClick={() => go('map')} style="text-align:left">
                   {t().mapW}
-                </span>
-                <span onClick={guard('fav')} style="cursor:pointer">
+                </button>
+                <button type="button" class="bn-tap" onClick={guard('fav')} style="text-align:left">
                   {t().favs}
-                </span>
+                </button>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
                   {t().forOwners}
                 </span>
-                <span onClick={guard('post')} style="cursor:pointer">
+                <button type="button" class="bn-tap" onClick={guard('post')} style="text-align:left">
                   {t().post}
-                </span>
-                <span onClick={guard('cabinet')} style="cursor:pointer">
+                </button>
+                <button type="button" class="bn-tap" onClick={guard('cabinet')} style="text-align:left">
                   {t().cabinet}
-                </span>
-                <span onClick={guard('profile')} style="cursor:pointer">
+                </button>
+                <button type="button" class="bn-tap" onClick={guard('profile')} style="text-align:left">
                   {t().verification}
-                </span>
+                </button>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
                   {t().rules}
                 </span>
-                <span onClick={() => setState('howOpen', true)} style="cursor:pointer">
+                <button type="button" class="bn-tap" onClick={() => setState('howOpen', true)} style="text-align:left">
                   {t().howWorks}
-                </span>
-                <span onClick={() => setState('howOpen', true)} style="cursor:pointer">
+                </button>
+                <button type="button" class="bn-tap" onClick={() => setState('howOpen', true)} style="text-align:left">
                   {t().moderation}
-                </span>
+                </button>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px">
-                <span
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={() => openLegal(null)}
-                  style="cursor:pointer;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793"
+                  style="text-align:left;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793"
                 >
                   {t().legalTitle}
-                </span>
+                </button>
                 <For each={LEGAL_IDS}>
                   {(id) => (
-                    <span onClick={() => openLegal(id)} style="cursor:pointer">
+                    <button type="button" class="bn-tap" onClick={() => openLegal(id)} style="text-align:left">
                       {t()[LEGAL_KEY_BY_ID[id]]}
-                    </span>
+                    </button>
                   )}
                 </For>
               </div>

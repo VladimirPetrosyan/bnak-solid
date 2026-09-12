@@ -25,12 +25,12 @@ export default function BottomNav() {
   ];
 
   return (
-    <div style="position:fixed;bottom:0;left:0;right:0;z-index:80;background:#fff;box-shadow:0 -1px 0 #ebeae7;display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom))">
+    <nav aria-label={t().mainNav} style="position:fixed;bottom:0;left:0;right:0;z-index:80;background:#fff;box-shadow:0 -1px 0 #ebeae7;display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom))">
       <For each={items()}>
         {(item) => {
           const on = () => state.screen === item.key;
           return (
-            <div onClick={item.open} style={bottomNavButtonStyle(on(), TEAL, MUTED)}>
+            <button type="button" class="bn-tap" onClick={item.open} aria-current={on() ? 'page' : undefined} style={bottomNavButtonStyle(on(), TEAL, MUTED)}>
               <span style={bottomNavIconWrapStyle}>
                 <Icon name={item.icon} size={21} weight={on() ? 2.2 : 1.7} />
                 <Show when={item.badge}>
@@ -38,10 +38,10 @@ export default function BottomNav() {
                 </Show>
               </span>
               <span style={bottomNavLabelStyle}>{item.label}</span>
-            </div>
+            </button>
           );
         }}
       </For>
-    </div>
+    </nav>
   );
 }

@@ -21,12 +21,14 @@ export default function Favs() {
           <div style="font-size:14.5px;color:#6f6d68;margin-top:7px;max-width:42ch;margin-left:auto;margin-right:auto">
             {t().favEmptyText}
           </div>
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => go('search')}
-            style="display:inline-flex;margin-top:20px;padding:13px 20px;border-radius:13px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700;cursor:pointer"
+            style="display:inline-flex;margin-top:20px;padding:13px 20px;border-radius:13px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700"
           >
             {t().searchW}
-          </div>
+          </button>
         </div>
       </Show>
 
@@ -50,7 +52,7 @@ export default function Favs() {
                 <div class="bn-fav-photo" style="border-radius:14px;overflow:hidden;background:#f2f1ee;position:relative">
                   <PhotoSlot id={c().slot} label={c().addr} src={c().photo} />
                 </div>
-                <div onClick={() => openListing(l.id)} class="bn-fav-info" style="cursor:pointer">
+                <button type="button" onClick={() => openListing(l.id)} class="bn-fav-info" style="text-align:left">
                   <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
                     <span
                       style={`font-size:21px;font-weight:800;letter-spacing:-.02em;text-decoration:${archived() ? 'line-through' : 'none'};color:${archived() ? FAINT : INK}`}
@@ -63,7 +65,7 @@ export default function Favs() {
                   <div style="font-size:13px;color:#6f6d68;margin-top:2px">
                     {c().addr} · {c().sellerLine}
                   </div>
-                </div>
+                </button>
                 <div class="bn-fav-status">
                   <span
                     style={`display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;font-size:11.5px;font-weight:700;background:${archived() ? SOFT : TEAL_T};color:${archived() ? FAINT : TEAL_TX}`}
@@ -74,14 +76,15 @@ export default function Favs() {
                     {archived() ? t().archNote2 : txt('checkedAt', { x: agoOf(l) })}
                   </div>
                 </div>
-                <div
+                <button
+                  type="button"
+                  class="bn-fav-del bn-tap"
                   onClick={() => toggleFav(l.id)}
-                  title={t().removeW}
-                  class="bn-fav-del"
-                  style="width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#f7f7f6;cursor:pointer"
+                  aria-label={t().removeW}
+                  style="width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#f7f7f6"
                 >
                   <Icon name="close" size={15} stroke="#6f6d68" weight={2} />
-                </div>
+                </button>
               </div>
             );
           }}

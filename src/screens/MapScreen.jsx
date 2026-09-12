@@ -108,23 +108,29 @@ export default function MapScreen() {
     <div style="width:100%;max-width:1400px;margin:0 auto;padding:20px clamp(14px,3vw,28px) 40px;animation:bnIn .2s ease">
       <Show when={state.isMob}>
         <div style="display:flex;gap:3px;padding:4px;background:#f2f1ee;border-radius:14px;margin-bottom:14px">
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => setMView('map')}
-            style={`flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:11px;font-size:13.5px;font-weight:700;cursor:pointer;background:${mView() === 'map' ? '#fff' : 'transparent'};color:${mView() === 'map' ? '#1c1b19' : '#6f6d68'};box-shadow:${mView() === 'map' ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
+            aria-pressed={mView() === 'map'}
+            style={`flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:11px;font-size:13.5px;font-weight:700;background:${mView() === 'map' ? '#fff' : 'transparent'};color:${mView() === 'map' ? '#1c1b19' : '#6f6d68'};box-shadow:${mView() === 'map' ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
           >
             <Icon name="map" size={15} weight={1.9} />
             <span>{t().mapW}</span>
-          </div>
-          <div
+          </button>
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => {
               if (engine) setBounds(engine.getBounds());
               setMView('list');
             }}
-            style={`flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:11px;font-size:13.5px;font-weight:700;cursor:pointer;background:${mView() === 'list' ? '#fff' : 'transparent'};color:${mView() === 'list' ? '#1c1b19' : '#6f6d68'};box-shadow:${mView() === 'list' ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
+            aria-pressed={mView() === 'list'}
+            style={`flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:11px;font-size:13.5px;font-weight:700;background:${mView() === 'list' ? '#fff' : 'transparent'};color:${mView() === 'list' ? '#1c1b19' : '#6f6d68'};box-shadow:${mView() === 'list' ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
           >
             <Icon name="list" size={15} weight={1.9} />
             <span>{txt('mapLive', { n: mapVisible().length })}</span>
-          </div>
+          </button>
         </div>
       </Show>
 
@@ -139,12 +145,14 @@ export default function MapScreen() {
                     {cityObj().n[li()]} · {t().mapSub}
                   </div>
                 </div>
-                <div
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={() => go('search')}
-                  style="padding:9px 14px;border-radius:11px;background:#f2f1ee;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap"
+                  style="padding:9px 14px;border-radius:11px;background:#f2f1ee;font-size:13px;font-weight:700;white-space:nowrap"
                 >
                   {t().asList}
-                </div>
+                </button>
               </div>
             </Show>
 
@@ -152,11 +160,20 @@ export default function MapScreen() {
               <For each={mapVisible()}>
                 {(l) => {
                   const c = () => cardOf(l);
+                  const selectOnMap = () => {
+                    setState('active', l.id);
+                    if (engine) engine.setView(l.ll, 15);
+                  };
                   return (
                     <div
-                      onClick={() => {
-                        setState('active', l.id);
-                        if (engine) engine.setView(l.ll, 15);
+                      role="button"
+                      tabindex="0"
+                      onClick={selectOnMap}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          selectOnMap();
+                        }
                       }}
                       style={`display:flex;gap:13px;padding:14px 18px;cursor:pointer;border-bottom:1px solid #f4f3f0;background:${state.active === l.id ? '#f7f7f6' : 'transparent'}`}
                     >
@@ -176,15 +193,17 @@ export default function MapScreen() {
                         <div style="font-size:12.5px;color:#6f6d68;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                           {c().addr}
                         </div>
-                        <div
+                        <button
+                          type="button"
+                          class="bn-tap"
                           onClick={(e) => {
                             e.stopPropagation();
                             openListing(l.id);
                           }}
-                          style="margin-top:7px;display:inline-flex;padding:6px 11px;border-radius:9px;background:#f2f1ee;font-size:11.5px;font-weight:700;cursor:pointer"
+                          style="margin-top:7px;display:inline-flex;padding:6px 11px;border-radius:9px;background:#f2f1ee;font-size:11.5px;font-weight:700"
                         >
                           {t().viewBtn}
-                        </div>
+                        </button>
                       </div>
                     </div>
                   );
@@ -222,13 +241,15 @@ export default function MapScreen() {
                     <span>{t().locationOpenYandex}</span>
                   </a>
                 </Show>
-                <div
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={retry}
-                  style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;background:#fff;color:#1c1b19;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(28,27,25,.08)"
+                  style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;background:#fff;color:#1c1b19;font-size:12.5px;font-weight:700;box-shadow:0 1px 2px rgba(28,27,25,.08)"
                 >
                   <Icon name="refresh" size={14} stroke="#1c1b19" weight={2} />
                   <span>{t().locationRetry}</span>
-                </div>
+                </button>
               </div>
             </div>
           </Show>

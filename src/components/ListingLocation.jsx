@@ -119,13 +119,15 @@ export default function ListingLocation(props) {
                     <Icon name="map" size={14} stroke="#1c1b19" weight={2} />
                     <span>{t().locationOpenYandex}</span>
                   </a>
-                  <div
+                  <button
+                    type="button"
+                    class="bn-tap"
                     onClick={retry}
-                    style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;background:#fff;color:#1c1b19;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(28,27,25,.08)"
+                    style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;background:#fff;color:#1c1b19;font-size:12.5px;font-weight:700;box-shadow:0 1px 2px rgba(28,27,25,.08)"
                   >
                     <Icon name="refresh" size={14} stroke="#1c1b19" weight={2} />
                     <span>{t().locationRetry}</span>
-                  </div>
+                  </button>
                 </div>
               </div>
             </Show>

@@ -33,12 +33,14 @@ export default function TokenWallet() {
       <Show when={!wallet().loading && wallet().error}>
         <div style="margin-top:16px;padding:16px;border-radius:14px;background:#fceeeb;font-size:13px;color:#93331f;display:flex;flex-direction:column;align-items:flex-start;gap:10px">
           <span>{wallet().error}</span>
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={refreshTokenWallet}
-            style="padding:9px 14px;border-radius:10px;background:#fff;font-size:12.5px;font-weight:700;cursor:pointer;transition:transform .12s"
+            style="padding:9px 14px;border-radius:10px;background:#fff;font-size:12.5px;font-weight:700"
           >
             {t().retryW}
-          </div>
+          </button>
         </div>
       </Show>
 

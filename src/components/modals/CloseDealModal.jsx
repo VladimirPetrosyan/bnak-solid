@@ -47,12 +47,16 @@ export default function CloseDealModal() {
               <div style="font-size:17px;font-weight:800;letter-spacing:-.02em">{title()}</div>
               <div style="margin-top:2px;font-size:12.5px;color:#6f6d68">{addrOf(listing())}</div>
             </div>
-            <div
+            <button
+              type="button"
+              class="bn-tap"
+              disabled={state.closeDeal.busy}
               onClick={close}
-              style={`width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#f7f7f6;flex:0 0 auto;cursor:${state.closeDeal.busy ? 'not-allowed' : 'pointer'};opacity:${state.closeDeal.busy ? 0.5 : 1}`}
+              aria-label={t().cancelW}
+              style="width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#f7f7f6;flex:0 0 auto"
             >
               <Icon name="close" size={13} stroke="#4a4844" weight={2} />
-            </div>
+            </button>
           </div>
 
           <div style="margin-top:12px;font-size:12px;color:#9a9793">{durationLabel()}</div>
@@ -63,9 +67,12 @@ export default function CloseDealModal() {
               {(src) => {
                 const r = () => radio(state.closeDeal.source === src);
                 return (
-                  <div
+                  <button
+                    type="button"
+                    class="bn-tap"
+                    aria-pressed={state.closeDeal.source === src}
                     onClick={() => closeDealSource(src)}
-                    style={`display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:12px;cursor:pointer;background:${r().bg};border:1px solid ${r().bd}`}
+                    style={`display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:12px;width:100%;text-align:left;background:${r().bg};border:1px solid ${r().bd}`}
                   >
                     <span
                       style={`width:16px;height:16px;border-radius:999px;border:2px solid ${r().box};flex:0 0 auto;display:flex;align-items:center;justify-content:center`}
@@ -73,25 +80,31 @@ export default function CloseDealModal() {
                       <span style={`width:7px;height:7px;border-radius:999px;background:${r().inner};display:block`} />
                     </span>
                     <span style={`font-size:13px;line-height:1.3;font-weight:${r().w}`}>{txt(SOURCE_LABEL_KEY[src])}</span>
-                  </div>
+                  </button>
                 );
               }}
             </For>
           </div>
 
           <div style="margin-top:18px;display:flex;gap:8px">
-            <div
+            <button
+              type="button"
+              class="bn-tap"
+              disabled={!ready() || state.closeDeal.busy}
               onClick={confirmCloseDeal}
-              style={`flex:1;display:flex;align-items:center;justify-content:center;padding:13px;border-radius:12px;background:${ready() ? TEAL : '#eeedea'};color:${ready() ? '#fff' : FAINT};font-size:13.5px;font-weight:700;cursor:${ready() && !state.closeDeal.busy ? 'pointer' : 'not-allowed'};opacity:${state.closeDeal.busy ? 0.7 : 1}`}
+              style={`flex:1;display:flex;align-items:center;justify-content:center;padding:13px;border-radius:12px;background:${ready() ? TEAL : '#eeedea'};color:${ready() ? '#fff' : FAINT};font-size:13.5px;font-weight:700`}
             >
               {t().confirmW}
-            </div>
-            <div
+            </button>
+            <button
+              type="button"
+              class="bn-tap"
+              disabled={state.closeDeal.busy}
               onClick={close}
-              style={`display:flex;align-items:center;padding:13px 16px;border-radius:12px;background:#f2f1ee;font-size:13.5px;font-weight:700;cursor:${state.closeDeal.busy ? 'not-allowed' : 'pointer'};opacity:${state.closeDeal.busy ? 0.6 : 1}`}
+              style="display:flex;align-items:center;padding:13px 16px;border-radius:12px;background:#f2f1ee;font-size:13.5px;font-weight:700"
             >
               {t().cancelW}
-            </div>
+            </button>
           </div>
         </div>
       </div>

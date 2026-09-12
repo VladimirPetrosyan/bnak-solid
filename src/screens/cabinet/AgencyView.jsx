@@ -47,12 +47,15 @@ export default function AgencyView() {
           {([key, text]) => {
             const on = () => state.cabTab === key;
             return (
-              <div
+              <button
+                type="button"
+                class="bn-tap"
+                aria-pressed={on()}
                 onClick={() => setState('cabTab', key)}
-                style={`padding:12px 16px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(28,27,25,.05);background:${on() ? INK : '#fff'};color:${on() ? '#fff' : MUTED}`}
+                style={`padding:12px 16px;border-radius:999px;font-size:13px;font-weight:700;box-shadow:0 1px 2px rgba(28,27,25,.05);background:${on() ? INK : '#fff'};color:${on() ? '#fff' : MUTED}`}
               >
                 {text}
-              </div>
+              </button>
             );
           }}
         </For>
@@ -75,14 +78,14 @@ export default function AgencyView() {
                 <div
                   style={`display:grid;grid-template-columns:2.4fr 1.5fr 1fr .8fr .9fr 1.9fr;border-bottom:1px solid #f4f3f0;align-items:center;background:${r.isDue() || r.isFlag() ? '#fffaf9' : '#fff'}`}
                 >
-                  <div onClick={() => openListing(r.listing.id)} style="padding:16px 20px;cursor:pointer">
+                  <button type="button" onClick={() => openListing(r.listing.id)} style="padding:16px 20px;text-align:left">
                     <div style="font-size:14.5px;font-weight:700">
                       {roomsLabel(r.listing)}, {r.listing.area} m², {txt('floorN', { a: r.listing.fl, b: r.listing.fls })}
                     </div>
                     <div style="font-size:12.5px;color:#6f6d68;margin-top:4px">
                       {addrOf(r.listing)} · {priceOf(r.listing)} {perOf(r.listing)}
                     </div>
-                  </div>
+                  </button>
                   <div style="padding:16px 20px">
                     <span
                       style={`display:inline-flex;align-items:center;padding:8px 12px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;background:${r.chipBg()};color:${r.chipFg()}`}
@@ -98,25 +101,31 @@ export default function AgencyView() {
                     {r.complaints() || '—'}
                   </div>
                   <div style="padding:12px 20px;display:flex;gap:8px;flex-wrap:wrap">
-                    <div
+                    <button
+                      type="button"
+                      class="bn-tap"
                       onClick={r.act}
-                      style={`display:inline-flex;align-items:center;padding:12px 16px;border-radius:11px;font-size:12.5px;font-weight:700;white-space:nowrap;cursor:pointer;background:${r.btnBg()};color:${r.btnFg()};border:1px solid ${r.btnBd()}`}
+                      style={`display:inline-flex;align-items:center;padding:12px 16px;border-radius:11px;font-size:12.5px;font-weight:700;white-space:nowrap;background:${r.btnBg()};color:${r.btnFg()};border:1px solid ${r.btnBd()}`}
                     >
                       {r.btnLabel()}
-                    </div>
-                    <div
+                    </button>
+                    <button
+                      type="button"
+                      class="bn-tap"
                       onClick={() => editListing(r.listing.id)}
-                      style="display:inline-flex;align-items:center;gap:6px;padding:12px 12px;border-radius:11px;background:#fff;border:1px solid #d9d7d2;font-size:12.5px;font-weight:700;cursor:pointer;transition:transform .12s"
+                      style="display:inline-flex;align-items:center;gap:6px;padding:12px 12px;border-radius:11px;background:#fff;border:1px solid #d9d7d2;font-size:12.5px;font-weight:700"
                     >
                       <Icon name="edit" size={14} weight={2} />
                       <span>{t().actEdit}</span>
-                    </div>
-                    <div
+                    </button>
+                    <button
+                      type="button"
+                      class="bn-tap"
                       onClick={() => markRented(r.listing.id)}
-                      style="display:inline-flex;align-items:center;padding:12px 12px;border-radius:11px;border:1px solid #e8e7e4;font-size:12.5px;font-weight:600;color:#6f6d68;cursor:pointer"
+                      style="display:inline-flex;align-items:center;padding:12px 12px;border-radius:11px;border:1px solid #e8e7e4;font-size:12.5px;font-weight:600;color:#6f6d68"
                     >
                       {t().actRented}
-                    </div>
+                    </button>
                     <VipAction r={r} compact />
                   </div>
                 </div>

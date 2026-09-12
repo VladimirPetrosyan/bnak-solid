@@ -68,12 +68,15 @@ export default function Search() {
               style="flex:1;min-width:0;border:0;background:transparent;font-size:15px;padding:0"
             />
             <Show when={state.query}>
-              <div
+              <button
+                type="button"
+                class="bn-tap"
                 onClick={() => setState('query', '')}
-                style="width:24px;height:24px;border-radius:999px;background:#e8e7e4;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto"
+                aria-label={t().clearSearch}
+                style="width:24px;height:24px;border-radius:999px;background:#e8e7e4;display:flex;align-items:center;justify-content:center;flex:0 0 auto"
               >
                 <Icon name="close" size={12} stroke="#4a4844" weight={2.4} />
-              </div>
+              </button>
             </Show>
           </div>
 
@@ -83,60 +86,73 @@ export default function Search() {
                 {(key) => {
                   const on = () => state.deal === key;
                   return (
-                    <div
+                    <button
+                      type="button"
+                      class="bn-tap"
                       onClick={() => {
                         setState('deal', key);
                         reload();
                       }}
-                      style={`flex:1 1 auto;text-align:center;padding:8px 12px;border-radius:8px;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap;background:${on() ? '#fff' : 'transparent'};color:${on() ? INK : MUTED};box-shadow:${on() ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
+                      aria-pressed={on()}
+                      style={`flex:1 1 auto;text-align:center;padding:8px 12px;border-radius:8px;font-size:13.5px;font-weight:700;white-space:nowrap;background:${on() ? '#fff' : 'transparent'};color:${on() ? INK : MUTED};box-shadow:${on() ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
                     >
                       {t()[key]}
-                    </div>
+                    </button>
                   );
                 }}
               </For>
             </div>
           </Show>
 
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => setState({ filtersOpen: true, sortOpen: false })}
-            style="display:flex;align-items:center;justify-content:center;gap:9px;height:48px;padding:0 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:14.5px;font-weight:700;cursor:pointer;flex:0 0 auto"
+            style="display:flex;align-items:center;justify-content:center;gap:9px;height:48px;padding:0 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:14.5px;font-weight:700;flex:0 0 auto"
           >
             <Icon name="search" size={16} stroke="#fff" weight={2.2} />
             <span>{t().find}</span>
-          </div>
+          </button>
         </div>
 
         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center">
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={toggleStrict}
-            style={`display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;background:${state.strict ? TEAL : '#fff'};color:${state.strict ? '#fff' : INK};border:1px solid ${state.strict ? TEAL : '#e8e7e4'}`}
+            aria-pressed={state.strict}
+            style={`display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;background:${state.strict ? TEAL : '#fff'};color:${state.strict ? '#fff' : INK};border:1px solid ${state.strict ? TEAL : '#e8e7e4'}`}
           >
             <span
               style={`width:8px;height:8px;border-radius:999px;display:block;background:${state.strict ? '#7fded2' : '#c9c7c2'};animation:${state.strict ? 'bnPulse 2.4s infinite' : 'none'}`}
             />
             <span>{t().onlyVerified}</span>
-          </div>
+          </button>
 
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => {
               setState('agencies', !state.agencies);
               reload();
             }}
+            aria-pressed={!state.agencies}
             style={pillStyle(!state.agencies)}
           >
             {t().noAgency}
-          </div>
-          <div onClick={() => setState('filtersOpen', true)} style={pillStyle(state.rooms !== 'all')}>
+          </button>
+          <button type="button" class="bn-tap" onClick={() => setState('filtersOpen', true)} style={pillStyle(state.rooms !== 'all')}>
             {state.rooms === 'all' ? t().roomsW : state.rooms === 'studio' ? t().studio : txt('roomsN', { n: state.rooms })}
-          </div>
-          <div onClick={() => setState('filtersOpen', true)} style={pillStyle(true)}>
+          </button>
+          <button type="button" class="bn-tap" onClick={() => setState('filtersOpen', true)} style={pillStyle(true)}>
             {cityObj().n[li()]}
-          </div>
+          </button>
 
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => setState('filtersOpen', true)}
-            style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid #e8e7e4;color:#1c1b19"
+            style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;border:1px solid #e8e7e4;color:#1c1b19"
           >
             <Icon name="sliders" size={14} weight={1.9} />
             <span>{t().allFilters}</span>
@@ -145,7 +161,7 @@ export default function Search() {
                 {activeFilters()}
               </span>
             </Show>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -167,8 +183,9 @@ export default function Search() {
               <h1 style="margin:0;font-size:clamp(22px,3.2vw,28px);font-weight:800;letter-spacing:-.03em">{t().vipTitle}</h1>
               <button
                 type="button"
+                class="bn-tap"
                 onClick={closeVipOnly}
-                style="padding:7px 14px;border-radius:999px;background:#f2f1ee;font-size:12.5px;font-weight:700;cursor:pointer;border:0"
+                style="padding:7px 14px;border-radius:999px;background:#f2f1ee;font-size:12.5px;font-weight:700"
               >
                 {t().vipBack}
               </button>
@@ -182,29 +199,37 @@ export default function Search() {
 
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <div style="position:relative">
-            <div
+            <button
+              type="button"
+              class="bn-tap"
               onClick={() => setState('sortOpen', !state.sortOpen)}
-              style="display:flex;align-items:center;gap:8px;padding:11px 15px;border-radius:12px;background:#fff;border:1px solid #e8e7e4;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap"
+              aria-haspopup="listbox"
+              aria-expanded={state.sortOpen}
+              style="display:flex;align-items:center;gap:8px;padding:11px 15px;border-radius:12px;background:#fff;border:1px solid #e8e7e4;font-size:13.5px;font-weight:600;white-space:nowrap"
             >
               <span style="color:#6f6d68">{t().sort}</span>
               <span style="font-weight:700">
                 {t()['sort' + { fresh: 'Fresh', cheap: 'Cheap', exp: 'Exp', score: 'Score', area: 'Area' }[state.sort]]}
               </span>
               <Icon name="down" size={13} stroke="#9a9793" weight={2.2} />
-            </div>
+            </button>
             <Show when={state.sortOpen}>
-              <div style="position:absolute;top:52px;right:0;z-index:40;min-width:230px;background:#fff;border-radius:14px;padding:6px;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7;animation:bnUp .16s ease both">
+              <div role="listbox" style="position:absolute;top:52px;right:0;z-index:40;min-width:230px;background:#fff;border-radius:14px;padding:6px;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7;animation:bnUp .16s ease both">
                 <For each={SORTS}>
                   {([key, textKey]) => {
                     const on = () => state.sort === key;
                     return (
-                      <div
+                      <button
+                        type="button"
+                        class="bn-tap"
+                        role="option"
+                        aria-selected={on()}
                         onClick={() => setState({ sort: key, sortOpen: false })}
-                        style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:13.5px;cursor:pointer;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
+                        style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:13.5px;width:100%;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
                       >
                         <span style={`width:7px;height:7px;border-radius:999px;display:block;background:${on() ? TEAL : '#dedcd7'}`} />
                         <span>{t()[textKey]}</span>
-                      </div>
+                      </button>
                     );
                   }}
                 </For>
@@ -213,17 +238,19 @@ export default function Search() {
           </div>
 
           <div style="display:flex;gap:3px;padding:4px;background:#f2f1ee;border-radius:12px">
-            <div style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;background:#fff;box-shadow:0 1px 3px rgba(28,27,25,.12);font-size:13.5px;font-weight:700;cursor:pointer">
+            <div style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;background:#fff;box-shadow:0 1px 3px rgba(28,27,25,.12);font-size:13.5px;font-weight:700">
               <Icon name="list" size={15} stroke="#1c1b19" weight={1.9} />
               <span>{t().listW}</span>
             </div>
-            <div
+            <button
+              type="button"
+              class="bn-tap"
               onClick={() => go('map')}
-              style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;font-size:13.5px;font-weight:600;color:#6f6d68;cursor:pointer"
+              style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;font-size:13.5px;font-weight:600;color:#6f6d68"
             >
               <Icon name="map" size={15} weight={1.9} />
               <span>{t().mapW}</span>
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -262,25 +289,30 @@ export default function Search() {
               when={vipOnly()}
               fallback={
                 <>
-                  <div
+                  <button
+                    type="button"
+                    class="bn-tap"
                     onClick={resetFilters}
-                    style="padding:13px 20px;border-radius:13px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700;cursor:pointer"
+                    style="padding:13px 20px;border-radius:13px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700"
                   >
                     {t().resetFilters}
-                  </div>
-                  <div
+                  </button>
+                  <button
+                    type="button"
+                    class="bn-tap"
                     onClick={() => go('map')}
-                    style="padding:13px 20px;border-radius:13px;background:#f2f1ee;font-size:14px;font-weight:700;cursor:pointer"
+                    style="padding:13px 20px;border-radius:13px;background:#f2f1ee;font-size:14px;font-weight:700"
                   >
                     {t().mapW}
-                  </div>
+                  </button>
                 </>
               }
             >
               <button
                 type="button"
+                class="bn-tap"
                 onClick={closeVipOnly}
-                style="padding:13px 20px;border-radius:13px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700;cursor:pointer;border:0"
+                style="padding:13px 20px;border-radius:13px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700"
               >
                 {t().vipBack}
               </button>
@@ -294,12 +326,14 @@ export default function Search() {
           <For each={shown()}>{(listing) => <ListingCard listing={listing} />}</For>
         </div>
         <Show when={gridSource().length > shown().length}>
-          <div
+          <button
+            type="button"
+            class="bn-tap"
             onClick={() => setState('shown', state.shown + 12)}
-            style="margin:24px auto 0;max-width:340px;display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;border-radius:14px;background:#fff;border:1px solid #e8e7e4;font-size:14.5px;font-weight:700;cursor:pointer"
+            style="margin:24px auto 0;max-width:340px;display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;border-radius:14px;background:#fff;border:1px solid #e8e7e4;font-size:14.5px;font-weight:700"
           >
             {txt('showMore', { n: gridSource().length - shown().length })}
-          </div>
+          </button>
         </Show>
       </Show>
     </div>

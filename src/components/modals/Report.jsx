@@ -21,12 +21,15 @@ export default function ReportModal() {
               </div>
               <div style="font-size:19px;font-weight:800;margin-top:8px;letter-spacing:-.025em">{target()}</div>
             </div>
-            <div
+            <button
+              type="button"
+              class="bn-tap"
               onClick={close}
-              style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#f7f7f6;cursor:pointer;flex:0 0 auto"
+              aria-label={t().cancelW}
+              style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#f7f7f6;flex:0 0 auto"
             >
               <Icon name="close" size={15} stroke="#4a4844" weight={2} />
-            </div>
+            </button>
           </div>
 
           <Show when={!state.reportSent}>
@@ -37,9 +40,12 @@ export default function ReportModal() {
                   {(key) => {
                     const r = () => radio(state.reason === key);
                     return (
-                      <div
+                      <button
+                        type="button"
+                        class="bn-tap"
+                        aria-pressed={state.reason === key}
                         onClick={() => setState('reason', key)}
-                        style={`display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:14px;cursor:pointer;background:${r().bg};border:1px solid ${r().bd}`}
+                        style={`display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:14px;width:100%;text-align:left;background:${r().bg};border:1px solid ${r().bd}`}
                       >
                         <span
                           style={`width:19px;height:19px;border-radius:999px;border:2px solid ${r().box};flex:0 0 auto;margin-top:4px;display:flex;align-items:center;justify-content:center`}
@@ -47,7 +53,7 @@ export default function ReportModal() {
                           <span style={`width:8px;height:8px;border-radius:999px;background:${r().inner};display:block`} />
                         </span>
                         <span style={`font-size:13.5px;line-height:1.45;font-weight:${r().w}`}>{txt(key)}</span>
-                      </div>
+                      </button>
                     );
                   }}
                 </For>
@@ -59,18 +65,23 @@ export default function ReportModal() {
                 style="margin-top:16px;width:100%;min-height:80px;padding:12px 16px;border-radius:14px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:13.5px;resize:vertical"
               />
               <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
-                <div
+                <button
+                  type="button"
+                  class="bn-tap"
+                  disabled={!state.reason}
                   onClick={submitReport}
-                  style={`flex:1;display:flex;align-items:center;justify-content:center;padding:16px 20px;border-radius:14px;background:${state.reason ? RED : '#eeedea'};color:${state.reason ? '#fff' : FAINT};font-size:14.5px;font-weight:700;cursor:${state.reason ? 'pointer' : 'not-allowed'}`}
+                  style={`flex:1;display:flex;align-items:center;justify-content:center;padding:16px 20px;border-radius:14px;background:${state.reason ? RED : '#eeedea'};color:${state.reason ? '#fff' : FAINT};font-size:14.5px;font-weight:700`}
                 >
                   {t().sendReport}
-                </div>
-                <div
+                </button>
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={close}
-                  style="display:flex;align-items:center;padding:16px 20px;border-radius:14px;background:#f2f1ee;font-size:14.5px;font-weight:700;cursor:pointer"
+                  style="display:flex;align-items:center;padding:16px 20px;border-radius:14px;background:#f2f1ee;font-size:14.5px;font-weight:700"
                 >
                   {t().cancelW}
-                </div>
+                </button>
               </div>
               <div style="margin-top:12px;font-size:12px;color:#6f6d68;line-height:1.5">{t().reportFine2}</div>
             </div>
@@ -91,21 +102,25 @@ export default function ReportModal() {
                 {t().sentNote}
               </div>
               <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
-                <div
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={close}
-                  style="flex:1;display:flex;align-items:center;justify-content:center;padding:16px 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:14.5px;font-weight:700;cursor:pointer"
+                  style="flex:1;display:flex;align-items:center;justify-content:center;padding:16px 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:14.5px;font-weight:700"
                 >
                   {t().gotIt}
-                </div>
-                <div
+                </button>
+                <button
+                  type="button"
+                  class="bn-tap"
                   onClick={() => {
                     close();
                     go('fav');
                   }}
-                  style="display:flex;align-items:center;padding:16px 20px;border-radius:14px;background:#f2f1ee;font-size:14.5px;font-weight:700;cursor:pointer"
+                  style="display:flex;align-items:center;padding:16px 20px;border-radius:14px;background:#f2f1ee;font-size:14.5px;font-weight:700"
                 >
                   {t().favs}
-                </div>
+                </button>
               </div>
             </div>
           </Show>

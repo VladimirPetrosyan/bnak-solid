@@ -10,9 +10,12 @@ const DEALS = ['rent', 'daily', 'sale', 'newb', 'comm'];
 function Radio(props) {
   const r = () => radio(props.on);
   return (
-    <div
+    <button
+      type="button"
+      class="bn-tap"
+      aria-pressed={props.on}
       onClick={props.onClick}
-      style={`display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:13px;cursor:pointer;background:${r().bg};border:1px solid ${r().bd}`}
+      style={`display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:13px;width:100%;text-align:left;background:${r().bg};border:1px solid ${r().bd}`}
     >
       <span
         style={`width:17px;height:17px;border-radius:999px;border:2px solid ${r().box};flex:0 0 auto;display:flex;align-items:center;justify-content:center`}
@@ -20,12 +23,12 @@ function Radio(props) {
         <span style={`width:7px;height:7px;border-radius:999px;background:${r().inner};display:block`} />
       </span>
       <span style={`font-size:13.5px;font-weight:${r().w};flex:1`}>{props.label}</span>
-    </div>
+    </button>
   );
 }
 
 const dropdownTrigger =
-  'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:13.5px;font-weight:600;cursor:pointer';
+  'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:13.5px;font-weight:600;width:100%;text-align:left';
 const dropdownPanel =
   'position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;max-height:260px;overflow-y:auto;background:#fff;border-radius:14px;padding:6px;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7;animation:bnUp .16s ease both';
 
@@ -39,19 +42,29 @@ function MultiPick(props) {
   };
   return (
     <div style="position:relative">
-      <div onClick={() => props.onOpenChange(!props.open)} style={dropdownTrigger}>
+      <button
+        type="button"
+        class="bn-tap"
+        aria-haspopup="listbox"
+        aria-expanded={props.open}
+        onClick={() => props.onOpenChange(!props.open)}
+        style={dropdownTrigger}
+      >
         <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{summary()}</span>
         <Icon name="down" size={13} stroke="#9a9793" weight={2.2} />
-      </div>
+      </button>
       <Show when={props.open}>
         <div style={dropdownPanel}>
           <For each={props.options}>
             {([key, text]) => {
               const on = () => props.isOn(key);
               return (
-                <div
+                <button
+                  type="button"
+                  class="bn-tap"
+                  aria-pressed={on()}
                   onClick={() => props.onToggle(key)}
-                  style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:13.5px;cursor:pointer;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
+                  style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:13.5px;width:100%;text-align:left;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
                 >
                   <span
                     style={`width:16px;height:16px;border-radius:5px;border:2px solid ${on() ? TEAL : '#c9c7c2'};background:${on() ? TEAL : 'transparent'};flex:0 0 auto;display:flex;align-items:center;justify-content:center`}
@@ -61,7 +74,7 @@ function MultiPick(props) {
                     </Show>
                   </span>
                   <span>{text}</span>
-                </div>
+                </button>
               );
             }}
           </For>
@@ -98,12 +111,15 @@ export default function FiltersModal() {
         <div onClick={(e) => e.stopPropagation()} style={`${modal('960px')};margin:2vh 0`}>
           <div style="display:flex;align-items:center;gap:12px;padding:22px 24px 0">
             <div style="flex:1;font-size:23px;font-weight:800;letter-spacing:-.03em">{t().filtersTitle}</div>
-            <div
+            <button
+              type="button"
+              class="bn-tap"
               onClick={close}
-              style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#f7f7f6;cursor:pointer"
+              aria-label={t().cancelW}
+              style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#f7f7f6"
             >
               <Icon name="close" size={15} stroke="#4a4844" weight={2} />
-            </div>
+            </button>
           </div>
 
           <div style="padding:20px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:24px;align-items:start">
@@ -113,7 +129,10 @@ export default function FiltersModal() {
                 <div style="display:flex;gap:6px;flex-wrap:wrap">
                   <For each={DEALS}>
                     {(key) => (
-                      <div
+                      <button
+                        type="button"
+                        class="bn-tap"
+                        aria-pressed={state.deal === key}
                         onClick={() => {
                           setState('deal', key);
                           reload();
@@ -121,7 +140,7 @@ export default function FiltersModal() {
                         style={pillStyle(state.deal === key)}
                       >
                         {t()[key]}
-                      </div>
+                      </button>
                     )}
                   </For>
                 </div>
@@ -146,29 +165,39 @@ export default function FiltersModal() {
               <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
                 <div style="position:relative">
                   <div style={`${labelStyle};margin-bottom:11px`}>{t().cityTitle}</div>
-                  <div onClick={() => setOpenPick(openPick() === 'city' ? null : 'city')} style={dropdownTrigger}>
+                  <button
+                    type="button"
+                    class="bn-tap"
+                    aria-haspopup="listbox"
+                    aria-expanded={openPick() === 'city'}
+                    onClick={() => setOpenPick(openPick() === 'city' ? null : 'city')}
+                    style={dropdownTrigger}
+                  >
                     <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{cityObj().n[li()]}</span>
                     <Icon name="down" size={13} stroke="#9a9793" weight={2.2} />
-                  </div>
+                  </button>
                   <Show when={openPick() === 'city'}>
                     <div style={dropdownPanel}>
                       <For each={Object.keys(CITY)}>
                         {(key) => {
                           const on = () => cityK() === key;
                           return (
-                            <div
+                            <button
+                              type="button"
+                              class="bn-tap"
+                              aria-pressed={on()}
                               onClick={() => {
                                 setState({ city: key, bbox: null });
                                 reload();
                                 setOpenPick(null);
                               }}
-                              style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:13.5px;cursor:pointer;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
+                              style={`display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:13.5px;width:100%;text-align:left;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
                             >
                               <span
                                 style={`width:7px;height:7px;border-radius:999px;display:block;background:${on() ? TEAL : '#dedcd7'}`}
                               />
                               <span>{CITY[key].n[li()]}</span>
-                            </div>
+                            </button>
                           );
                         }}
                       </For>
@@ -188,9 +217,15 @@ export default function FiltersModal() {
                       ]}
                     >
                       {([key, text]) => (
-                        <div onClick={() => setState('rooms', key)} style={pillStyle(state.rooms === key)}>
+                        <button
+                          type="button"
+                          class="bn-tap"
+                          aria-pressed={state.rooms === key}
+                          onClick={() => setState('rooms', key)}
+                          style={pillStyle(state.rooms === key)}
+                        >
                           {text}
-                        </div>
+                        </button>
                       )}
                     </For>
                   </div>
@@ -199,12 +234,12 @@ export default function FiltersModal() {
               <div>
                 <div style={`${labelStyle};margin-bottom:11px`}>{t().sellerTitle}</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap">
-                  <div onClick={() => setState('owners', !state.owners)} style={pillStyle(state.owners)}>
+                  <button type="button" class="bn-tap" aria-pressed={state.owners} onClick={() => setState('owners', !state.owners)} style={pillStyle(state.owners)}>
                     {t().ownerW}
-                  </div>
-                  <div onClick={() => setState('agencies', !state.agencies)} style={pillStyle(state.agencies)}>
+                  </button>
+                  <button type="button" class="bn-tap" aria-pressed={state.agencies} onClick={() => setState('agencies', !state.agencies)} style={pillStyle(state.agencies)}>
                     {t().agencyW}
-                  </div>
+                  </button>
                 </div>
               </div>
               <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
@@ -269,18 +304,22 @@ export default function FiltersModal() {
           </div>
 
           <div style="display:flex;gap:10px;padding:0 24px 24px;flex-wrap:wrap">
-            <div
+            <button
+              type="button"
+              class="bn-tap"
               onClick={close}
-              style="flex:1;display:flex;align-items:center;justify-content:center;padding:15px 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:15px;font-weight:700;cursor:pointer"
+              style="flex:1;display:flex;align-items:center;justify-content:center;padding:15px 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:15px;font-weight:700"
             >
               {txt('showNLive', { n: visible().length })}
-            </div>
-            <div
+            </button>
+            <button
+              type="button"
+              class="bn-tap"
               onClick={resetFilters}
-              style="display:flex;align-items:center;padding:15px 20px;border-radius:14px;background:#f2f1ee;font-size:15px;font-weight:700;cursor:pointer"
+              style="display:flex;align-items:center;padding:15px 20px;border-radius:14px;background:#f2f1ee;font-size:15px;font-weight:700"
             >
               {t().resetW}
-            </div>
+            </button>
           </div>
         </div>
       </div>
