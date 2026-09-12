@@ -14,10 +14,12 @@ export default function Favs() {
 
       <Show when={items().length === 0}>
         <div style="margin-top:24px;background:#fff;border-radius:20px;padding:clamp(28px,5vw,52px);text-align:center;box-shadow:0 1px 2px rgba(28,27,25,.05)">
-          <span style="width:58px;height:58px;border-radius:18px;background:#f2f1ee;display:inline-flex;align-items:center;justify-content:center">
-            <Icon name="heart" size={26} stroke="#9a9793" weight={1.7} />
-          </span>
-          <div style="font-size:20px;font-weight:800;margin-top:16px;letter-spacing:-.02em">{t().favEmpty}</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px">
+            <span style="width:44px;height:44px;border-radius:14px;background:#f2f1ee;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto">
+              <Icon name="heart" size={21} stroke="#9a9793" weight={1.7} />
+            </span>
+            <div style="font-size:20px;font-weight:800;letter-spacing:-.02em">{t().favEmpty}</div>
+          </div>
           <div style="font-size:15px;color:#6f6d68;margin-top:7px;max-width:42ch;margin-left:auto;margin-right:auto">
             {t().favEmptyText}
           </div>
