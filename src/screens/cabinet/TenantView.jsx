@@ -11,7 +11,11 @@ export default function TenantView() {
     <>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:16px;margin-top:24px">
         <Kpi label={t().kpiSaved} value={String(favItems().length)} note={t().favs} />
-        <Kpi label={t().kpiChats} value={String(Object.keys(threadsAll()).length)} note={t().messages} />
+        <Kpi
+          label={t().kpiChats}
+          value={String(Object.values(threadsAll()).filter((th) => th.msgs && th.msgs.length > 0).length)}
+          note={t().messages}
+        />
         <Kpi
           label={t().kpiReports}
           value={String(Object.keys(state.flagged).filter((k) => state.flagged[k]).length)}
