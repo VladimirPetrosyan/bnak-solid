@@ -1,0 +1,226 @@
+// HayHome backend — минимальный, но настоящий сервер под фронтенд из ../src.
+//
+// Закрывает то, что во фронтенд-демо было симуляцией в localStorage:
+//   - регистрация по номеру телефона: SMS-код подтверждает номер один раз, дальше пароль
+//     не короче 8 символов; вход — телефон + пароль, без SMS. Код отправляется через
+//     Notificore (см. notificore.go, auth.go handleRequestCode) — пока NOTIFICORE_API_KEY
+//     не задан, код печатается в лог и возвращается в devCode;
+//   - объявления реально хранятся на сервере и видны всем, а не только автору;
+//   - окно подтверждения «раз в 72 часа» реально считается на сервере и реально скрывает
+//     объявление, если владелец не подтвердил (sweepExpiredListings, тикает раз в минуту);
+//   - загрузка фото — по-настоящему на диск (или потом — в S3/R2, см. photos.go);
+//   - избранное и переписка — общие для всех пользователей, а не только для одного браузера.
+//
+// Не сделано намеренно (нужны решения/ключи, которые может завести только владелец продукта):
+//   - приём платежей (баланс/кошелёк убраны совсем — см. git-историю, если понадобится вернуть);
+//   - проверка документов собственности человеком/KYC-сервисом. Частичная защита от подделки
+//     объявлений уже есть: при публикации требуется защитный код кадастрового сертификата
+//     (cadastre_code), который можно вручную сверить на сайте кадастрового комитета — см.
+//     README.md, раздел «Проверка по кадастру».
+//
+// Панель администратора (/api/admin/*, фронтенд — отдельная страница control.html) не связана
+// с обычными пользователями вообще: свой логин/пароль, свои сессии, см. admin_auth.go.
+//
+// Запуск: см. README.md рядом с этим файлом.
+package main
+
+import (
+	"log"
+	"net/http"
+	"os"
+	"time"
+)
+
+var (
+	devMode             bool
+	uploadsDir          string
+	privateDocumentsDir string
+	corsOrigin          string
+	publicBaseURL       string
+	operatorEmail       string
+	operatorCity        string
+	notificoreAPIKey    string
+	notificoreSender    string
+)
+
+func main() {
+	uploadsDir = envOr("UPLOADS_DIR", "./uploads")
+	privateDocumentsDir = envOr("PRIVATE_DOCUMENTS_DIR", "./private-documents")
+	dbPath := envOr("DB_PATH", "./bnak.db")
+	port := envOr("PORT", "8080")
+
+	var err error
+	if devMode, err = parseDevMode(os.Getenv("DEV_MODE")); err != nil {
+		log.Fatal(err)
+	}
+	if corsOrigin, err = validateOrigins(devMode, os.Getenv("CORS_ORIGIN")); err != nil {
+		log.Fatal(err)
+	}
+	if publicBaseURL, err = validatePublicBaseURL(devMode, os.Getenv("PUBLIC_BASE_URL"), port); err != nil {
+		log.Fatal(err)
+	}
+	if operatorEmail, err = validateOperatorEmail(devMode, os.Getenv("OPERATOR_EMAIL")); err != nil {
+		log.Fatal(err)
+	}
+	if operatorCity, err = validateOperatorCity(devMode, os.Getenv("OPERATOR_CITY")); err != nil {
+		log.Fatal(err)
+	}
+	notificoreAPIKey = os.Getenv("NOTIFICORE_API_KEY")
+	notificoreSender = envOr("NOTIFICORE_SENDER", "HayHome")
+
+	db = openDB(dbPath)
+	defer db.Close()
+
+	if err := os.MkdirAll(uploadsDir, 0o755); err != nil {
+		log.Fatal("uploads dir: ", err)
+	}
+	if err := os.MkdirAll(privateDocumentsDir, 0o700); err != nil {
+		log.Fatal("private documents dir: ", err)
+	}
+	if err := os.Chmod(privateDocumentsDir, 0o700); err != nil {
+		log.Fatal("private documents dir chmod: ", err)
+	}
+
+	// демо-объявления — только по явному опту, не по DEV_MODE: пустая БД должна давать пустую
+	// ленту и в деве, и в проде, если только их специально не попросили (см. seed.go).
+	if seedDemoData, err := parseBool("SEED_DEMO_DATA", os.Getenv("SEED_DEMO_DATA")); err != nil {
+		log.Fatal(err)
+	} else if seedDemoData {
+		seedIfEmpty()
+	}
+	// заводит супер-пользователя панели /control только один раз, пока таблица admins пуста —
+	// см. admin_auth.go и README.md
+	ensureBootstrapAdmin(envOr("ADMIN_USERNAME", ""), envOr("ADMIN_PASSWORD", ""))
+
+	go func() {
+		t := time.NewTicker(time.Minute)
+		defer t.Stop()
+		sweepExpiredListings()
+		for range t.C {
+			sweepExpiredListings()
+		}
+	}()
+
+	startExchangeRatesRefresher()
+
+	mux := http.NewServeMux()
+
+	// health
+	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	})
+
+	mux.HandleFunc("GET /api/exchange-rates", handleGetExchangeRates)
+
+	// аутентификация: телефон + пароль, SMS-код нужен только один раз — при регистрации
+	// и при сбросе пароля (см. комментарий в начале auth.go)
+	mux.HandleFunc("POST /api/auth/start", handleAuthStart)
+	mux.HandleFunc("POST /api/auth/request-code", handleRequestCode)
+	mux.HandleFunc("POST /api/auth/verify-code", handleVerifyCode)
+	mux.HandleFunc("POST /api/auth/register", handleRegister)
+	mux.HandleFunc("POST /api/auth/login", handleLogin)
+	mux.HandleFunc("POST /api/auth/reset-password", handleResetPassword)
+	mux.HandleFunc("POST /api/auth/logout", handleLogout)
+	mux.HandleFunc("GET /api/me", requireAuth(handleMe))
+	mux.HandleFunc("PUT /api/me", requireAuth(handleUpdateMe))
+
+	// объявления
+	mux.HandleFunc("GET /api/listings", withUser(handleListListings))
+	mux.HandleFunc("GET /api/listings/mine", requireAuth(handleMyListings))
+	mux.HandleFunc("POST /api/listings", requireAuth(handleCreateListing))
+	mux.HandleFunc("GET /api/listings/{id}", withUser(handleGetListing))
+	mux.HandleFunc("PUT /api/listings/{id}", requireAuth(handleUpdateListing))
+	mux.HandleFunc("DELETE /api/listings/{id}", requireAuth(handleDeleteListing))
+	mux.HandleFunc("POST /api/listings/{id}/confirm", requireAuth(handleConfirmListing))
+	mux.HandleFunc("POST /api/listings/{id}/mark-taken", requireAuth(handleMarkTaken))
+	mux.HandleFunc("POST /api/listings/{id}/return-to-feed", requireAuth(handleReturnToFeed))
+	mux.HandleFunc("POST /api/listings/{id}/report", requireAuth(handleReportListing))
+	mux.HandleFunc("POST /api/listings/{id}/resolve", requireAuth(handleResolveReport))
+	mux.HandleFunc("POST /api/listings/{id}/photos", requireAuth(handleUploadListingPhoto))
+	mux.HandleFunc("DELETE /api/listings/{id}/photos", requireAuth(handleDeleteListingPhoto))
+	mux.HandleFunc("POST /api/listings/{id}/promote", requireAuth(handlePromoteListing))
+	mux.HandleFunc("GET /api/listings/{id}/document", requireAuth(handleGetListingDocument))
+	mux.HandleFunc("GET /api/listings/{id}/revision", requireAuth(handleGetListingRevision))
+
+	// внутренние токены и VIP
+	mux.HandleFunc("GET /api/tokens", requireAuth(handleGetTokens))
+
+	// вложения (для чата)
+	mux.HandleFunc("POST /api/uploads", requireAuth(handleGenericUpload))
+
+	// избранное
+	mux.HandleFunc("GET /api/favorites", requireAuth(handleListFavorites))
+	mux.HandleFunc("POST /api/favorites/{id}", requireAuth(handleAddFavorite))
+	mux.HandleFunc("DELETE /api/favorites/{id}", requireAuth(handleRemoveFavorite))
+
+	// чат
+	mux.HandleFunc("GET /api/threads", requireAuth(handleListThreads))
+	mux.HandleFunc("POST /api/threads", requireAuth(handleOpenThread))
+	mux.HandleFunc("GET /api/threads/{id}/messages", requireAuth(handleListMessages))
+	mux.HandleFunc("POST /api/threads/{id}/messages", requireAuth(handleSendMessage))
+	mux.HandleFunc("POST /api/threads/{id}/read", requireAuth(handleMarkThreadRead))
+
+	// поддержка
+	mux.HandleFunc("GET /api/support/messages", requireAuth(handleListSupportMessages))
+	mux.HandleFunc("POST /api/support/messages", requireAuth(handleSendSupportMessage))
+	mux.HandleFunc("POST /api/support/read", requireAuth(handleMarkSupportRead))
+
+	mux.HandleFunc("POST /api/realtime/ticket", requireAuth(handleIssueRealtimeTicket))
+	mux.HandleFunc("GET /api/realtime", handleRealtimeUpgrade)
+
+	// панель администратора — отдельный логин/пароль, отдельные сессии (см. admin_auth.go),
+	// обычные пользователи не имеют и не могут получить сюда доступ через свой аккаунт
+	mux.HandleFunc("POST /api/admin/login", handleAdminLogin)
+	mux.HandleFunc("POST /api/admin/logout", handleAdminLogout)
+	mux.HandleFunc("GET /api/admin/users", requireAdminSession(handleAdminUsers))
+	mux.HandleFunc("GET /api/admin/reports", requireAdminSession(handleAdminReports))
+	mux.HandleFunc("POST /api/admin/reports/{id}/resolve", requireAdminSession(handleAdminResolveReport))
+	mux.HandleFunc("GET /api/admin/listings", requireAdminSession(handleAdminListings))
+	mux.HandleFunc("POST /api/admin/listings/{id}/status", requireAdminSession(handleAdminSetListingStatus))
+	mux.HandleFunc("DELETE /api/admin/listings/{id}", requireAdminSession(handleAdminDeleteListing))
+	mux.HandleFunc("GET /api/admin/listings/{id}/document", requireAdminSession(handleAdminGetListingDocument))
+	mux.HandleFunc("GET /api/admin/revisions", requireAdminSession(handleAdminListRevisions))
+	mux.HandleFunc("POST /api/admin/revisions/{id}/resolve", requireAdminSession(handleAdminResolveRevision))
+	mux.HandleFunc("GET /api/admin/support/threads", requireAdminSession(handleAdminSupportThreads))
+	mux.HandleFunc("GET /api/admin/support/threads/{id}/messages", requireAdminSession(handleAdminListSupportMessages))
+	mux.HandleFunc("POST /api/admin/support/threads/{id}/messages", requireAdminSession(handleAdminSendSupportMessage))
+	mux.HandleFunc("POST /api/admin/realtime/ticket", requireAdminSession(handleAdminIssueRealtimeTicket))
+
+	// раздача загруженных файлов
+	mux.Handle("GET /uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir))))
+
+	handler := withCORS(corsOrigin, mux)
+
+	log.Printf("hayhome-backend слушает на :%s (dev=%v, db=%s, uploads=%s, publicBaseURL=%s)", port, devMode, dbPath, uploadsDir, publicBaseURL)
+	log.Printf("operator contact: %s (%s)", operatorEmail, operatorCity)
+	log.Fatal(http.ListenAndServe(":"+port, handler))
+}
+
+func withCORS(rawOrigins string, next http.Handler) http.Handler {
+	origins := parseOrigins(rawOrigins)
+	wildcard := originAllowed(origins, "*")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqOrigin := r.Header.Get("Origin")
+		switch {
+		case wildcard:
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		case reqOrigin != "" && originAllowed(origins, reqOrigin):
+			w.Header().Set("Access-Control-Allow-Origin", reqOrigin)
+			w.Header().Set("Vary", "Origin")
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, "+browserIDHeader)
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func envOr(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
+}

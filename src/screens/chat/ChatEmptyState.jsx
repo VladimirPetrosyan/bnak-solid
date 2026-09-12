@@ -1,0 +1,20 @@
+import { t, go } from '../../store';
+import Icon from '../../components/Icon';
+
+export default function ChatEmptyState() {
+  return (
+    <div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px">
+      <span style="width:58px;height:58px;border-radius:18px;background:#f2f1ee;display:inline-flex;align-items:center;justify-content:center">
+        <Icon name="chat" size={26} stroke="#9a9793" weight={1.7} />
+      </span>
+      <div style="font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:16px">{t().chatEmptyT}</div>
+      <div style="font-size:14.5px;color:#6f6d68;margin-top:7px;max-width:38ch">{t().chatEmptyS}</div>
+      <div
+        onClick={() => go('search')}
+        style="display:inline-flex;margin-top:20px;padding:13px 20px;border-radius:13px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700;cursor:pointer"
+      >
+        {t().searchW}
+      </div>
+    </div>
+  );
+}

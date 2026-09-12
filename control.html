@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>HayHome — control</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scrollbar-gutter: stable;
+      }
+      html,
+      body {
+        max-width: 100%;
+        overflow-x: hidden;
+        overflow-x: clip;
+      }
+      body {
+        margin: 0;
+        background: #f7f7f6;
+        color: #1c1b19;
+        font-family: Manrope, system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+      input,
+      button {
+        font: inherit;
+        color: inherit;
+      }
+      input::placeholder {
+        color: #9a9793;
+      }
+      :focus {
+        outline: none;
+      }
+      :focus-visible {
+        outline: 2px solid #0e7c73;
+        outline-offset: 2px;
+      }
+      @keyframes bnIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/admin-main.jsx"></script>
+  </body>
+</html>

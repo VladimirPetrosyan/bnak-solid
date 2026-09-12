@@ -1,0 +1,1676 @@
+import { createStore } from 'solid-js/store';
+import { createEffect, createRoot } from 'solid-js';
+import { CITY, DIST, FEAT, nf } from './data';
+import { dict, tr, LI } from './i18n';
+import { TEAL, TEAL_T, TEAL_TX, INK, MUTED, FAINT, SOFT, RED, RED_T, RED_TX } from './theme';
+import { api, setAuthToken, fileURL, ApiError } from './api';
+import { documentFile, clearDocumentFile, buildListingFormData } from './documentUpload';
+import { isValidOutcomeSource } from './closeDeal';
+import { formatListingDate } from './listingStats';
+import { getBrowserId } from './browserId';
+import { readMigrated, safeSet } from './storage';
+import { connectRealtime, disconnectRealtime, watchListing, clearListingWatch } from './realtime';
+import { validateExchangeRateSnapshot, isNewerSnapshot, amdToForeign, isSnapshotStale } from './exchangeRates';
+import { resolveLegalId, LEGAL_CONSENT_VERSION } from './legalDocs';
+import { buildListingPayload } from './postPayload';
+import { isValidRepairCondition, repairConditionLabel } from './repairCondition';
+import { COUNTRIES, findCountry, findCountryByDigits, groupDigits } from './countries';
+
+const KEY = 'hayhome.state.v2';
+const LEGACY_KEY = 'bnak.state.v2';
+
+const DEFAULTS = {
+  lang: 'RU',
+  screen: 'search',
+  deal: 'rent',
+  query: '',
+  sort: 'fresh',
+  shown: 12,
+  strict: true,
+  rooms: 'all',
+  city: 'yerevan',
+  priceMin: '',
+  priceMax: '',
+  areaMin: '',
+  areaMax: '',
+  amen: {},
+  repair: {},
+  owners: true,
+  agencies: true,
+  fresh: 'f72',
+  bbox: null,
+  favs: {},
+  active: null,
+  phoneShown: false,
+  filtersOpen: false,
+  howOpen: false,
+  sortOpen: false,
+  reportOn: null,
+  reason: null,
+  reportSent: false,
+  reportText: '',
+  flagged: {},
+  rented: {},
+  user: null,
+  token: null,
+  auth: {
+    step: 'entry',
+    country: 'AM',
+    phone: '',
+    code: '',
+    password: '',
+    role: 'tenant',
+    name: '',
+    forgot: false,
+    after: null,
+    legalAccepted: false,
+    busy: false,
+    resendAt: 0
+  },
+  thread: null,
+  draft: '',
+  threads: null,
+  unread: {},
+  post: null,
+  confirmed: {},
+  gallery: null,
+  sms: null,
+  closeDeal: null,
+  cabTab: 'all',
+  savedSearches: [],
+  docVerified: false,
+  licenceOk: false,
+  toast: null,
+  tick: 0,
+  loading: false,
+  isMob: window.innerWidth < 820,
+  remoteListings: [],
+  myRemote: [],
+  remoteFavorites: [],
+  remoteBusy: false,
+  tokenWallet: { data: null, loading: false, error: null },
+  promoteBusy: {},
+  confirmBusy: {},
+  realtimeStatus: 'offline',
+  support: { messages: [], loading: false },
+  exchangeRates: null,
+  legalId: null,
+  legalFrom: 'search'
+};
+
+const PERSIST = [
+  'lang',
+  'favs',
+  'user',
+  'token',
+  'flagged',
+  'rented',
+  'confirmed',
+  'threads',
+  'deal',
+  'strict',
+  'sort',
+  'city',
+  'unread',
+  'savedSearches',
+  'docVerified'
+];
+
+function load() {
+  try {
+    const raw = readMigrated(localStorage, KEY, LEGACY_KEY);
+    if (!raw) return {};
+    const o = JSON.parse(raw);
+    if (!o || typeof o !== 'object') return {};
+    if (!CITY[o.city]) delete o.city;
+    if (!LI[o.lang]) delete o.lang;
+    if (!['rent', 'daily', 'sale', 'newb', 'comm'].includes(o.deal)) delete o.deal;
+    if (!['fresh', 'cheap', 'exp', 'score', 'area'].includes(o.sort)) delete o.sort;
+    return o;
+  } catch {
+    return {};
+  }
+}
+
+export const [state, setState] = createStore({ ...DEFAULTS, ...load() });
+setAuthToken(state.token);
+
+createRoot(() => {
+  let last = '';
+  createEffect(() => {
+    const keep = {};
+    PERSIST.forEach((k) => {
+      keep[k] = state[k];
+    });
+    const str = JSON.stringify(keep);
+    if (str === last) return;
+    last = str;
+    safeSet(localStorage, KEY, str);
+  });
+});
+
+export const t = () => dict(state.lang);
+export const txt = (key, vars) => tr(state.lang, key, vars);
+export const li = () => LI[state.lang] ?? 1;
+export const langCode = () => ['hy', 'ru', 'en'][li()];
+
+export const cityK = () => (CITY[state.city] ? state.city : 'yerevan');
+export const cityObj = () => CITY[cityK()];
+
+const API_ERR_KEYS = {
+  'bad json': 'errBadJson',
+  'invalid phone': 'errInvalidPhone',
+  'sms send failed': 'errSmsFailed',
+  'db error': 'errDbError',
+  'code not requested': 'errCodeNotRequested',
+  'code expired': 'errCodeExpired',
+  'wrong code': 'errWrongCode',
+  'invalid password': 'errInvalidPassword',
+  'phone not verified': 'errPhoneNotVerified',
+  'phone already registered': 'errPhoneTaken',
+  'legal not accepted': 'errLegalRequired',
+  'legal version outdated': 'errLegalVersion',
+  'invalid legal language': 'errLegalLanguage',
+  'invalid credentials': 'errInvalidCredentials',
+  'user not found': 'errUserNotFound',
+  'not authenticated': 'errNotAuthenticated',
+  'not found': 'errNotFound',
+  'invalid status': 'errInvalidStatus',
+  listing_not_active: 'errListingNotActive',
+  invalid_source: 'errInvalidSource',
+  vip_active: 'errVipActive',
+  tokens_insufficient: 'errTokensInsufficient',
+  'street, price and area are required': 'errListingRequired',
+  'cadastre certificate code is required': 'errCadastreRequired',
+  invalid_repair_condition: 'errRepairCondition',
+  'not your listing': 'errNotYourListing',
+  'listing not found': 'errListingNotFound',
+  'bad multipart form': 'errBadForm',
+  'request too large': 'errRequestTooLarge',
+  'document missing': 'errDoc',
+  'document is empty': 'errDocSize',
+  'document too large': 'errDocSize',
+  'document type not allowed': 'errDocType',
+  "no photo file (field 'photo')": 'errNoPhoto',
+  'missing url': 'errMissingUrl',
+  "no file (field 'file')": 'errNoFile',
+  'save failed': 'errSaveFailed',
+  'thread not found': 'errThreadNotFound',
+  'not a participant': 'errNotParticipant',
+  'cannot message yourself': 'errMessageSelf',
+  'empty message': 'errEmptyMessage',
+  no_changes: 'errNoChanges',
+  revision_pending: 'errRevisionPending',
+  changes_require_review: 'errChangesRequireReview'
+};
+
+function apiErrText(e) {
+  if (e instanceof ApiError) {
+    if (e.code === 'network') return txt('netErr');
+    if (e.code === 'too many requests') return txt('errTooManyRequests', { n: e.retryAfter || 60 });
+    const key = API_ERR_KEYS[e.code];
+    return key ? txt(key) : e.code;
+  }
+  return String((e && e.message) || e);
+}
+
+function backendStatusToSc(status) {
+  if (status === 'flagged') return 'flagged';
+  if (status === 'rented' || status === 'archived') return 'archived';
+  return 'fresh'; // 'active'
+}
+
+function normalizeRemote(item) {
+  const l = item.listing;
+  const owner = item.owner || {};
+  const text = l.street || '';
+  const confirmedMs = l.confirmedAt ? new Date(l.confirmedAt).getTime() : Date.now();
+  return {
+    id: l.id,
+    deal: l.deal,
+    city: l.city,
+    d: l.d || 'kentron',
+    st: [text, text, text],
+    ll: [l.lat || 0, l.lng || 0],
+    price: l.price,
+    rooms: l.rooms,
+    area: l.area,
+    fl: l.fl,
+    fls: l.fls,
+    sc: backendStatusToSc(l.status),
+    ch: Math.max(0, Math.floor((Date.now() - confirmedMs) / 3600000)),
+    s: 'u:' + l.ownerId,
+    f: l.f || [],
+    ph: (l.photos || []).length || 5,
+    photos: (l.photos || []).map(fileURL),
+    desc: l.desc,
+    dep: l.dep,
+    cadastreCode: l.cadastreCode || '',
+    repairCondition: l.repairCondition || '',
+    remote: true,
+    ownerId: l.ownerId,
+    ownerInfo: owner,
+    backendStatus: l.status,
+    confirmedAt: l.confirmedAt || null,
+    expiresAt: l.expiresAt || null,
+    updatedAt: l.updatedAt || null,
+    promoted: !!l.promoted,
+    promotedUntil: l.promotedUntil || null,
+    pendingRevision: item.pendingRevision || null,
+    createdAt: l.createdAt || null,
+    outcome: item.outcome || null,
+    views: typeof item.views === 'number' ? item.views : undefined,
+    favorites: typeof item.favorites === 'number' ? item.favorites : undefined
+  };
+}
+
+function mergeDefinedFields(base, incoming) {
+  if (!incoming) return base;
+  if (!base) return incoming;
+  const result = { ...base };
+  Object.keys(incoming).forEach((key) => {
+    const value = incoming[key];
+    if (value !== null && value !== undefined) result[key] = value;
+  });
+  return result;
+}
+
+function mergeRemoteItem(base, incoming) {
+  if (!base) return incoming;
+  return {
+    ...incoming,
+    listing: mergeDefinedFields(base.listing, incoming.listing),
+    owner: mergeDefinedFields(base.owner, incoming.owner),
+    views: typeof incoming.views === 'number' ? incoming.views : base.views,
+    favorites: typeof incoming.favorites === 'number' ? incoming.favorites : base.favorites,
+    pendingRevision: incoming.pendingRevision !== undefined ? incoming.pendingRevision : base.pendingRevision,
+    outcome: incoming.outcome !== undefined ? incoming.outcome : base.outcome
+  };
+}
+
+function remoteById() {
+  const map = {};
+  const apply = (list) => {
+    list.forEach((it) => {
+      const id = it.listing.id;
+      map[id] = mergeRemoteItem(map[id], it);
+    });
+  };
+  apply(state.remoteListings);
+  apply(state.remoteFavorites);
+  apply(state.myRemote);
+  return map;
+}
+
+export async function loadRemoteListings() {
+  const snapshot = statsSnapshot();
+  try {
+    const list = await api.get('/api/listings?deal=' + encodeURIComponent(state.deal) + '&city=' + encodeURIComponent(cityK()));
+    setState('remoteListings', applyRemoteReconciliation(list, snapshot));
+    syncListingWatch();
+  } catch {}
+}
+
+export async function loadExchangeRates() {
+  try {
+    const payload = await api.get('/api/exchange-rates');
+    applyExchangeRateSnapshot(payload);
+  } catch {}
+}
+
+function applyExchangeRateSnapshot(payload) {
+  const snapshot = validateExchangeRateSnapshot(payload);
+  if (!snapshot || !isNewerSnapshot(snapshot, state.exchangeRates)) return;
+  setState('exchangeRates', snapshot);
+}
+
+export async function loadMyRemoteListings() {
+  if (!state.token) {
+    setState('myRemote', []);
+    return;
+  }
+  const snapshot = statsSnapshot();
+  try {
+    const list = await api.get('/api/listings/mine');
+    setState('myRemote', applyRemoteReconciliation(list, snapshot));
+  } catch {}
+}
+
+export async function loadFavoritesRemote() {
+  if (!state.token) return;
+  const snapshot = statsSnapshot();
+  try {
+    const list = await api.get('/api/favorites');
+    const reconciled = applyRemoteReconciliation(list, snapshot);
+    setState('remoteFavorites', reconciled);
+    setState('favs', (f) => {
+      const next = { ...f };
+      reconciled.forEach((it) => {
+        next[it.listing.id] = true;
+      });
+      return next;
+    });
+  } catch {}
+}
+
+export async function refreshTokenWallet() {
+  if (!state.token) {
+    setState('tokenWallet', { data: null, loading: false, error: null });
+    return;
+  }
+  const requestToken = state.token;
+  setState('tokenWallet', { loading: true, error: null });
+  try {
+    const data = await api.get('/api/tokens');
+    if (state.token !== requestToken) return;
+    setState('tokenWallet', { data, loading: false, error: null });
+  } catch (e) {
+    if (state.token !== requestToken) return;
+    setState('tokenWallet', { loading: false, error: apiErrText(e) });
+  }
+}
+
+export async function activateVip(id) {
+  if (state.promoteBusy[id]) return;
+  setState('promoteBusy', id, true);
+  try {
+    await api.post('/api/listings/' + id + '/promote');
+    await Promise.all([refreshTokenWallet(), loadMyRemoteListings(), loadRemoteListings()]);
+    say(txt('vipActivatedToast'));
+  } catch (e) {
+    say(apiErrText(e));
+  } finally {
+    setState('promoteBusy', id, false);
+  }
+}
+
+export function allListings() {
+  return Object.values(remoteById()).map(normalizeRemote);
+}
+
+export const byId = (id) => allListings().find((l) => l.id === id);
+
+export async function refreshListingDetail(id) {
+  const snapshot = statsSnapshot();
+  try {
+    const item = await api.get('/api/listings/' + id, { 'X-Browser-Id': getBrowserId() });
+    const [reconciled] = applyRemoteReconciliation([item], snapshot);
+    setState('remoteListings', (list) => {
+      const i = list.findIndex((x) => x.listing.id === id);
+      if (i === -1) return list.concat([reconciled]);
+      const next = list.slice();
+      next[i] = reconciled;
+      return next;
+    });
+  } catch {}
+}
+
+export function sellerOf(l) {
+  const o = l.ownerInfo || {};
+  const name = o.name || 'HayHome';
+  return {
+    n: [name, name, name],
+    t: o.role === 'agency' ? 'agency' : 'owner',
+    since: 2026,
+    score: 100,
+    comp: 0,
+    conf: [1, 1],
+    ini: o.ini || '?',
+    ph: o.phone ? formatPhone(o.phone) : ''
+  };
+}
+
+export function statusOf(l) {
+  if (state.rented[l.id]) return 'archived';
+  if (state.flagged[l.id]) return 'flagged';
+  if (state.confirmed[l.id]) return 'fresh';
+  return l.sc;
+}
+
+export const hoursOf = (l) => (state.confirmed[l.id] ? 0 : l.ch);
+
+export function addrOf(l) {
+  const i = li();
+  if (l.city !== 'yerevan') return CITY[l.city].n[i] + ', ' + l.st[i];
+  return (DIST[l.d] || DIST.center)[i] + ', ' + l.st[i];
+}
+
+export function agoOf(l) {
+  const h = hoursOf(l);
+  if (h < 1) return txt('hAgo', { n: 1 });
+  if (h < 24) return txt('hAgo', { n: h });
+  return txt('dAgo', { n: Math.round(h / 24) });
+}
+
+export const priceOf = (l) => nf(l.price) + ' ֏';
+
+export function usdOf(l) {
+  const snap = state.exchangeRates;
+  const usd = snap && amdToForeign(l.price, snap.usd);
+  return Number.isFinite(usd) ? '≈ $' + nf(usd) : '';
+}
+
+export function rubOf(l) {
+  const snap = state.exchangeRates;
+  const rub = snap && amdToForeign(l.price, snap.rub);
+  return Number.isFinite(rub) ? '≈ ₽' + nf(rub) : '';
+}
+
+export function exchangeRateDateLabel() {
+  const snap = state.exchangeRates;
+  if (!snap) return '';
+  const formatted = formatListingDate(snap.publishedAt, state.lang);
+  return formatted ? txt('rateDateLabel', { x: formatted }) : '';
+}
+
+export function exchangeRateIsStale() {
+  return isSnapshotStale(state.exchangeRates);
+}
+
+export function perOf(l) {
+  if (l.deal === 'daily') return txt('perDay');
+  if (l.deal === 'sale' || l.deal === 'newb') return '';
+  return txt('perMonth');
+}
+
+export function roomsLabel(l) {
+  if (l.deal === 'comm') return ['տարածք', 'помещение', 'space'][li()];
+  if (l.rooms === 0) return txt('studio');
+  return txt('roomsN', { n: l.rooms });
+}
+
+export const metaOf = (l) =>
+  (l.f || [])
+    .slice(0, 3)
+    .map((f) => (FEAT[f] || ['', '', ''])[li()])
+    .join(' · ');
+
+export const repairLabelOf = (l) => repairConditionLabel(l.repairCondition, li()) || txt('repairUnspecified');
+
+export function shortPrice(l) {
+  const big = ['մլն', 'млн', 'M'][li()];
+  const small = ['հզ', 'к', 'k'][li()];
+  if (l.price >= 1000000) return Math.round(l.price / 100000) / 10 + ' ' + big + ' ֏';
+  return Math.round(l.price / 1000) + ' ' + small + ' ֏';
+}
+
+export function clock(seconds) {
+  const left = Math.max(0, seconds - state.tick);
+  const p = (n) => String(Math.floor(n)).padStart(2, '0');
+  return p(left / 3600) + ':' + p((left % 3600) / 60) + ':' + p(left % 60);
+}
+
+export function visible() {
+  const q = (state.query || '').trim().toLowerCase();
+  const out = allListings().filter((l) => {
+    if (l.deal !== state.deal) return false;
+    if (l.city !== cityK()) return false;
+    const st = statusOf(l);
+    if (state.strict && (st === 'due' || st === 'flagged' || st === 'archived')) return false;
+    if (st === 'archived') return false;
+    if (state.fresh === 'f24' && hoursOf(l) >= 24) return false;
+    if (state.fresh === 'f48' && hoursOf(l) >= 48) return false;
+    if (state.rooms !== 'all') {
+      if (state.rooms === 'studio' && l.rooms !== 0) return false;
+      if (state.rooms === '3' && l.rooms < 3) return false;
+      if (state.rooms !== 'studio' && state.rooms !== '3' && l.rooms !== parseInt(state.rooms, 10)) return false;
+    }
+    const pmin = parseInt(String(state.priceMin).replace(/\s/g, ''), 10);
+    const pmax = parseInt(String(state.priceMax).replace(/\s/g, ''), 10);
+    if (!isNaN(pmin) && l.price < pmin) return false;
+    if (!isNaN(pmax) && l.price > pmax) return false;
+    const amin = parseInt(state.areaMin, 10);
+    const amax = parseInt(state.areaMax, 10);
+    if (!isNaN(amin) && l.area < amin) return false;
+    if (!isNaN(amax) && l.area > amax) return false;
+    if (state.bbox) {
+      const b = state.bbox;
+      if (l.ll[0] < b[0] || l.ll[0] > b[2] || l.ll[1] < b[1] || l.ll[1] > b[3]) return false;
+    }
+    const sel = sellerOf(l);
+    if (!state.owners && sel.t === 'owner') return false;
+    if (!state.agencies && sel.t === 'agency') return false;
+    const on = Object.keys(state.amen).filter((k) => state.amen[k]);
+    if (on.length && !on.every((k) => (l.f || []).includes(k))) return false;
+    const repairOn = Object.keys(state.repair).filter((k) => state.repair[k]);
+    if (repairOn.length && !repairOn.includes(l.repairCondition)) return false;
+    if (q) {
+      const hay = (addrOf(l) + ' ' + l.st.join(' ') + ' ' + (DIST[l.d] || []).join(' ') + ' ' + sel.n.join(' ')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  const cmp = {
+    fresh: (a, b) => hoursOf(a) - hoursOf(b),
+    cheap: (a, b) => a.price - b.price,
+    exp: (a, b) => b.price - a.price,
+    score: (a, b) => sellerOf(b).score - sellerOf(a).score,
+    area: (a, b) => b.area - a.area
+  }[state.sort];
+  return out.sort(cmp || (() => 0));
+}
+
+export function cardOf(l) {
+  const st = statusOf(l);
+  const sel = sellerOf(l);
+  const fav = !!state.favs[l.id];
+  const low = sel.score < 80;
+  const warm = st === 'due' || st === 'flagged';
+  const shortKey = { fresh: 'shFresh', aging: 'shAging', due: 'shDue', flagged: 'shFlag', archived: 'shArch' }[st];
+  return {
+    id: l.id,
+    listing: l,
+    slot: 'ph-' + l.id,
+    photo: (l.photos && l.photos[0]) || null,
+    price: priceOf(l),
+    per: perOf(l),
+    alt: usdOf(l),
+    photosLabel: txt('photosN', { n: l.ph }),
+    addr: addrOf(l),
+    meta: metaOf(l),
+    title: roomsLabel(l) + ', ' + l.area + ' m²',
+    tags: [roomsLabel(l), l.area + ' m²', txt('floorN', { a: l.fl, b: l.fls }), (DIST[l.d] || DIST.center)[li()]],
+    chipBg: warm ? RED_T : st === 'archived' ? '#eeedea' : 'rgba(255,255,255,.94)',
+    chipFg: warm ? RED_TX : st === 'fresh' ? TEAL_TX : MUTED,
+    chipDot: warm ? RED : st === 'fresh' ? TEAL : '#c9c7c2',
+    chipAnim: st === 'fresh' ? 'bnPulse 2.4s infinite' : warm ? 'bnPulse 1.2s infinite' : 'none',
+    chipShort: txt(shortKey || 'shFresh'),
+    chipText:
+      st === 'fresh' || st === 'aging'
+        ? txt('stToday', { x: agoOf(l) })
+        : st === 'due'
+          ? txt('stDue')
+          : st === 'flagged'
+            ? txt('stFlag')
+            : txt('stArch'),
+    status: st,
+    fav,
+    initials: sel.ini,
+    avBg: sel.t === 'owner' ? TEAL_T : SOFT,
+    avFg: sel.t === 'owner' ? TEAL_TX : MUTED,
+    sellerLine: sel.n[li()] + ' · ' + txt(sel.t === 'owner' ? 'ownerW' : 'agencyW'),
+    scoreFg: low ? RED_TX : MUTED,
+    scoreText: txt('honesty') + ' ' + sel.score + '% · ' + sel.comp + ' ' + txt('complaintsW'),
+    warn: st === 'flagged' || low,
+    warnText: st === 'flagged' ? txt('warnFlag', { n: Math.max(1, sel.comp) }) : txt('warnScore', { n: 100 - sel.score })
+  };
+}
+
+let toastTimer;
+export function say(msg) {
+  clearTimeout(toastTimer);
+  setState('toast', msg);
+  toastTimer = setTimeout(() => setState('toast', null), 3600);
+}
+
+function syncListingWatch() {
+  const l = state.screen === 'listing' ? byId(state.active) : null;
+  if (l && l.remote) watchListing(l.id);
+  else clearListingWatch();
+}
+
+export function go(screen) {
+  const wasListing = state.screen === 'listing';
+  setState({ screen, phoneShown: false, sortOpen: false });
+  if (wasListing || screen === 'listing') syncListingWatch();
+  window.scrollTo(0, 0);
+}
+
+let loadTimer;
+export function reload() {
+  clearTimeout(loadTimer);
+  setState({ loading: true, shown: 12 });
+  loadTimer = setTimeout(() => setState('loading', false), 420);
+  loadRemoteListings();
+}
+
+export function requireAuth(after) {
+  if (state.user) return true;
+  setState({
+    auth: { ...state.auth, step: 'entry', code: '', password: '', forgot: false, after: after || null, legalAccepted: false, busy: false },
+    screen: 'auth'
+  });
+  return false;
+}
+
+export function startRegistration() {
+  setState('auth', (a) => ({ ...a, step: 'phone', code: '', password: '', legalAccepted: false }));
+}
+
+export function openLegal(id) {
+  const from = state.screen === 'legal' ? state.legalFrom : state.screen;
+  setState({ legalFrom: from, legalId: resolveLegalId(id) });
+  go('legal');
+}
+
+export function legalBack() {
+  if (state.legalId) {
+    setState('legalId', null);
+    return;
+  }
+  go(state.legalFrom || 'search');
+}
+
+export function openListing(id) {
+  setState({ active: id, phoneShown: false, gallery: null });
+  go('listing');
+  const l = byId(id);
+  if (l && l.remote) refreshListingDetail(id);
+}
+
+const statsGen = {};
+const statsCache = {};
+
+function statsSnapshot() {
+  return { ...statsGen };
+}
+
+function reconcileStats(list, snapshot) {
+  return list.map((item) => {
+    const id = item.listing.id;
+    if ((statsGen[id] || 0) === (snapshot[id] || 0)) return item;
+    return { ...item, ...statsCache[id] };
+  });
+}
+
+const KNOWN_LISTING_STATUSES = new Set(['pending', 'active', 'flagged', 'archived', 'rented']);
+const stateCache = {};
+
+function isValidDateStr(v) {
+  return typeof v === 'string' && !isNaN(new Date(v).getTime());
+}
+
+function isValidNullableDateStr(v) {
+  return v === null || v === undefined || isValidDateStr(v);
+}
+
+function parseTimeOrNaN(v) {
+  if (!v) return NaN;
+  const t = new Date(v).getTime();
+  return isNaN(t) ? NaN : t;
+}
+
+function newestKnownState(id) {
+  const cached = stateCache[id];
+  let best = cached ? { ...cached, time: parseTimeOrNaN(cached.updatedAt) } : null;
+  for (const list of [state.remoteListings, state.myRemote, state.remoteFavorites]) {
+    const item = list.find((x) => x.listing.id === id);
+    if (!item) continue;
+    const time = parseTimeOrNaN(item.listing.updatedAt);
+    if (isNaN(time)) continue;
+    if (!best || time > best.time) {
+      best = {
+        status: item.listing.status,
+        confirmedAt: item.listing.confirmedAt || null,
+        expiresAt: item.listing.expiresAt || null,
+        updatedAt: item.listing.updatedAt,
+        time
+      };
+    }
+  }
+  return best;
+}
+
+function resetStateCache() {
+  Object.keys(stateCache).forEach((id) => delete stateCache[id]);
+}
+
+function reconcileState(list) {
+  return list.map((item) => {
+    const id = item.listing.id;
+    const incoming = parseTimeOrNaN(item.listing.updatedAt);
+    const known = newestKnownState(id);
+    if (known && (isNaN(incoming) || incoming <= known.time)) {
+      return {
+        ...item,
+        listing: {
+          ...item.listing,
+          status: known.status,
+          confirmedAt: known.confirmedAt,
+          expiresAt: known.expiresAt,
+          updatedAt: known.updatedAt
+        }
+      };
+    }
+    stateCache[id] = {
+      status: item.listing.status,
+      confirmedAt: item.listing.confirmedAt || null,
+      expiresAt: item.listing.expiresAt || null,
+      updatedAt: item.listing.updatedAt
+    };
+    return item;
+  });
+}
+
+function applyRemoteReconciliation(list, snapshot) {
+  return reconcileState(reconcileStats(list, snapshot));
+}
+
+function applyListingStatePatch(data) {
+  if (!data || typeof data.listingId !== 'string' || !data.listingId) return;
+  if (typeof data.status !== 'string' || !KNOWN_LISTING_STATUSES.has(data.status)) return;
+  if (!isValidDateStr(data.updatedAt)) return;
+  if (!isValidNullableDateStr(data.confirmedAt) || !isValidNullableDateStr(data.expiresAt)) return;
+
+  const id = data.listingId;
+  const incoming = parseTimeOrNaN(data.updatedAt);
+  const known = newestKnownState(id);
+  if (known && incoming <= known.time) return;
+
+  const patch = {
+    status: data.status,
+    confirmedAt: data.confirmedAt || null,
+    expiresAt: data.expiresAt || null,
+    updatedAt: data.updatedAt
+  };
+  stateCache[id] = patch;
+
+  const apply = (list) => {
+    const i = list.findIndex((x) => x.listing.id === id);
+    if (i === -1) return list;
+    const next = list.slice();
+    next[i] = { ...next[i], listing: { ...next[i].listing, ...patch } };
+    return next;
+  };
+  setState('remoteListings', apply);
+  setState('myRemote', apply);
+  setState('remoteFavorites', apply);
+}
+
+function applyListingStatsPatch(data) {
+  if (!data || typeof data.listingId !== 'string') return;
+  const patch = {};
+  if (typeof data.views === 'number' && data.views >= 0) patch.views = data.views;
+  if (typeof data.favorites === 'number' && data.favorites >= 0) patch.favorites = data.favorites;
+  if (!Object.keys(patch).length) return;
+  const id = data.listingId;
+  statsCache[id] = { ...statsCache[id], ...patch };
+  statsGen[id] = (statsGen[id] || 0) + 1;
+  const apply = (list) => {
+    const i = list.findIndex((x) => x.listing.id === id);
+    if (i === -1) return list;
+    const next = list.slice();
+    next[i] = { ...next[i], ...patch };
+    return next;
+  };
+  setState('remoteListings', apply);
+  setState('myRemote', apply);
+  setState('remoteFavorites', apply);
+}
+
+const favPending = new Set();
+
+export async function toggleFav(id) {
+  if (!requireAuth({ type: 'fav', id })) return;
+  if (!byId(id)) return;
+  const had = !!state.favs[id];
+  if (favPending.has(id)) return;
+  favPending.add(id);
+  try {
+    const resp = await (had ? api.del('/api/favorites/' + id) : api.post('/api/favorites/' + id));
+    setState('favs', id, had ? undefined : true);
+    applyListingStatsPatch({ listingId: id, favorites: resp.favorites });
+    say(had ? txt('favRemoved') : txt('favAdded'));
+  } catch (e) {
+    say(apiErrText(e));
+  } finally {
+    favPending.delete(id);
+  }
+}
+
+export function setLang(code) {
+  setState('lang', code);
+  say(txt('langToast', { x: code }));
+}
+
+export function toggleStrict() {
+  const next = !state.strict;
+  setState('strict', next);
+  reload();
+  say(next ? txt('strictOn') : txt('strictOff'));
+}
+
+export function activeFilterCount() {
+  return (
+    (state.rooms !== 'all' ? 1 : 0) +
+    Object.keys(state.amen).filter((k) => state.amen[k]).length +
+    Object.keys(state.repair).filter((k) => state.repair[k]).length +
+    (state.priceMin || state.priceMax ? 1 : 0) +
+    (state.areaMin || state.areaMax ? 1 : 0) +
+    (state.owners && state.agencies ? 0 : 1) +
+    (state.fresh !== 'f72' ? 1 : 0)
+  );
+}
+
+export function resetFilters() {
+  setState({
+    rooms: 'all',
+    amen: {},
+    repair: {},
+    priceMin: '',
+    priceMax: '',
+    areaMin: '',
+    areaMax: '',
+    owners: true,
+    agencies: true,
+    fresh: 'f72',
+    strict: true,
+    query: '',
+    filtersOpen: false,
+    bbox: null
+  });
+  reload();
+  say(txt('filtersReset'));
+}
+
+export function openReport(id) {
+  if (!requireAuth({ type: 'report', id })) return;
+  setState({ reportOn: id, reason: null, reportSent: false, reportText: '' });
+}
+
+export async function submitReport() {
+  if (!state.reason) {
+    say(txt('reportPick'));
+    return;
+  }
+  const id = state.reportOn;
+  const l = byId(id);
+  if (l && l.remote) {
+    try {
+      await api.post('/api/listings/' + id + '/report', { reason: state.reason, text: state.reportText || '' });
+      setState('reportSent', true);
+      refreshListingDetail(id);
+    } catch (e) {
+      say(apiErrText(e));
+    }
+    return;
+  }
+  setState('flagged', id, true);
+  setState('reportSent', true);
+}
+
+export { COUNTRIES };
+
+function authPhone(a) {
+  return '+' + findCountry(a.country).cc + ' ' + a.phone;
+}
+
+function formatPhone(raw) {
+  const d = String(raw || '').replace(/\D/g, '');
+  if (!d) return '';
+  const c = findCountryByDigits(d);
+  if (!c) return '+' + d;
+  return '+' + c.cc + ' ' + groupDigits(d.slice(c.cc.length));
+}
+
+function normalizeUser(u) {
+  return u ? { ...u, phone: formatPhone(u.phone) } : u;
+}
+
+function applySession(resp) {
+  setAuthToken(resp.token);
+  setState({ token: resp.token, user: normalizeUser(resp.user) });
+}
+
+function afterLogin() {
+  loadMyRemoteListings();
+  loadFavoritesRemote();
+  loadThreadsRemote();
+  loadSupportMessages();
+  refreshTokenWallet();
+  connectRealtime({ onMessage: handleRealtimeEvent, onStatus: (s) => setState('realtimeStatus', s) });
+  syncListingWatch();
+}
+
+function handleRealtimeEvent(type, data) {
+  if (type === 'chat.message') receiveRealtimeMessage(data);
+  else if (type === 'listing.stats') applyListingStatsPatch(data);
+  else if (type === 'listing.state') applyListingStatePatch(data);
+  else if (type === 'exchange_rates.updated') applyExchangeRateSnapshot(data);
+  else if (type === 'support.message') receiveSupportMessage(data);
+}
+
+function supportUnreadFrom(messages) {
+  return messages.some((m) => m.sender === 'admin' && !m.readAt);
+}
+
+export function receiveSupportMessage(data) {
+  const message = data && data.message;
+  if (!message) return;
+  setState('support', 'messages', (msgs) => (msgs.some((m) => m.id === message.id) ? msgs : [...msgs, message]));
+  if (state.screen === 'chat' && state.thread === SUPPORT_KEY) {
+    markSupportRead();
+    return;
+  }
+  setState('unread', SUPPORT_KEY, true);
+}
+
+export async function loadSupportMessages() {
+  setState('support', { loading: true });
+  try {
+    const messages = await api.get('/api/support/messages');
+    setState('support', { messages, loading: false });
+    if (supportUnreadFrom(messages)) setState('unread', SUPPORT_KEY, true);
+  } catch {
+    setState('support', { loading: false });
+  }
+}
+
+export async function markSupportRead() {
+  const unread = { ...state.unread };
+  delete unread[SUPPORT_KEY];
+  setState('unread', unread);
+  try {
+    await api.post('/api/support/read');
+  } catch {}
+}
+
+export async function sendSupportMessage(text) {
+  const value = text.trim();
+  if (!value) return;
+  try {
+    const message = await api.post('/api/support/messages', { text: value });
+    setState('support', (s) => ({ ...s, messages: [...s.messages, message] }));
+  } catch (e) {
+    say(apiErrText(e));
+  }
+}
+
+export function openSupport() {
+  if (!requireAuth({ type: 'go', to: 'chat' })) return;
+  go('chat');
+  openThread(SUPPORT_KEY);
+}
+
+export async function restoreSession() {
+  const authRestore = state.token
+    ? api.get('/api/me').then(
+        (me) => {
+          setState('user', normalizeUser(me));
+          afterLogin();
+        },
+        () => {
+          disconnectRealtime();
+          setAuthToken(null);
+          setState({ user: null, token: null, realtimeStatus: 'offline' });
+        }
+      )
+    : Promise.resolve();
+  await Promise.all([authRestore, loadRemoteListings(), loadExchangeRates()]);
+}
+
+function afterAuthDone() {
+  const a = state.auth;
+  const after = a.after;
+  setState({
+    auth: { ...a, phone: '', code: '', password: '', forgot: false, after: null, legalAccepted: false, busy: false },
+    screen: state.user.role === 'tenant' ? 'search' : 'cabinet'
+  });
+  say(txt('welcomeToast', { n: state.user.name }));
+  afterLogin();
+  if (!after) return;
+  if (after.type === 'go') go(after.to);
+  else if (after.type === 'fav') toggleFav(after.id);
+  else if (after.type === 'chat') openThreadFor(after.id);
+  else if (after.type === 'phone') {
+    setState({ active: after.id, phoneShown: true });
+    go('listing');
+    const l = byId(after.id);
+    if (l && l.remote) refreshListingDetail(after.id);
+  } else if (after.type === 'report') {
+    setState({ active: after.id, reportOn: after.id, reason: null, reportSent: false, reportText: '' });
+    go('listing');
+    const l = byId(after.id);
+    if (l && l.remote) refreshListingDetail(after.id);
+  }
+}
+
+const RESEND_COOLDOWN_MS = 60_000;
+
+function markCodeJustSent() {
+  setState('auth', 'resendAt', Date.now() + RESEND_COOLDOWN_MS);
+}
+
+function handleSendCodeErr(e) {
+  if (e instanceof ApiError && e.code === 'too many requests') {
+    setState('auth', 'resendAt', Date.now() + (e.retryAfter || 60) * 1000);
+  }
+  say(apiErrText(e));
+}
+
+export async function startAuth() {
+  const a = state.auth;
+  try {
+    const resp = await api.post('/api/auth/start', { phone: authPhone(a) });
+    setState('auth', 'step', resp.exists ? 'login' : 'code');
+    if (!resp.exists) markCodeJustSent();
+  } catch (e) {
+    handleSendCodeErr(e);
+  }
+}
+
+export async function requestCode() {
+  const a = state.auth;
+  if (Date.now() < (a.resendAt || 0)) return;
+  try {
+    await api.post('/api/auth/request-code', { phone: authPhone(a) });
+    markCodeJustSent();
+  } catch (e) {
+    handleSendCodeErr(e);
+  }
+}
+
+export async function verifyCode() {
+  const a = state.auth;
+  try {
+    await api.post('/api/auth/verify-code', { phone: authPhone(a), code: a.code });
+    setState('auth', 'step', a.forgot ? 'reset' : 'password');
+  } catch (e) {
+    say(apiErrText(e));
+  }
+}
+
+export function choosePassword() {
+  setState('auth', 'step', 'role');
+}
+
+export async function finishAuth() {
+  const a = state.auth;
+  if (a.busy) return;
+  if (!a.legalAccepted) {
+    say(txt('errLegalRequired'));
+    return;
+  }
+  const name = (a.name || '').trim() || (a.role === 'agency' ? 'Yerevan Home' : t().namePh);
+  setState('auth', 'busy', true);
+  try {
+    const resp = await api.post('/api/auth/register', {
+      phone: authPhone(a),
+      password: a.password,
+      name,
+      role: a.role,
+      acceptedLegal: true,
+      legalVersion: LEGAL_CONSENT_VERSION,
+      legalLanguage: langCode()
+    });
+    applySession(resp);
+    afterAuthDone();
+  } catch (e) {
+    setState('auth', 'busy', false);
+    say(apiErrText(e));
+  }
+}
+
+export async function loginWithPassword() {
+  const a = state.auth;
+  try {
+    const resp = await api.post('/api/auth/login', { phone: authPhone(a), password: a.password });
+    applySession(resp);
+    afterAuthDone();
+  } catch (e) {
+    say(apiErrText(e));
+  }
+}
+
+export async function forgotPassword() {
+  const a = state.auth;
+  try {
+    await api.post('/api/auth/request-code', { phone: authPhone(a) });
+    setState('auth', { step: 'code', code: '', password: '', forgot: true });
+    markCodeJustSent();
+  } catch (e) {
+    handleSendCodeErr(e);
+  }
+}
+
+export async function resetPassword() {
+  const a = state.auth;
+  try {
+    const resp = await api.post('/api/auth/reset-password', { phone: authPhone(a), password: a.password });
+    applySession(resp);
+    afterAuthDone();
+  } catch (e) {
+    say(apiErrText(e));
+  }
+}
+
+export async function setRole(role) {
+  if (!state.user) return;
+  const prev = state.user.role;
+  setState('user', 'role', role); // оптимистично, для мгновенного отклика UI
+  try {
+    await api.put('/api/me', { name: state.user.name, role });
+    refreshTokenWallet();
+  } catch (e) {
+    setState('user', 'role', prev);
+    say(apiErrText(e));
+  }
+}
+
+export function signOut() {
+  api.post('/api/auth/logout').catch(() => {});
+  disconnectRealtime();
+  setAuthToken(null);
+  resetStateCache();
+  setState({
+    user: null,
+    token: null,
+    screen: 'search',
+    post: null,
+    myRemote: [],
+    remoteFavorites: [],
+    tokenWallet: { data: null, loading: false, error: null },
+    realtimeStatus: 'offline',
+    auth: { ...DEFAULTS.auth }
+  });
+  say(txt('signOutToast'));
+}
+
+export const SUPPORT_KEY = 'support';
+
+function mapSupportMsg(m) {
+  return { id: m.id, me: m.sender === 'user', text: m.text, time: m.createdAt ? clockOf(m.createdAt) : '' };
+}
+
+function supportThread() {
+  return {
+    remote: true,
+    support: true,
+    listing: null,
+    other: { id: SUPPORT_KEY, name: txt('supportW'), role: 'support', ini: '🎧' },
+    msgs: state.support.messages.map(mapSupportMsg)
+  };
+}
+
+export function threadsAll() {
+  const base = state.threads || {};
+  if (!state.user) return base;
+  return { [SUPPORT_KEY]: supportThread(), ...base };
+}
+
+export function chatSellerOf(thread) {
+  const o = thread.other || {};
+  const name = o.name || 'HayHome';
+  return {
+    n: [name, name, name],
+    t: o.role === 'agency' ? 'agency' : 'owner',
+    since: 2026,
+    score: 100,
+    comp: 0,
+    conf: [1, 1],
+    ini: o.ini || '?',
+    ph: ''
+  };
+}
+
+function clockOf(iso) {
+  const d = new Date(iso);
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+function mapRemoteMsg(m) {
+  return {
+    id: m.id,
+    me: !!(state.user && m.senderId === state.user.id),
+    kind: m.kind && m.kind !== 'text' ? m.kind : undefined,
+    text: m.text,
+    url: fileURL(m.url),
+    name: m.name,
+    size: m.size,
+    dur: m.dur,
+    lat: m.lat,
+    lng: m.lng,
+    time: m.createdAt ? clockOf(m.createdAt) : ''
+  };
+}
+
+export function openThread(key) {
+  const unread = { ...state.unread };
+  delete unread[key];
+  setState({ thread: key, unread });
+  if (key === SUPPORT_KEY) {
+    loadSupportMessages().then(markSupportRead);
+    return;
+  }
+  const th = threadsAll()[key];
+  if (th && th.remote) loadThreadMessages(key, th.listing, th.other);
+}
+
+function mergeMessages(existing, incoming) {
+  const byId = new Map((existing || []).map((m) => [m.id, m]));
+  incoming.forEach((m) => {
+    if (m && Number.isInteger(m.id) && m.id > 0) byId.set(m.id, mapRemoteMsg(m));
+  });
+  return [...byId.values()].sort((a, b) => a.id - b.id);
+}
+
+export async function loadThreadMessages(threadId, listingId, other) {
+  try {
+    const msgs = await api.get('/api/threads/' + threadId + '/messages');
+    setState('threads', (th) => {
+      const cur = (th || {})[threadId] || {};
+      return {
+        ...(th || {}),
+        [threadId]: {
+          remote: true,
+          listing: listingId || cur.listing,
+          other: other || cur.other,
+          msgs: mergeMessages(cur.msgs, msgs)
+        }
+      };
+    });
+  } catch {}
+}
+
+export async function loadThreadsRemote() {
+  if (!state.token) return;
+  try {
+    const list = await api.get('/api/threads');
+    setState('threads', (th) => {
+      const next = { ...(th || {}) };
+      list.forEach((item) => {
+        const id = item.thread.id;
+        const existing = next[id];
+        next[id] = {
+          remote: true,
+          listing: item.listingId,
+          other: item.other,
+          msgs: (existing && existing.msgs) || (item.lastMessage ? [mapRemoteMsg(item.lastMessage)] : [])
+        };
+      });
+      return next;
+    });
+    setState('unread', (u) => {
+      const next = { ...u };
+      list.forEach((item) => {
+        if (item.unread > 0) next[item.thread.id] = true;
+        else delete next[item.thread.id];
+      });
+      return next;
+    });
+  } catch {}
+}
+
+export async function openThreadFor(listingId) {
+  if (!requireAuth({ type: 'chat', id: listingId })) return;
+  const l = byId(listingId);
+  if (!l) {
+    say(txt('errListingNotFound'));
+    return;
+  }
+  try {
+    const resp = await api.post('/api/threads', { listingId });
+    const o = l.ownerInfo || {};
+    await loadThreadMessages(resp.threadId, listingId, { id: l.ownerId, name: o.name, role: o.role, ini: o.ini });
+    const unread = { ...state.unread };
+    delete unread[resp.threadId];
+    setState({ thread: resp.threadId, unread });
+    go('chat');
+  } catch (e) {
+    say(apiErrText(e));
+  }
+}
+
+function activeThreadKey() {
+  const all = threadsAll();
+  return all[state.thread] ? state.thread : Object.keys(all)[0];
+}
+
+function isRemoteThread(key) {
+  const th = threadsAll()[key];
+  return !!(th && th.remote);
+}
+
+function mergeIncomingMessages(threadId, rawMessages) {
+  let added = false;
+  setState('threads', threadId, 'msgs', (msgs) => {
+    const merged = mergeMessages(msgs, rawMessages);
+    added = merged.length !== (msgs || []).length;
+    return merged;
+  });
+  return added;
+}
+
+export function receiveRealtimeMessage(payload) {
+  const { message, threadId } = payload || {};
+  if (!message || !threadId) return;
+  const cur = threadsAll()[threadId];
+  if (!cur || !cur.remote) {
+    loadThreadsRemote();
+    return;
+  }
+  if (!mergeIncomingMessages(threadId, [message])) return;
+  const mine = !!(state.user && message.senderId === state.user.id);
+  if (mine) return;
+  if (state.thread === threadId) {
+    api.post('/api/threads/' + threadId + '/read').catch(() => {});
+  } else {
+    setState('unread', threadId, true);
+  }
+}
+
+async function sendRemote(threadId, payload) {
+  try {
+    const msg = await api.post('/api/threads/' + threadId + '/messages', payload);
+    mergeIncomingMessages(threadId, [msg]);
+  } catch (e) {
+    say(apiErrText(e));
+  }
+}
+
+async function uploadBlob(blobUrl, filename) {
+  const blob = await fetch(blobUrl).then((r) => r.blob());
+  const form = new FormData();
+  form.append('file', blob, filename || 'upload');
+  const resp = await api.upload('/api/uploads', form);
+  return resp.url;
+}
+
+async function sendRemoteMedia(threadId, kind, blobUrl, extra) {
+  try {
+    const url = await uploadBlob(blobUrl, extra && extra.name);
+    await sendRemote(threadId, { kind, url, ...extra });
+  } catch (e) {
+    say(apiErrText(e));
+  }
+}
+
+export function sendMsg() {
+  const key = activeThreadKey();
+  const text = (state.draft || '').trim();
+  if (!text) {
+    say(txt('typeSomething'));
+    return;
+  }
+  setState('draft', '');
+  if (key === SUPPORT_KEY) {
+    sendSupportMessage(text);
+    return;
+  }
+  if (isRemoteThread(key)) sendRemote(key, { kind: 'text', text });
+}
+
+export function sendAudioMsg(url, dur) {
+  const key = activeThreadKey();
+  if (key === SUPPORT_KEY) return;
+  if (isRemoteThread(key)) sendRemoteMedia(key, 'audio', url, { dur });
+}
+
+export function sendVideoMsg(url) {
+  const key = activeThreadKey();
+  if (key === SUPPORT_KEY) return;
+  if (isRemoteThread(key)) sendRemoteMedia(key, 'video', url, {});
+}
+
+export function sendImageMsg(url) {
+  const key = activeThreadKey();
+  if (key === SUPPORT_KEY) return;
+  if (isRemoteThread(key)) sendRemoteMedia(key, 'image', url, {});
+}
+
+export function sendFileMsg(url, name, size) {
+  const key = activeThreadKey();
+  if (key === SUPPORT_KEY) return;
+  if (isRemoteThread(key)) sendRemoteMedia(key, 'file', url, { name, size });
+}
+
+export function sendLocationMsg(lat, lng) {
+  const key = activeThreadKey();
+  if (key === SUPPORT_KEY) return;
+  if (isRemoteThread(key)) sendRemote(key, { kind: 'location', lat, lng });
+}
+
+export function myItems() {
+  const u = state.user;
+  if (!u) return [];
+  const merged = remoteById();
+  return state.myRemote.map((it) => normalizeRemote(merged[it.listing.id] || it));
+}
+
+export function postState() {
+  const u = state.user || {};
+  return (
+    state.post || {
+      step: 1,
+      editId: null,
+      deal: 'rent',
+      city: 'yerevan',
+      dist: 'kentron',
+      street: '',
+      phone: (u.phone || '').replace('+374 ', ''),
+      rooms: 2,
+      area: '',
+      fl: '',
+      fls: '',
+      feats: { furn: true },
+      repair: '',
+      desc: '',
+      price: '',
+      dep: '1',
+      cadastreCode: '',
+      photos: 0,
+      channel: 'sms',
+      doc: false,
+      agree: false
+    }
+  );
+}
+
+export const setPost = (patch) => setState('post', { ...postState(), ...patch });
+
+export async function publishListing(files = []) {
+  const p = postState();
+  const body = buildListingPayload(p);
+  const c = CITY[p.city].ll;
+  body.lat = c[0] + (Math.random() - 0.5) * 0.03;
+  body.lng = c[1] + (Math.random() - 0.5) * 0.04;
+
+  setState('remoteBusy', true);
+  try {
+    let id = p.editId;
+    if (p.editId) {
+      const resp = await api.put('/api/listings/' + p.editId, body);
+      say(resp.reviewStatus === 'pending' ? txt('editReviewToast') : txt('editedToast'));
+    } else {
+      const file = documentFile();
+      if (!file) {
+        say(txt('errDoc'));
+        return;
+      }
+      const resp = await api.upload('/api/listings', buildListingFormData(body, file));
+      id = resp.listing.id;
+      clearDocumentFile();
+      say(txt('publishedToast'));
+      for (const file of files) {
+        if (!file) continue;
+        const form = new FormData();
+        form.append('photo', file);
+        try {
+          await api.upload('/api/listings/' + id + '/photos', form);
+        } catch {}
+      }
+    }
+    setState({ post: null, sms: null, screen: 'cabinet' });
+    await Promise.all([loadMyRemoteListings(), loadRemoteListings(), refreshTokenWallet()]);
+  } catch (e) {
+    say(apiErrText(e));
+  } finally {
+    setState('remoteBusy', false);
+  }
+}
+
+export function editListing(id) {
+  const l = byId(id);
+  if (!l) return;
+  if (l.pendingRevision) {
+    say(txt('editDisabledPending'));
+    return;
+  }
+  const feats = {};
+  (l.f || []).forEach((f) => {
+    feats[f] = true;
+  });
+  clearDocumentFile();
+  setState({
+    post: {
+      ...postState(),
+      step: 1,
+      editId: id,
+      deal: l.deal,
+      city: l.city,
+      dist: l.d,
+      street: l.st[li()],
+      rooms: l.rooms,
+      area: String(l.area),
+      fl: String(l.fl),
+      fls: String(l.fls),
+      feats,
+      repair: isValidRepairCondition(l.repairCondition) ? l.repairCondition : '',
+      desc: l.desc || '',
+      price: String(l.price),
+      cadastreCode: l.cadastreCode || '',
+      photos: l.ph,
+      doc: true
+    },
+    screen: 'post'
+  });
+  window.scrollTo(0, 0);
+}
+
+export function markRented(id) {
+  const l = byId(id);
+  if (!l) return;
+  setState('closeDeal', { id, source: null, busy: false });
+}
+
+export function closeDealSource(source) {
+  if (state.closeDeal && !state.closeDeal.busy) setState('closeDeal', 'source', source);
+}
+
+export function cancelCloseDeal() {
+  if (state.closeDeal && state.closeDeal.busy) return;
+  setState('closeDeal', null);
+}
+
+export async function confirmCloseDeal() {
+  const cd = state.closeDeal;
+  if (!cd || cd.busy || !isValidOutcomeSource(cd.source)) return;
+  const l = byId(cd.id);
+  if (!l) return;
+  if (l.remote) {
+    setState('closeDeal', 'busy', true);
+    try {
+      await api.post('/api/listings/' + cd.id + '/mark-taken', { source: cd.source });
+      await Promise.all([loadMyRemoteListings(), loadRemoteListings(), refreshTokenWallet()]);
+    } catch (e) {
+      setState('closeDeal', 'busy', false);
+      say(apiErrText(e));
+      return;
+    }
+  } else {
+    setState('rented', cd.id, true);
+  }
+  setState('closeDeal', null);
+  say(txt('rentedToast'));
+}
+
+export async function returnToFeed(id) {
+  const l = byId(id);
+  if (l && l.remote) {
+    try {
+      await api.post('/api/listings/' + id + '/return-to-feed');
+      loadMyRemoteListings();
+      loadRemoteListings();
+    } catch (e) {
+      say(apiErrText(e));
+      return;
+    }
+  } else {
+    setState('rented', (r) => {
+      const next = { ...r };
+      delete next[id];
+      return next;
+    });
+    setState('confirmed', id, true);
+  }
+  say(txt('returnedToast'));
+}
+
+export function confirmBySms(id) {
+  const l = byId(id);
+  if (l && l.remote) {
+    confirmRemote(id);
+    return;
+  }
+  setState('sms', { kind: 'listing', id, code: '' });
+}
+
+export async function confirmRemote(id) {
+  if (state.confirmBusy[id]) return;
+  setState('confirmBusy', id, true);
+  try {
+    const l = byId(id);
+    const path = l && statusOf(l) === 'flagged' ? '/resolve' : '/confirm';
+    await api.post('/api/listings/' + id + path);
+    await loadMyRemoteListings();
+    const fresh = byId(id);
+    say(txt('smsDone', { x: fresh ? roomsLabel(fresh) + ', ' + fresh.area + ' m²' : '' }));
+  } catch (e) {
+    say(apiErrText(e));
+  } finally {
+    setState('confirmBusy', id, false);
+  }
+}
+
+export function submitSms() {
+  const m = state.sms;
+  if (!m || (m.code || '').length !== 4) {
+    say(txt('codeErr'));
+    return;
+  }
+  if (m.kind === 'publish') {
+    publishListing();
+    return;
+  }
+  const l = byId(m.id);
+  setState('confirmed', m.id, true);
+  setState('flagged', (f) => {
+    const next = { ...f };
+    delete next[m.id];
+    return next;
+  });
+  setState('sms', null);
+  say(txt('smsDone', { x: l ? roomsLabel(l) + ', ' + l.area + ' m²' : '' }));
+}
+
+export async function confirmAll() {
+  const next = { ...state.confirmed };
+  const remoteIds = [];
+  myItems().forEach((l) => {
+    const st = statusOf(l);
+    if (st === 'archived' || st === 'flagged') return;
+    if (l.remote) remoteIds.push(l.id);
+    else next[l.id] = true;
+  });
+  setState('confirmed', next);
+  await Promise.all(remoteIds.map((id) => api.post('/api/listings/' + id + '/confirm').catch(() => {})));
+  if (remoteIds.length) loadMyRemoteListings();
+  say(txt('allConfirmed'));
+}
+
+export function saveSearch() {
+  const titleKey = { rent: 'titleRent', daily: 'titleDaily', sale: 'titleSale', newb: 'titleNew', comm: 'titleComm' }[state.deal];
+  const label =
+    t()[titleKey] +
+    ' · ' +
+    cityObj().n[li()] +
+    (state.rooms !== 'all' ? ' · ' + state.rooms : '') +
+    (state.priceMax ? ' · ≤ ' + nf(+state.priceMax) + ' ֏' : '');
+  setState(
+    'savedSearches',
+    state.savedSearches.concat([{ label, deal: state.deal, city: cityK(), rooms: state.rooms, priceMax: state.priceMax }])
+  );
+  say(txt('savedToast'));
+}
+
+export { INK, MUTED, FAINT, SOFT, TEAL, TEAL_T, TEAL_TX, RED, RED_T, RED_TX };

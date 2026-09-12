@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HayHome — жильё в Армении</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Armenian:wght@400;500;600;700;800&display=swap"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scrollbar-gutter: stable;
+      }
+      html,
+      body {
+        max-width: 100%;
+        overflow-x: hidden;
+        overflow-x: clip;
+      }
+      body {
+        margin: 0;
+        background: #f7f7f6;
+        color: #1c1b19;
+        font-family: Manrope, 'Noto Sans Armenian', system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+      img {
+        max-width: 100%;
+      }
+      @media (max-width: 1080px) {
+        .bn-hide-narrow {
+          display: none !important;
+        }
+      }
+      a {
+        color: #0e7c73;
+        text-decoration: none;
+      }
+      a:hover {
+        color: #0a625b;
+      }
+      ::selection {
+        background: #d0e8e5;
+      }
+      :focus {
+        outline: none;
+      }
+      :focus-visible {
+        outline: 2px solid #0e7c73;
+        outline-offset: 2px;
+      }
+      input,
+      textarea,
+      button {
+        font: inherit;
+        color: inherit;
+      }
+      input::placeholder,
+      textarea::placeholder {
+        color: #9a9793;
+      }
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #e0dfdb;
+        border-radius: 8px;
+      }
+      .bn-field {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 16px;
+        border-radius: 14px;
+        border: 1px solid #e8e7e4;
+        background: #fbfbfa;
+        transition:
+          border-color 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .bn-field:focus-within {
+        border-color: #0e7c73;
+      }
+      .bn-field input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        background: transparent;
+        padding: 16px 0;
+        font-size: 15.5px;
+        font-weight: 600;
+      }
+      .bn-field input:focus,
+      .bn-field input:focus-visible {
+        outline: none;
+      }
+      .bn-ring:focus-within {
+        border-color: #0e7c73 !important;
+      }
+      .bn-ring input:focus,
+      .bn-ring input:focus-visible,
+      .bn-ring textarea:focus,
+      .bn-ring textarea:focus-visible {
+        outline: none;
+      }
+      input:focus,
+      textarea:focus,
+      select:focus {
+        outline: none;
+        border-color: #0e7c73 !important;
+      }
+      .bn-fact-row {
+        align-items: flex-start;
+      }
+      @media (max-width: 1075px) {
+        .bn-fact-row {
+          align-items: center;
+        }
+      }
+      .bn-field-code input {
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: 0.5em;
+        text-align: center;
+        padding: 16px 0;
+        text-indent: 0.5em;
+      }
+      @keyframes bnPulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(14, 124, 115, 0.45);
+        }
+        70% {
+          box-shadow: 0 0 0 7px rgba(14, 124, 115, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(14, 124, 115, 0);
+        }
+      }
+      @keyframes bnUp {
+        from {
+          transform: translateY(10px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      @keyframes bnDown {
+        from {
+          transform: translateY(-10px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      @keyframes bnIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes bnSk {
+        0% {
+          opacity: 0.55;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.55;
+        }
+      }
+      @keyframes bnDot {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+          opacity: 0.45;
+        }
+        30% {
+          transform: translateY(-4px);
+          opacity: 1;
+        }
+      }
+      .bn-yamap
+        .ymaps3--controls_bottom.ymaps3--controls_left.ymaps3--controls_horizontal
+        .ymaps3--control__background
+        button.ymaps3--control-button {
+        display: none;
+      }
+      .bn-vip-track {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      .bn-vip-track::-webkit-scrollbar {
+        display: none;
+      }
+      .bn-listing-cols {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+      .bn-listing-main {
+        min-width: 0;
+      }
+      .bn-listing-aside {
+        width: 100%;
+        position: static;
+      }
+      @media (min-width: 760px) {
+        .bn-listing-cols {
+          flex-direction: row;
+          align-items: flex-start;
+        }
+        .bn-listing-main {
+          flex: 1 1 0;
+        }
+        .bn-listing-aside {
+          flex: 0 0 320px;
+          width: 320px;
+          max-width: 380px;
+          position: sticky;
+          top: 96px;
+        }
+      }
+      .bn-fav-card {
+        display: grid;
+        grid-template-columns: 72px minmax(0, 1fr) 38px;
+        grid-template-areas: 'photo info info' 'photo status del';
+        align-items: center;
+        gap: 10px 12px;
+        padding: 16px;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(28, 27, 25, 0.05);
+      }
+      .bn-fav-photo {
+        grid-area: photo;
+        height: 72px;
+      }
+      .bn-fav-info {
+        grid-area: info;
+        min-width: 0;
+      }
+      .bn-fav-status {
+        grid-area: status;
+        min-width: 0;
+      }
+      .bn-fav-del {
+        grid-area: del;
+        justify-self: end;
+      }
+      @media (min-width: 600px) {
+        .bn-fav-card {
+          grid-template-columns: 152px minmax(0, 1fr) 160px 38px;
+          grid-template-areas: 'photo info status del';
+          gap: 16px;
+        }
+        .bn-fav-photo {
+          height: 112px;
+        }
+      }
+      .bn-vip-card {
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease,
+          border-color 0.15s ease;
+      }
+      .bn-vip-card:hover,
+      .bn-vip-card:focus-visible {
+        transform: translateY(-3px);
+        box-shadow: 0 14px 32px -20px rgba(28, 27, 25, 0.4);
+        border-color: #dedcd7;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+        .bn-vip-card:hover,
+        .bn-vip-card:focus-visible {
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/index.jsx"></script>
+  </body>
+</html>

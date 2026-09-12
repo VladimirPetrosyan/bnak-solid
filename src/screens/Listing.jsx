@@ -1,0 +1,372 @@
+import { For, Show } from 'solid-js';
+import {
+  state,
+  setState,
+  t,
+  txt,
+  li,
+  byId,
+  cardOf,
+  sellerOf,
+  statusOf,
+  agoOf,
+  addrOf,
+  roomsLabel,
+  priceOf,
+  perOf,
+  usdOf,
+  rubOf,
+  exchangeRateDateLabel,
+  exchangeRateIsStale,
+  metaOf,
+  toggleFav,
+  openListing,
+  openThreadFor,
+  openReport,
+  requireAuth,
+  say,
+  visible,
+  repairLabelOf,
+  go,
+  TEAL,
+  TEAL_T,
+  TEAL_TX,
+  RED,
+  RED_T,
+  RED_TX,
+  INK
+} from '../store';
+import { DIST, FEAT, nf } from '../data';
+import PhotoSlot from '../components/PhotoSlot';
+import Icon from '../components/Icon';
+import ListingLocation from '../components/ListingLocation';
+import { formatListingDate, postedAtOf, viewsOf, favoritesOf } from '../listingStats';
+import { remainingPhotos, galleryIndex } from '../galleryNav';
+
+export default function Listing() {
+  const l = () => byId(state.active);
+  const sel = () => sellerOf(l());
+  const c = () => cardOf(l());
+  const st = () => statusOf(l());
+  const warm = () => st() === 'flagged' || st() === 'due';
+  const low = () => sel().score < 80;
+  const dealValue = () => ({ rent: t().vLong, daily: t().vDaily, sale: t().vSale, newb: t().vNew, comm: t().vComm })[l().deal];
+
+  const postedLabel = () => {
+    const formatted = formatListingDate(postedAtOf(l()), state.lang);
+    return formatted ? txt('statPostedOn', { x: formatted }) : t().statPostedUnknown;
+  };
+
+  const specs = () => [
+    [t().kDeal, dealValue()],
+    [t().kRooms, l().rooms === 0 ? t().studio : String(l().rooms)],
+    [t().kArea, l().area + ' m²'],
+    [t().kFloor, txt('floorN', { a: l().fl, b: l().fls })],
+    [t().kReno, repairLabelOf(l())],
+    [t().kFurn, (l().f || []).includes('furn') ? t().vYes : t().vNo],
+    [t().kDeposit, t().vOneMonth],
+    [t().kUtil, t().vMeters],
+    [t().kWho, txt(sel().t === 'owner' ? 'ownerW' : 'agencyW')],
+    [t().kPromo, t().vTokens]
+  ];
+
+  const history = () =>
+    Array.from({ length: 14 }, (_, i) => {
+      const miss = (st() !== 'fresh' && i > 11) || (low() && [3, 7, 9].includes(i));
+      return { h: miss ? '28%' : 55 + ((i * 7) % 45) + '%', bg: miss ? '#f3c9bf' : TEAL };
+    });
+
+  const similar = () =>
+    visible()
+      .filter((x) => x.id !== l().id)
+      .slice(0, 3);
+
+  const revealPhone = () => {
+    if (!requireAuth({ type: 'phone', id: l().id })) return;
+    setState('phoneShown', true);
+    say(txt('phoneToast', { x: agoOf(l()) }));
+  };
+
+  return (
+    <div style="width:100%;max-width:1400px;margin:0 auto;padding:20px clamp(14px,3vw,28px) 48px;animation:bnIn .2s ease">
+      <div
+        onClick={() => go('search')}
+        style="display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#6f6d68;cursor:pointer;margin-bottom:16px"
+      >
+        <Icon name="back" size={15} weight={2.2} />
+        <span>{t().backAll}</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);grid-template-rows:clamp(88px,15vw,172px) clamp(88px,15vw,172px);gap:10px">
+        <div
+          onClick={() => setState('gallery', { id: l().id, i: galleryIndex(0, l().photos) })}
+          style="grid-column:span 1;grid-row:span 2;position:relative;border-radius:18px;overflow:hidden;background:#f2f1ee;cursor:pointer"
+        >
+          <PhotoSlot id={`ph-${l().id}-0`} label={addrOf(l())} src={l().photos && l().photos[0]} />
+        </div>
+        <div
+          onClick={() => setState('gallery', { id: l().id, i: galleryIndex(1, l().photos) })}
+          style="position:relative;border-radius:18px;overflow:hidden;background:#f2f1ee;cursor:pointer"
+        >
+          <PhotoSlot id={`ph-${l().id}-1`} label={addrOf(l())} src={l().photos && l().photos[1]} />
+        </div>
+        <div
+          onClick={() => setState('gallery', { id: l().id, i: galleryIndex(2, l().photos) })}
+          style="position:relative;border-radius:18px;overflow:hidden;background:#f2f1ee;cursor:pointer"
+        >
+          <PhotoSlot id={`ph-${l().id}-2`} label={addrOf(l())} src={l().photos && l().photos[2]} />
+          <Show when={remainingPhotos(l().ph) > 0}>
+            <span style="position:absolute;bottom:10px;right:10px;padding:6px 12px;border-radius:999px;background:rgba(28,27,25,.62);color:#fff;font-size:12px;font-weight:600;pointer-events:none">
+              + {remainingPhotos(l().ph)}
+            </span>
+          </Show>
+        </div>
+      </div>
+
+      <div class="bn-listing-cols" style="margin-top:26px">
+        <div class="bn-listing-main">
+          <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+            <span style="font-size:clamp(28px,5vw,38px);font-weight:800;letter-spacing:-.035em">{priceOf(l())}</span>
+            <span style="font-size:16px;font-weight:600;color:#6f6d68">{perOf(l())}</span>
+            <span style="font-size:14px;color:#9a9793">{[usdOf(l()), rubOf(l())].filter(Boolean).join(' · ')}</span>
+          </div>
+          <Show when={exchangeRateDateLabel()}>
+            <div style="margin-top:6px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#9a9793">
+              <span>{exchangeRateDateLabel()}</span>
+              <Show when={exchangeRateIsStale()}>
+                <span style={`padding:3px 9px;border-radius:999px;background:${RED_T};color:${RED_TX};font-weight:700;font-size:11px`}>
+                  {t().rateStale}
+                </span>
+              </Show>
+            </div>
+          </Show>
+          <h1 style="margin:12px 0 0;font-size:clamp(21px,3.4vw,27px);font-weight:800;letter-spacing:-.03em">
+            {roomsLabel(l())}, {l().area} m², {txt('floorN', { a: l().fl, b: l().fls })}
+          </h1>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px">
+            <For each={l().f || []}>
+              {(f) => (
+                <span style="padding:7px 13px;border-radius:999px;background:#fff;font-size:13px;font-weight:600;color:#4a4844;box-shadow:0 1px 2px rgba(28,27,25,.05)">
+                  {FEAT[f][li()]}
+                </span>
+              )}
+            </For>
+          </div>
+          <div style="margin-top:14px;display:flex;align-items:center;gap:8px;font-size:15px;color:#4a4844">
+            <Icon name="pin" size={17} stroke="#9a9793" />
+            <span>
+              {addrOf(l())} · {metaOf(l())}
+            </span>
+          </div>
+
+          <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;font-size:13.5px;color:#6f6d68">
+            <span style="display:flex;align-items:center;gap:6px">
+              <Icon name="eye" size={15} stroke="#9a9793" />
+              {viewsOf(l()) == null ? '—' : txt('statViews', { n: nf(viewsOf(l())) })}
+            </span>
+            <span style="display:flex;align-items:center;gap:6px">
+              <Icon name="calendar" size={15} stroke="#9a9793" />
+              {postedLabel()}
+            </span>
+            <span style="display:flex;align-items:center;gap:6px">
+              <Icon name="heart" size={15} stroke="#9a9793" />
+              {favoritesOf(l()) == null ? '—' : txt('statFavorites', { n: nf(favoritesOf(l())) })}
+            </span>
+          </div>
+
+          <div style="margin-top:24px;border-radius:18px;background:#fff;box-shadow:0 1px 2px rgba(28,27,25,.05);overflow:hidden">
+            <div style={`display:flex;align-items:center;gap:13px;padding:18px 20px;background:${warm() ? RED_T : TEAL_T}`}>
+              <span
+                style={`width:38px;height:38px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:${warm() ? RED : TEAL}`}
+              >
+                <Icon name="check" size={19} stroke="#fff" weight={2.6} />
+              </span>
+              <div style="flex:1">
+                <div style={`font-size:15.5px;font-weight:800;color:${warm() ? RED_TX : '#0a4f4a'}`}>
+                  {st() === 'flagged' ? txt('confBadgeFlag', { n: Math.max(1, sel().comp) }) : txt('confBadgeFresh', { x: agoOf(l()) })}
+                </div>
+                <div style={`font-size:12.5px;margin-top:2px;color:${warm() ? '#7d4030' : '#3d6b66'}`}>{t().confBadgeNote}</div>
+              </div>
+            </div>
+            <div style="padding:20px">
+              <div style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793;margin-bottom:12px">
+                {t().confHistory}
+              </div>
+              <div style="display:flex;gap:5px;align-items:flex-end;height:56px">
+                <For each={history()}>
+                  {(h) => <div style={`flex:1;height:${h.h};background:${h.bg};border-radius:5px;min-width:6px`} />}
+                </For>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;color:#9a9793">
+                <span>{t().daysAgo14}</span>
+                <span>{t().todayW}</span>
+              </div>
+              <div style="margin-top:18px;padding-top:18px;border-top:1px solid #f0efec;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px">
+                <div>
+                  <div style="font-size:21px;font-weight:800;letter-spacing:-.02em">
+                    {sel().conf[0]} / {sel().conf[1]}
+                  </div>
+                  <div style="font-size:12.5px;color:#6f6d68;margin-top:2px">{t().confInTime}</div>
+                </div>
+                <div>
+                  <div style="font-size:21px;font-weight:800;letter-spacing:-.02em">{sel().conf[1]}</div>
+                  <div style="font-size:12.5px;color:#6f6d68;margin-top:2px">{t().daysInFeed}</div>
+                </div>
+                <div>
+                  <div style={`font-size:21px;font-weight:800;letter-spacing:-.02em;color:${sel().comp > 2 ? RED : INK}`}>{sel().comp}</div>
+                  <div style="font-size:12.5px;color:#6f6d68;margin-top:2px">{t().compCount}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:26px">
+            <h2 style="margin:0 0 12px;font-size:21px;font-weight:800;letter-spacing:-.02em">{t().descTitle}</h2>
+            <p style="margin:0;font-size:15.5px;line-height:1.65;color:#2c2a27;max-width:64ch;text-wrap:pretty">
+              {txt('descBody', { d: (DIST[l().d] || DIST.center)[li()] })}
+            </p>
+            <p style="margin:12px 0 0;font-size:15.5px;line-height:1.65;color:#4a4844;max-width:64ch;text-wrap:pretty">{t().descBody2}</p>
+          </div>
+
+          <div style="margin-top:26px">
+            <h2 style="margin:0 0 14px;font-size:21px;font-weight:800;letter-spacing:-.02em">{t().specsTitle}</h2>
+            <div style="background:#fff;border-radius:18px;padding:6px 20px;box-shadow:0 1px 2px rgba(28,27,25,.05);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:0 32px">
+              <For each={specs()}>
+                {([key, value]) => (
+                  <div style="display:flex;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #f4f3f0;font-size:14px">
+                    <span style="color:#6f6d68">{key}</span>
+                    <span style="font-weight:700;text-align:right">{value}</span>
+                  </div>
+                )}
+              </For>
+            </div>
+          </div>
+        </div>
+
+        <aside class="bn-listing-aside">
+          <div style="background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(28,27,25,.05),0 16px 40px -28px rgba(28,27,25,.4);overflow:hidden">
+            <div style="padding:18px 20px;display:flex;gap:13px;align-items:center">
+              <span
+                style={`width:46px;height:46px;border-radius:999px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:${c().avBg};color:${c().avFg}`}
+              >
+                {sel().ini}
+              </span>
+              <div style="min-width:0">
+                <div style="font-size:15.5px;font-weight:700">{sel().n[li()]}</div>
+                <div style="font-size:12.5px;color:#6f6d68;margin-top:1px">
+                  {txt(sel().t === 'owner' ? 'ownerW' : 'agencyW')} · {txt('onHayHomeSince', { y: sel().since })}
+                </div>
+              </div>
+            </div>
+            <div style="padding:0 20px 18px">
+              <div style={`padding:14px 16px;border-radius:14px;background:${low() ? RED_T : TEAL_T}`}>
+                <div style="display:flex;align-items:baseline;justify-content:space-between">
+                  <span style="font-size:12px;font-weight:700;color:#4a4844">{t().ratingHonesty}</span>
+                  <span style={`font-size:19px;font-weight:800;color:${low() ? RED_TX : TEAL_TX}`}>{sel().score}%</span>
+                </div>
+                <div style="margin-top:10px;height:7px;border-radius:999px;background:rgba(28,27,25,.09);overflow:hidden">
+                  <div style={`width:${sel().score}%;height:100%;border-radius:999px;background:${low() ? RED : TEAL}`} />
+                </div>
+                <div style="margin-top:10px;font-size:12.5px;line-height:1.45;color:#4a4844">
+                  {low() ? txt('scoreBad', { c: sel().comp }) : txt('scoreGood', { a: sel().conf[0], b: sel().conf[1], c: sel().comp })}
+                </div>
+              </div>
+            </div>
+            <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:9px">
+              <div
+                onClick={revealPhone}
+                style="display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;border-radius:14px;background:#0e7c73;color:#fff;font-size:15px;font-weight:700;cursor:pointer"
+              >
+                <Icon name="phone" size={17} weight={1.9} />
+                <span>{state.phoneShown ? sel().ph : t().showPhone}</span>
+              </div>
+              <div
+                onClick={() => openThreadFor(l().id)}
+                style="display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;border-radius:14px;background:#f2f1ee;font-size:15px;font-weight:700;cursor:pointer"
+              >
+                <Icon name="chat" size={17} weight={1.9} />
+                <span>{t().writeChat}</span>
+              </div>
+              <div
+                onClick={() => toggleFav(l().id)}
+                style="display:flex;padding:14px;border-radius:14px;border:1px solid #e8e7e4;font-size:14px;font-weight:600;color:#4a4844;cursor:pointer"
+              >
+                <div style="display:flex;align-items:center;gap:9px;width:max-content;max-width:100%;margin:auto;text-align:center">
+                  <Icon name="heart" size={16} fill={c().fav ? TEAL : 'none'} stroke={c().fav ? TEAL : '#4a4844'} style="flex:0 0 auto" />
+                  <span>{c().fav ? t().inFavW : t().saveWatch}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Show when={l().remote && l().cadastreCode}>
+            <div style="margin-top:16px;background:#fff;border-radius:18px;padding:20px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="width:34px;height:34px;border-radius:11px;background:#e8f4f2;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                  <Icon name="doc" size={16} stroke="#0a5f59" weight={1.8} />
+                </span>
+                <div style="min-width:0">
+                  <div style="font-size:13px;font-weight:800">{t().cadastreLbl}</div>
+                  <div style="font-size:13.5px;color:#2c2a27;margin-top:2px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all">
+                    {l().cadastreCode}
+                  </div>
+                </div>
+              </div>
+              <a
+                href="https://www.cadastre.am"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:13px;background:#f2f1ee;color:#1c1b19;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:none"
+              >
+                <span>{t().cadastreBadge}</span>
+              </a>
+            </div>
+          </Show>
+
+          <div style="margin-top:16px;background:#fff;border-radius:18px;padding:20px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
+            <div style="font-size:15px;font-weight:800;letter-spacing:-.01em">{t().reportBoxTitle}</div>
+            <div style="margin-top:7px;font-size:13px;line-height:1.55;color:#4a4844">{t().reportBoxText}</div>
+            <div
+              onClick={() => setState({ reportOn: l().id, reason: null, reportSent: false })}
+              style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:9px;padding:13px;border-radius:13px;background:#fceeeb;color:#93331f;font-size:13.5px;font-weight:700;cursor:pointer;text-align:center"
+            >
+              <span>{t().reportCta}</span>
+            </div>
+            <div style="margin-top:10px;font-size:11.5px;color:#9a9793">{t().reportFine}</div>
+          </div>
+        </aside>
+      </div>
+
+      <ListingLocation address={addrOf(l())} ll={l().ll} />
+
+      <Show when={similar().length}>
+        <div style="margin-top:34px">
+          <h2 style="margin:0 0 14px;font-size:21px;font-weight:800;letter-spacing:-.02em">{t().similarTitle}</h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:16px">
+            <For each={similar()}>
+              {(x) => (
+                <div
+                  onClick={() => openListing(x.id)}
+                  style="display:flex;gap:14px;padding:14px;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(28,27,25,.05);cursor:pointer"
+                >
+                  <div style="flex:0 0 96px;height:76px;border-radius:12px;overflow:hidden;background:#f2f1ee;position:relative">
+                    <PhotoSlot id={`ph-${x.id}`} label={addrOf(x)} src={x.photos && x.photos[0]} />
+                  </div>
+                  <div style="min-width:0;flex:1">
+                    <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">{priceOf(x)}</div>
+                    <div style="font-size:13px;font-weight:700;margin-top:4px">
+                      {roomsLabel(x)}, {x.area} m²
+                    </div>
+                    <div style="font-size:12.5px;color:#6f6d68;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                      {addrOf(x)}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </For>
+          </div>
+        </div>
+      </Show>
+    </div>
+  );
+}

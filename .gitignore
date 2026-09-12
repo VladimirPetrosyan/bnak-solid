@@ -1,0 +1,16 @@
+node_modules
+dist
+.vite
+.DS_Store
+*.local
+.env
+.env.*
+!.env.example
+.claude
+.idea
+.gocache
+.cache
+.tmp
+*.log
+backend/*.db*
+backend/*.exe
