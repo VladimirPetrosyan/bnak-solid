@@ -465,10 +465,9 @@ export default function Auth() {
                     patch({ code: capInput(e, e.currentTarget.value.replace(/\D/g, '').slice(0, 4)) });
                   }}
                   onKeyDown={(e) => e.key === 'Enter' && toVerify()}
-                  placeholder="1111"
+                  placeholder="0000"
                 />
               </div>
-              <div style="margin-top:8px;font-size:12px;color:#9a9793;text-align:center">{t().codeHint}</div>
               <div
                 onClick={toVerify}
                 style={`margin-top:16px;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;background:${(a().code || '').length === 4 ? TEAL : '#eeedea'};color:${(a().code || '').length === 4 ? '#fff' : FAINT}`}

@@ -204,7 +204,6 @@ Object.assign(T, {
   codeTitle: ['Կոդը ուղարկված է', 'Код отправлен', 'Code sent'],
   codeSub: ['Մուտքագրեք {p} համարին ուղարկված կոդը', 'Введите код, отправленный на {p}', 'Enter the code we sent to {p}'],
   codeLbl: ['Կոդ SMS-ից', 'Код из SMS', 'SMS code'],
-  codeHint: ['Դեմո՝ 1111', 'Демо-код: 1111', 'Demo code: 1111'],
   codeErr: ['4 նիշ', '4 цифры', '4 digits'],
   confirmW: ['Հաստատել', 'Подтвердить', 'Confirm'],
   resend: ['Ուղարկել կրկին', 'Отправить снова', 'Resend'],

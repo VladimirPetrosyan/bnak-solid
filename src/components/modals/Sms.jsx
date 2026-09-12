@@ -28,10 +28,9 @@ export default function SmsModal() {
               setState('sms', 'code', v);
             }}
             onKeyDown={(e) => e.key === 'Enter' && submitSms()}
-            placeholder="1111"
+            placeholder="0000"
             style="margin-top:16px;width:100%;padding:16px;border-radius:14px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:22px;font-weight:800;letter-spacing:.5em;text-align:center"
           />
-          <div style="margin-top:8px;font-size:12px;color:#9a9793;text-align:center">{t().codeHint}</div>
           <div style="margin-top:16px;display:flex;gap:10px">
             <div
               onClick={submitSms}
