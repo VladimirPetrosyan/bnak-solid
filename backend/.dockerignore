@@ -1,0 +1,10 @@
+bnak-backend
+bnak-backend.exe
+bnak.db
+bnak.db-shm
+bnak.db-wal
+uploads
+private-documents
+server.log
+.gocache
+.cache
