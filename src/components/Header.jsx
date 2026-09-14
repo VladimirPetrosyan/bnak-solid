@@ -25,16 +25,9 @@ export default function Header() {
           type="button"
           class="bn-tap"
           onClick={() => (state.screen === 'auth' ? exitAuth() : go('search'))}
-          style="display:flex;align-items:center;gap:8px;flex:0 0 auto"
+          style="display:flex;align-items:center;flex:0 0 auto"
         >
-          <span style="position:relative;width:34px;height:34px;border-radius:11px;background:#0e7c73;display:flex;align-items:center;justify-content:center;overflow:hidden">
-            <span style="font-family:Manrope,sans-serif;font-size:20px;font-weight:800;color:#fff;line-height:1">H</span>
-            <span style="position:absolute;right:5px;bottom:5px;width:5px;height:5px;border-radius:1px;background:#7fded2" />
-          </span>
-          <span style="display:flex;align-items:baseline;gap:4px">
-            <span style="font-size:22px;font-weight:800;letter-spacing:-.035em">HayHome</span>
-            <span style="width:5px;height:5px;border-radius:1px;background:#0e7c73;display:block" />
-          </span>
+          <img src="/brand/hayhome-logo.png" alt="HayHome" style="height:38px;width:auto;display:block" />
         </button>
 
         <Show when={!state.isMob}>

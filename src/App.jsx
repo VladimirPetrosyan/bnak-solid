@@ -106,12 +106,7 @@ export default function App() {
         <footer style="background:#fff;margin-top:auto;box-shadow:0 -1px 0 #ebeae7">
           <div style="width:100%;max-width:1400px;margin:0 auto;padding:32px clamp(16px,3vw,28px);display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
             <div style="flex:1 1 280px;min-width:0">
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="width:28px;height:28px;border-radius:9px;background:#0e7c73;display:flex;align-items:center;justify-content:center">
-                  <span style="font-family:Manrope,sans-serif;font-size:16px;font-weight:800;color:#fff;line-height:1">H</span>
-                </span>
-                <span style="font-weight:800;font-size:20px;letter-spacing:-.035em">HayHome</span>
-              </div>
+              <img src="/brand/hayhome-logo.png" alt="HayHome" style="height:32px;width:auto;display:block" />
               <div style="margin-top:12px;font-size:13px;color:#6f6d68;max-width:44ch;line-height:1.55">{t().footNote}</div>
             </div>
 
