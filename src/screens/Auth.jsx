@@ -17,7 +17,6 @@ import {
   resetPassword,
   startRegistration,
   openLegal,
-  exitAuth,
   TEAL,
   FAINT,
   RED,
@@ -312,25 +311,8 @@ export default function Auth() {
   );
 
   return (
-    <div style="min-height:100vh;display:flex;flex-wrap:wrap;background:#fff;animation:bnIn .2s ease">
+    <div style="min-height:calc(100vh - 64px);display:flex;flex-wrap:wrap;background:#fff;animation:bnIn .2s ease">
       <div style="flex:1 1 400px;min-width:280px;background:#0e7c73;color:#fff;padding:clamp(20px,min(5vw,6vh),56px);display:flex;flex-direction:column;justify-content:space-between;gap:36px">
-        <div style="display:flex;flex-direction:column;gap:22px">
-          <button
-            type="button"
-            class="bn-tap"
-            onClick={exitAuth}
-            style="display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:rgba(255,255,255,.85);align-self:flex-start"
-          >
-            <Icon name="back" size={15} weight={2.2} stroke="#fff" />
-            <span>{t().backW}</span>
-          </button>
-          <div style="display:flex;align-items:center;gap:12px">
-            <span style="width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">
-              <span style="font-family:Manrope,sans-serif;font-size:20px;font-weight:800;color:#fff;line-height:1">H</span>
-            </span>
-            <span style="font-size:22px;font-weight:800;letter-spacing:-.035em">HayHome</span>
-          </div>
-        </div>
         <div>
           <div style="font-size:clamp(26px,3.6vw,38px);font-weight:800;letter-spacing:-.035em;line-height:1.15;max-width:18ch">
             {t().authHero}
@@ -352,7 +334,7 @@ export default function Auth() {
         <div style="font-size:13px;opacity:.7">{t().authFoot}</div>
       </div>
 
-      <div style="flex:1 1 400px;min-width:280px;display:flex;align-items:center;justify-content:center;padding:clamp(20px,min(5vw,6vh),56px)">
+      <div style="flex:1 1 400px;min-width:280px;display:flex;align-items:flex-start;justify-content:center;padding:clamp(20px,min(5vw,6vh),56px)">
         <div style="width:100%;max-width:400px">
           <Show when={a().step === 'entry'}>
             <div style="animation:bnUp .2s ease both">

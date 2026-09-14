@@ -57,14 +57,15 @@ export default function App() {
     });
   });
 
-  const chrome = () => state.screen !== 'auth' && !(state.isMob && state.screen === 'chat');
+  const showHeader = () => !(state.isMob && state.screen === 'chat');
+  const showFooterNav = () => state.screen !== 'auth' && !(state.isMob && state.screen === 'chat');
   const guard = (screen) => () => requireAuth({ type: 'go', to: screen }) && go(screen);
 
   return (
     <div
-      style={`min-height:100vh;background:#f7f7f6;display:flex;flex-direction:column;padding-bottom:${state.isMob && chrome() ? '76px' : '0'}`}
+      style={`min-height:100vh;background:#f7f7f6;display:flex;flex-direction:column;padding-bottom:${state.isMob && showFooterNav() ? '76px' : '0'}`}
     >
-      <Show when={chrome()}>
+      <Show when={showHeader()}>
         <Header />
       </Show>
 
@@ -101,7 +102,7 @@ export default function App() {
         </Match>
       </Switch>
 
-      <Show when={chrome()}>
+      <Show when={showFooterNav()}>
         <footer style="background:#fff;margin-top:auto;box-shadow:0 -1px 0 #ebeae7">
           <div style="width:100%;max-width:1400px;margin:0 auto;padding:32px clamp(16px,3vw,28px);display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
             <div style="flex:1 1 280px;min-width:0">
@@ -176,7 +177,7 @@ export default function App() {
         </footer>
       </Show>
 
-      <Show when={state.isMob && chrome()}>
+      <Show when={state.isMob && showFooterNav()}>
         <BottomNav />
       </Show>
 

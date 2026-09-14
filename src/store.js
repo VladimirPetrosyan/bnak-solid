@@ -8,7 +8,7 @@ import { documentFile, clearDocumentFile, buildListingFormData } from './documen
 import { isValidOutcomeSource } from './closeDeal';
 import { formatListingDate } from './listingStats';
 import { getBrowserId } from './browserId';
-import { readMigrated, safeSet } from './storage';
+import { readMigrated, safeSet, safeGet, safeRemove } from './storage';
 import { connectRealtime, disconnectRealtime, watchListing, clearListingWatch } from './realtime';
 import { validateExchangeRateSnapshot, isNewerSnapshot, amdToForeign, isSnapshotStale } from './exchangeRates';
 import { resolveLegalId, LEGAL_CONSENT_VERSION } from './legalDocs';
@@ -18,6 +18,23 @@ import { COUNTRIES, findCountry, findCountryByDigits, groupDigits } from './coun
 
 const KEY = 'hayhome.state.v2';
 const LEGACY_KEY = 'bnak.state.v2';
+const AUTH_FLOW_KEY = 'hayhome.authFlow.v1';
+const AUTH_FLOW_STEPS = ['login', 'phone', 'code', 'password', 'role', 'forgotPhone', 'reset'];
+const AUTH_FLOW_TTL = 10 * 60 * 1000;
+
+function loadAuthFlow() {
+  try {
+    const raw = safeGet(localStorage, AUTH_FLOW_KEY);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (!o || typeof o !== 'object') return null;
+    if (!AUTH_FLOW_STEPS.includes(o.step)) return null;
+    if (Date.now() - (o.savedAt || 0) > AUTH_FLOW_TTL) return null;
+    return o;
+  } catch {
+    return null;
+  }
+}
 
 const DEFAULTS = {
   lang: 'RU',
@@ -133,7 +150,67 @@ function load() {
   }
 }
 
-export const [state, setState] = createStore({ ...DEFAULTS, ...load() });
+export const GUARDED_SCREENS = ['fav', 'chat', 'post', 'cabinet', 'profile'];
+
+function parseRoute(pathname) {
+  const parts = pathname.split('/').filter(Boolean);
+  const [head, id] = parts;
+  if (!head) return { screen: 'search' };
+  if (head === 'map') return { screen: 'map' };
+  if (head === 'favorites') return { screen: 'fav' };
+  if (head === 'cabinet') return { screen: 'cabinet' };
+  if (head === 'profile') return { screen: 'profile' };
+  if (head === 'auth') return { screen: 'auth' };
+  if (head === 'post') return { screen: 'post' };
+  if (head === 'chat') return { screen: 'chat' };
+  if (head === 'listing') return id ? { screen: 'listing', active: decodeURIComponent(id) } : { screen: 'search' };
+  if (head === 'legal') {
+    return { screen: 'legal', legalId: id ? resolveLegalId(decodeURIComponent(id)) : null, legalFrom: 'search' };
+  }
+  return { screen: 'search' };
+}
+
+function pathFor(s) {
+  switch (s.screen) {
+    case 'map':
+      return '/map';
+    case 'fav':
+      return '/favorites';
+    case 'cabinet':
+      return '/cabinet';
+    case 'profile':
+      return '/profile';
+    case 'auth':
+      return '/auth';
+    case 'post':
+      return '/post';
+    case 'chat':
+      return '/chat';
+    case 'listing':
+      return s.active ? '/listing/' + encodeURIComponent(s.active) : '/';
+    case 'legal':
+      return s.legalId ? '/legal/' + encodeURIComponent(s.legalId) : '/legal';
+    default:
+      return '/';
+  }
+}
+
+const routeInit = parseRoute(window.location.pathname);
+const savedAuthFlow = loadAuthFlow();
+const authFlowInit = savedAuthFlow
+  ? {
+      auth: {
+        ...DEFAULTS.auth,
+        step: savedAuthFlow.step,
+        country: savedAuthFlow.country || DEFAULTS.auth.country,
+        phone: savedAuthFlow.phone || '',
+        role: savedAuthFlow.role || DEFAULTS.auth.role,
+        forgot: !!savedAuthFlow.forgot
+      }
+    }
+  : {};
+
+export const [state, setState] = createStore({ ...DEFAULTS, ...load(), ...routeInit, ...authFlowInit });
 setAuthToken(state.token);
 
 createRoot(() => {
@@ -147,6 +224,36 @@ createRoot(() => {
     if (str === last) return;
     last = str;
     safeSet(localStorage, KEY, str);
+  });
+
+  createEffect(() => {
+    const path = pathFor(state);
+    if (window.location.pathname === path) return;
+    window.history.replaceState(null, '', path);
+  });
+
+  let lastAuthFlow = '';
+  createEffect(() => {
+    const step = state.auth.step;
+    if (!AUTH_FLOW_STEPS.includes(step)) {
+      if (lastAuthFlow) {
+        lastAuthFlow = '';
+        safeRemove(localStorage, AUTH_FLOW_KEY);
+      }
+      return;
+    }
+    const payload = {
+      step,
+      country: state.auth.country,
+      phone: state.auth.phone,
+      role: state.auth.role,
+      forgot: state.auth.forgot,
+      savedAt: Date.now()
+    };
+    const str = JSON.stringify(payload);
+    if (str === lastAuthFlow) return;
+    lastAuthFlow = str;
+    safeSet(localStorage, AUTH_FLOW_KEY, str);
   });
 });
 
@@ -1006,13 +1113,20 @@ export async function restoreSession() {
       )
     : Promise.resolve();
   await Promise.all([authRestore, loadRemoteListings(), loadExchangeRates()]);
+
+  if (GUARDED_SCREENS.includes(state.screen) && !state.user) {
+    requireAuth({ type: 'go', to: state.screen });
+  } else if (state.screen === 'auth' && state.user) {
+    setState('auth', { ...DEFAULTS.auth });
+    go(state.user.role === 'tenant' ? 'search' : 'cabinet');
+  }
 }
 
 function afterAuthDone() {
   const a = state.auth;
   const after = a.after;
   setState({
-    auth: { ...a, phone: '', code: '', password: '', forgot: false, after: null, legalAccepted: false, busy: false },
+    auth: { ...a, step: 'entry', phone: '', code: '', password: '', forgot: false, after: null, legalAccepted: false, busy: false },
     screen: state.user.role === 'tenant' ? 'search' : 'cabinet'
   });
   say(txt('welcomeToast', { n: state.user.name }));
