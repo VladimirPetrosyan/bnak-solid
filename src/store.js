@@ -63,6 +63,7 @@ const DEFAULTS = {
     name: '',
     forgot: false,
     after: null,
+    from: null,
     legalAccepted: false,
     busy: false,
     resendAt: 0
@@ -627,11 +628,18 @@ export function reload() {
 
 export function requireAuth(after) {
   if (state.user) return true;
+  const from = state.screen === 'auth' ? state.auth.from : state.screen;
   setState({
-    auth: { ...state.auth, step: 'entry', code: '', password: '', forgot: false, after: after || null, legalAccepted: false, busy: false },
+    auth: { ...state.auth, step: 'entry', code: '', password: '', forgot: false, after: after || null, from, legalAccepted: false, busy: false },
     screen: 'auth'
   });
   return false;
+}
+
+export function exitAuth() {
+  const from = state.auth.from && state.auth.from !== 'auth' ? state.auth.from : 'search';
+  setState('auth', { step: 'entry', code: '', password: '', forgot: false, after: null, from: null, legalAccepted: false, busy: false });
+  go(from);
 }
 
 export function startRegistration() {
