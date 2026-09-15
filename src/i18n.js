@@ -8,7 +8,6 @@ const T = {
   cabinet: ['Աշխատասեղան', 'Кабинет', 'Dashboard'],
   favs: ['Ընտրանի', 'Избранное', 'Saved'],
   messages: ['Հաղորդագրություններ', 'Сообщения', 'Messages'],
-  profile: ['Պրոֆիլ', 'Профиль', 'Profile'],
   signin: ['Մուտք', 'Войти', 'Sign in'],
   searchW: ['Որոնում', 'Поиск', 'Search'],
   mainNav: ['Հիմնական նավարկություն', 'Основная навигация', 'Main navigation'],
@@ -97,7 +96,6 @@ const T = {
     'Rentals and sales across Armenia. A listing stays alive only while its owner confirms the home is free.'
   ],
   forOwners: ['Սեփականատերերին', 'Владельцам', 'For owners'],
-  verification: ['Վերիֆիկացիա', 'Верификация', 'Verification'],
   rules: ['Կանոններ', 'Правила', 'Rules'],
   howWorks: ['Ինչպես է աշխատում ստուգումը', 'Как работает проверка', 'How verification works'],
   moderation: ['Բողոքներ և մոդերացիա', 'Жалобы и модерация', 'Reports and moderation'],
@@ -529,52 +527,33 @@ Object.assign(T, {
     'Разместите первое — 4 шага, около 3 минут.',
     'Post your first one — 4 steps, about 3 minutes.'
   ],
-  profileTitle: ['Պրոֆիլ և վերիֆիկացիա', 'Профиль и верификация', 'Profile and verification'],
-  profileSub: [
-    'Որքան բարձր է մակարդակը, այնքան բարձր է հայտարարությունը ցուցակում։',
-    'Чем выше уровень, тем выше объявление в выдаче.',
-    'The higher your level, the higher your listings rank.'
-  ],
-  levelW: ['Մակարդակ', 'Уровень', 'Level'],
-  v1: ['Հեռախոս {p}', 'Телефон {p}', 'Phone {p}'],
-  v1n: ['Հաստատված — այս համարին են գալիս կոդերը', 'Подтверждён — на этот номер приходят коды', 'Verified — codes arrive here'],
-  v2: ['Անձը (ID / անձնագիր)', 'Личность (ID / паспорт)', 'Identity (ID / passport)'],
-  v2n: ['Ստուգված է', 'Проверено', 'Verified'],
-  v3: ['Օբյեկտի սեփականություն', 'Владение объектом', 'Property ownership'],
-  v3n: [
-    'Բեռնեք կադաստրի քաղվածքը — «սեփականությունը հաստատված է» նշանը և առաջնահերթություն',
-    'Загрузите выписку из кадастра — метка «владение подтверждено» и приоритет в выдаче',
-    'Upload a cadastre extract for the verified badge and ranking priority'
-  ],
-  v4: ['Գործակալության լիցենզիա', 'Лицензия агентства', 'Agency licence'],
-  v4n: ['Միայն գործակալությունների համար', 'Только для агентств', 'Agencies only'],
-  doneW: ['Պատրաստ է', 'Готово', 'Done'],
-  uploadW: ['Բեռնել', 'Загрузить', 'Upload'],
-  notReq: ['Պարտադիր չէ', 'Не требуется', 'Not required'],
-  docToast: ['Փաստաթուղթը ստուգման է — մինչև 2 ժամ', 'Документ на проверке — до 2 часов', 'Document under review — up to 2 hours'],
-  langTitle: ['Ինտերֆեյսի լեզու', 'Языки интерфейса', 'Interface language'],
-  langNote: [
-    'Հայտարարությունները պահվում են երեք լեզվով, հասցեն միշտ հայերեն է։',
-    'Объявления хранятся на трёх языках, адрес всегда на армянском.',
-    'Listings are stored in three languages; addresses stay in Armenian.'
-  ],
-  roleSwitch: ['Դերը դեմոյի համար', 'Роль для демо', 'Demo role'],
-  roleSwitchN: [
-    'Փոխեք դերը՝ տեսնելու վարձակալի, սեփականատիրոջ և գործակալության տարբեր անձնական էջերը։',
-    'Переключите роль, чтобы увидеть разные кабинеты: арендатор, собственник, агентство.',
-    'Switch roles to see the tenant, owner and agency dashboards.'
-  ],
   signOutW: ['Դուրս գալ', 'Выйти', 'Sign out'],
-  benefitsT: ['Ի՞նչ է տալիս սեփականության վերիֆիկացիան', 'Что даёт верификация владения', 'What ownership verification unlocks'],
-  ben1: ['«Սեփականությունը հաստատված է» նշանը', 'Метка «владение подтверждено»', 'A verified-ownership badge'],
-  ben2: ['Առաջնահերթություն ցուցակում', 'Приоритет в выдаче', 'Ranking priority'],
-  ben3: ['Բողոքը քննվում է 4 ժամում', 'Жалоба разбирается за 4 часа', 'Reports resolved in 4 hours'],
-  supportW: ['Աջակցություն', 'Поддержка', 'Support'],
-  supportSub: [
-    'Գրեք մեզ — կպատասխանենք մոտակա ժամերին',
-    'Напишите нам — ответим в ближайшее время',
-    'Message us — we usually reply within a few hours'
-  ]
+  editW: ['Խմբագրել', 'Редактировать', 'Edit'],
+  saveW: ['Պահպանել', 'Сохранить', 'Save'],
+  profileTitle: ['Պրոֆիլի խմբագրում', 'Редактирование профиля', 'Edit profile'],
+  secPersonal: ['Անձնական տվյալներ', 'Личные данные', 'Personal details'],
+  secPersonalSub: ['Այսպես ձեզ կտեսնեն հայտարարություններում և չատում', 'Так вас увидят в объявлениях и в чате', 'How you appear in listings and chats'],
+  secPhone: ['Հեռախոսահամար', 'Номер телефона', 'Phone number'],
+  secPhoneSub: ['Օգտագործվում է մուտքի համար, փոփոխությունը հաստատվում է SMS-ով', 'Используется для входа, смена подтверждается кодом из SMS', 'Used to sign in, changes are confirmed by SMS'],
+  secSecurity: ['Անվտանգություն', 'Безопасность', 'Security'],
+  secSecuritySub: ['Գաղտնաբառը փոխելուց հետո մյուս սարքերից դուրս կգաք', 'После смены пароля на других устройствах будет выполнен выход', 'Changing the password signs you out on other devices'],
+  firstNameLbl: ['Անուն', 'Имя', 'First name'],
+  lastNameLbl: ['Ազգանուն', 'Фамилия', 'Last name'],
+  nameSavedToast: ['Տվյալները պահպանված են', 'Данные сохранены', 'Details saved'],
+  currentPhoneLbl: ['Ընթացիկ համար', 'Текущий номер', 'Current number'],
+  newPhoneLbl: ['Նոր համար', 'Новый номер', 'New number'],
+  phoneCodeSub: ['Կոդն ուղարկվել է {p} համարին', 'Код отправлен на {p}', 'Code sent to {p}'],
+  phoneSavedToast: ['Համարը փոխված է', 'Номер изменён', 'Number changed'],
+  currentPwLbl: ['Ընթացիկ գաղտնաբառ', 'Текущий пароль', 'Current password'],
+  newPwLbl: ['Նոր գաղտնաբառ', 'Новый пароль', 'New password'],
+  pwSavedToast: ['Գաղտնաբառը փոխված է', 'Пароль изменён', 'Password changed'],
+  signOutConfirmQ: ['Ցանկանու՞մ եք դուրս գալ', 'Уверены, что хотите выйти?', 'Are you sure you want to sign out?'],
+  signOutConfirmSub: [
+    'Կրկին մուտք գործելու համար հարկավոր կլինի հեռախոսահամար և գաղտնաբառ',
+    'Чтобы войти снова, понадобится номер телефона и пароль',
+    "You'll need your phone number and password to sign in again"
+  ],
+  supportW: ['Աջակցություն', 'Поддержка', 'Support']
 });
 
 Object.assign(T, {
@@ -750,6 +729,7 @@ Object.assign(T, {
   fileMsg: ['Փաստաթուղթ', 'Документ', 'Document'],
   locMsg: ['Ընթացիկ տեղադրություն', 'Текущая геопозиция', 'Current location'],
   locOpen: ['Բացել քարտեզի վրա', 'Открыть на карте', 'Open on map'],
+  youPrefix: ['Դուք՝', 'Вы:', 'You:'],
   geoDenied: ['Տեղադրությունը հասանելի չէ', 'Геолокация недоступна', 'Location unavailable'],
   chatBack: ['Հետ', 'Назад', 'Back'],
   netErr: ['Սերվերը անհասանելի է', 'Сервер недоступен, проверьте подключение', 'Server unavailable, check your connection']
@@ -768,6 +748,7 @@ Object.assign(T, {
   errCodeNotRequested: ['Նախ պահանջեք կոդ', 'Сначала запросите код', 'Request a code first'],
   errCodeExpired: ['Կոդի ժամկետը լրացել է, պահանջեք նորը', 'Код устарел, запросите новый', 'Code expired, request a new one'],
   errWrongCode: ['Սխալ կոդ', 'Неверный код', 'Wrong code'],
+  errWrongPassword: ['Ընթացիկ գաղտնաբառը սխալ է', 'Неверный текущий пароль', 'Current password is incorrect'],
   errInvalidPassword: [
     'Գաղտնաբառը պետք է լինի առնվազն 8 նիշ',
     'Пароль должен быть не короче 8 символов',

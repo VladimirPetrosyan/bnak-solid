@@ -1,10 +1,56 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+func listenChat(t *testing.T, userID string) *realtimeConn {
+	t.Helper()
+	c := newRealtimeConn(realtimeHubInstance, nil, userID)
+	realtimeHubInstance.register(userID, c)
+	t.Cleanup(func() { realtimeHubInstance.unregister(userID, c) })
+	return c
+}
+
+func TestListMessagesMarksReadAndNotifiesSenderOverRealtime(t *testing.T) {
+	setupTestDB(t)
+	owner := mustCreateUser(t, "owner")
+	tenant := mustCreateUser(t, "tenant")
+	listing := mustCreateListing(t, owner, "active")
+	thread := mustCreateThread(t, listing, tenant, owner)
+
+	if _, err := db.Exec(`INSERT INTO messages(thread_id, sender_id, kind, text) VALUES (?, ?, 'text', 'hi')`, thread, tenant); err != nil {
+		t.Fatalf("insert message: %v", err)
+	}
+
+	conn := listenChat(t, tenant)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/threads/"+thread+"/messages", nil)
+	req.SetPathValue("id", thread)
+	req = withCtxUser(t, req, owner)
+	rec := httptest.NewRecorder()
+	handleListMessages(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	select {
+	case raw := <-conn.send:
+		var env realtimeEnvelope
+		if err := json.Unmarshal(raw, &env); err != nil {
+			t.Fatalf("decode event: %v", err)
+		}
+		if env.Type != "chat.read" {
+			t.Fatalf("type = %q, want chat.read", env.Type)
+		}
+	default:
+		t.Fatal("want a chat.read event sent to the message sender")
+	}
+}
 
 func TestMarkThreadReadByParticipant(t *testing.T) {
 	setupTestDB(t)
@@ -64,6 +110,79 @@ func TestMarkThreadReadIgnoresOwnMessages(t *testing.T) {
 	}
 	if readAt != nil {
 		t.Fatalf("own message must stay unread, got read_at = %v", readAt)
+	}
+}
+
+func TestMarkThreadReadNotifiesSenderOverRealtime(t *testing.T) {
+	setupTestDB(t)
+	owner := mustCreateUser(t, "owner")
+	tenant := mustCreateUser(t, "tenant")
+	listing := mustCreateListing(t, owner, "active")
+	thread := mustCreateThread(t, listing, tenant, owner)
+
+	if _, err := db.Exec(`INSERT INTO messages(thread_id, sender_id, kind, text) VALUES (?, ?, 'text', 'hi')`, thread, tenant); err != nil {
+		t.Fatalf("insert message: %v", err)
+	}
+
+	conn := listenChat(t, tenant)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/threads/"+thread+"/read", nil)
+	req.SetPathValue("id", thread)
+	req = withCtxUser(t, req, owner)
+	rec := httptest.NewRecorder()
+	handleMarkThreadRead(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	select {
+	case raw := <-conn.send:
+		var env realtimeEnvelope
+		if err := json.Unmarshal(raw, &env); err != nil {
+			t.Fatalf("decode event: %v", err)
+		}
+		if env.Type != "chat.read" {
+			t.Fatalf("type = %q, want chat.read", env.Type)
+		}
+		data, ok := env.Data.(map[string]any)
+		if !ok {
+			t.Fatalf("data has unexpected shape: %#v", env.Data)
+		}
+		if data["threadId"] != thread {
+			t.Fatalf("threadId = %v, want %v", data["threadId"], thread)
+		}
+		if data["readerId"] != owner {
+			t.Fatalf("readerId = %v, want %v", data["readerId"], owner)
+		}
+	default:
+		t.Fatal("want a chat.read event sent to the message sender")
+	}
+}
+
+func TestMarkThreadReadSkipsRealtimeWhenNothingToMark(t *testing.T) {
+	setupTestDB(t)
+	owner := mustCreateUser(t, "owner")
+	tenant := mustCreateUser(t, "tenant")
+	listing := mustCreateListing(t, owner, "active")
+	thread := mustCreateThread(t, listing, tenant, owner)
+
+	conn := listenChat(t, tenant)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/threads/"+thread+"/read", nil)
+	req.SetPathValue("id", thread)
+	req = withCtxUser(t, req, owner)
+	rec := httptest.NewRecorder()
+	handleMarkThreadRead(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	select {
+	case raw := <-conn.send:
+		t.Fatalf("want no chat.read event when there was nothing to mark read, got %s", raw)
+	default:
 	}
 }
 

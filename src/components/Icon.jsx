@@ -3,6 +3,7 @@ import rawHeart from '@tabler/icons/outline/heart.svg?raw';
 import rawChat from '@tabler/icons/outline/message-circle.svg?raw';
 import rawPin from '@tabler/icons/outline/map-pin.svg?raw';
 import rawCheck from '@tabler/icons/outline/check.svg?raw';
+import rawChecks from '@tabler/icons/outline/checks.svg?raw';
 import rawPlus from '@tabler/icons/outline/plus.svg?raw';
 import rawMinus from '@tabler/icons/outline/minus.svg?raw';
 import rawClose from '@tabler/icons/outline/x.svg?raw';
@@ -52,6 +53,7 @@ const ICONS = {
   chat: shapesOf(rawChat),
   pin: shapesOf(rawPin),
   check: shapesOf(rawCheck),
+  checks: shapesOf(rawChecks),
   plus: shapesOf(rawPlus),
   minus: shapesOf(rawMinus),
   close: shapesOf(rawClose),

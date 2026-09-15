@@ -130,6 +130,8 @@ func main() {
 	mux.HandleFunc("POST /api/auth/logout", handleLogout)
 	mux.HandleFunc("GET /api/me", requireAuth(handleMe))
 	mux.HandleFunc("PUT /api/me", requireAuth(handleUpdateMe))
+	mux.HandleFunc("PUT /api/me/phone", requireAuth(handleUpdatePhone))
+	mux.HandleFunc("PUT /api/me/password", requireAuth(handleUpdatePassword))
 
 	// объявления
 	mux.HandleFunc("GET /api/listings", withUser(handleListListings))

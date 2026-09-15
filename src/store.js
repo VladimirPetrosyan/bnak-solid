@@ -94,10 +94,9 @@ const DEFAULTS = {
   gallery: null,
   sms: null,
   closeDeal: null,
+  signOutConfirmOpen: false,
   cabTab: 'all',
   savedSearches: [],
-  docVerified: false,
-  licenceOk: false,
   toast: null,
   tick: 0,
   loading: false,
@@ -130,8 +129,7 @@ const PERSIST = [
   'sort',
   'city',
   'unread',
-  'savedSearches',
-  'docVerified'
+  'savedSearches'
 ];
 
 function load() {
@@ -274,6 +272,7 @@ const API_ERR_KEYS = {
   'code not requested': 'errCodeNotRequested',
   'code expired': 'errCodeExpired',
   'wrong code': 'errWrongCode',
+  'wrong password': 'errWrongPassword',
   'invalid password': 'errInvalidPassword',
   'phone not verified': 'errPhoneNotVerified',
   'phone already registered': 'errPhoneTaken',
@@ -1051,6 +1050,7 @@ function afterLogin() {
 
 function handleRealtimeEvent(type, data) {
   if (type === 'chat.message') receiveRealtimeMessage(data);
+  else if (type === 'chat.read') receiveRealtimeRead(data);
   else if (type === 'listing.stats') applyListingStatsPatch(data);
   else if (type === 'listing.state') applyListingStatePatch(data);
   else if (type === 'exchange_rates.updated') applyExchangeRateSnapshot(data);
@@ -1092,21 +1092,53 @@ export async function markSupportRead() {
   } catch {}
 }
 
-export async function sendSupportMessage(text) {
-  const value = text.trim();
-  if (!value) return;
+let pendingSupportSeq = 0;
+
+function addPendingSupportMessage(msg) {
+  const id = 'pending-' + ++pendingSupportSeq;
+  setState('support', 'messages', (msgs) => [
+    ...msgs,
+    { sender: 'user', pending: true, createdAt: new Date().toISOString(), ...msg, id }
+  ]);
+  return id;
+}
+
+function removePendingSupportMessage(id) {
+  setState('support', 'messages', (msgs) => msgs.filter((m) => m.id !== id));
+}
+
+async function persistSupportMessage(pendingId, payload) {
   try {
-    const message = await api.post('/api/support/messages', { text: value });
-    setState('support', (s) => ({ ...s, messages: [...s.messages, message] }));
+    const message = await api.post('/api/support/messages', payload);
+    removePendingSupportMessage(pendingId);
+    setState('support', 'messages', (msgs) => [...msgs, message]);
   } catch (e) {
+    removePendingSupportMessage(pendingId);
     say(apiErrText(e));
   }
 }
 
-export function openSupport() {
-  if (!requireAuth({ type: 'go', to: 'chat' })) return;
-  go('chat');
-  openThread(SUPPORT_KEY);
+export async function sendSupportMessage(text) {
+  const value = text.trim();
+  if (!value) return;
+  const pendingId = addPendingSupportMessage({ kind: 'text', text: value });
+  await persistSupportMessage(pendingId, { kind: 'text', text: value });
+}
+
+export async function sendSupportMedia(kind, blobUrl, extra) {
+  const pendingId = addPendingSupportMessage({ kind, url: blobUrl, ...extra });
+  try {
+    const url = await uploadBlob(blobUrl, extra && extra.name);
+    await persistSupportMessage(pendingId, { kind, url, ...extra });
+  } catch (e) {
+    removePendingSupportMessage(pendingId);
+    say(apiErrText(e));
+  }
+}
+
+export async function sendSupportLocation(lat, lng) {
+  const pendingId = addPendingSupportMessage({ kind: 'location', lat, lng });
+  await persistSupportMessage(pendingId, { kind: 'location', lat, lng });
 }
 
 export async function restoreSession() {
@@ -1268,17 +1300,58 @@ export async function resetPassword() {
   }
 }
 
-export async function setRole(role) {
-  if (!state.user) return;
-  const prev = state.user.role;
-  setState('user', 'role', role); // оптимистично, для мгновенного отклика UI
+async function attempt(run, toast) {
   try {
-    await api.put('/api/me', { name: state.user.name, role });
-    refreshTokenWallet();
+    await run();
+    say(txt(toast));
+    return true;
   } catch (e) {
-    setState('user', 'role', prev);
     say(apiErrText(e));
+    return false;
   }
+}
+
+export function updateName(name) {
+  return attempt(async () => {
+    const resp = await api.put('/api/me', { name, role: state.user.role });
+    setState('user', { name: resp.name, ini: resp.ini });
+  }, 'nameSavedToast');
+}
+
+export async function sendPhoneChangeCode(phone) {
+  try {
+    const resp = await api.post('/api/auth/start', { phone });
+    if (resp.exists) say(txt('errPhoneTaken'));
+    return !resp.exists;
+  } catch (e) {
+    say(apiErrText(e));
+    return false;
+  }
+}
+
+export function changePhone(phone, code) {
+  return attempt(async () => {
+    await api.post('/api/auth/verify-code', { phone, code });
+    const resp = await api.put('/api/me/phone', { phone });
+    setState('user', 'phone', formatPhone(resp.phone));
+  }, 'phoneSavedToast');
+}
+
+export function changePassword(current, password) {
+  return attempt(() => api.put('/api/me/password', { current, password }), 'pwSavedToast');
+}
+
+export function askSignOutConfirm() {
+  setState('signOutConfirmOpen', true);
+}
+
+export function cancelSignOutConfirm() {
+  setState('signOutConfirmOpen', false);
+}
+
+export function confirmSignOut() {
+  setState('signOutConfirmOpen', false);
+  signOut();
 }
 
 export function signOut() {
@@ -1303,7 +1376,22 @@ export function signOut() {
 export const SUPPORT_KEY = 'support';
 
 function mapSupportMsg(m) {
-  return { id: m.id, me: m.sender === 'user', text: m.text, time: m.createdAt ? clockOf(m.createdAt) : '' };
+  return {
+    id: m.id,
+    me: m.sender === 'user',
+    pending: m.pending,
+    kind: m.kind && m.kind !== 'text' ? m.kind : undefined,
+    text: m.text,
+    url: fileURL(m.url),
+    name: m.name,
+    size: m.size,
+    dur: m.dur,
+    lat: m.lat,
+    lng: m.lng,
+    time: m.createdAt ? clockOf(m.createdAt) : '',
+    date: m.createdAt ? dateOf(m.createdAt) : '',
+    readAt: m.readAt || null
+  };
 }
 
 function supportThread() {
@@ -1342,6 +1430,11 @@ function clockOf(iso) {
   return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
 
+function dateOf(iso) {
+  const d = new Date(iso);
+  return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear();
+}
+
 function mapRemoteMsg(m) {
   return {
     id: m.id,
@@ -1354,7 +1447,9 @@ function mapRemoteMsg(m) {
     dur: m.dur,
     lat: m.lat,
     lng: m.lng,
-    time: m.createdAt ? clockOf(m.createdAt) : ''
+    time: m.createdAt ? clockOf(m.createdAt) : '',
+    date: m.createdAt ? dateOf(m.createdAt) : '',
+    readAt: m.readAt || null
   };
 }
 
@@ -1370,12 +1465,16 @@ export function openThread(key) {
   if (th && th.remote) loadThreadMessages(key, th.listing, th.other);
 }
 
+function sortableId(id) {
+  return Number.isInteger(id) && id > 0 ? id : Infinity;
+}
+
 function mergeMessages(existing, incoming) {
   const byId = new Map((existing || []).map((m) => [m.id, m]));
   incoming.forEach((m) => {
     if (m && Number.isInteger(m.id) && m.id > 0) byId.set(m.id, mapRemoteMsg(m));
   });
-  return [...byId.values()].sort((a, b) => a.id - b.id);
+  return [...byId.values()].sort((a, b) => sortableId(a.id) - sortableId(b.id));
 }
 
 export async function loadThreadMessages(threadId, listingId, other) {
@@ -1417,12 +1516,20 @@ export async function loadThreadsRemote() {
     setState('unread', (u) => {
       const next = { ...u };
       list.forEach((item) => {
-        if (item.unread > 0) next[item.thread.id] = true;
+        if (item.unread > 0) next[item.thread.id] = item.unread;
         else delete next[item.thread.id];
       });
       return next;
     });
   } catch {}
+}
+
+export function unreadCountOf(v) {
+  return typeof v === 'number' ? v : v ? 1 : 0;
+}
+
+export function unreadTotal() {
+  return Object.values(state.unread).reduce((sum, v) => sum + unreadCountOf(v), 0);
 }
 
 export async function openThreadFor(listingId) {
@@ -1479,17 +1586,50 @@ export function receiveRealtimeMessage(payload) {
   if (state.thread === threadId) {
     api.post('/api/threads/' + threadId + '/read').catch(() => {});
   } else {
-    setState('unread', threadId, true);
+    setState('unread', threadId, (n) => unreadCountOf(n) + 1);
+  }
+}
+
+export function receiveRealtimeRead(payload) {
+  const { threadId, readerId, readAt } = payload || {};
+  if (!threadId || !state.user || readerId === state.user.id) return;
+  const th = threadsAll()[threadId];
+  if (!th || !th.remote) return;
+  setState('threads', threadId, 'msgs', (msgs) =>
+    (msgs || []).map((m) => (m.me && !m.readAt ? { ...m, readAt: readAt || new Date().toISOString() } : m))
+  );
+}
+
+let pendingMsgSeq = 0;
+
+function addPendingMessage(threadId, msg) {
+  const id = 'pending-' + ++pendingMsgSeq;
+  const now = new Date().toISOString();
+  setState('threads', threadId, 'msgs', (msgs) => [
+    ...(msgs || []),
+    { me: true, pending: true, time: clockOf(now), date: dateOf(now), ...msg, id }
+  ]);
+  return id;
+}
+
+function removePendingMessage(threadId, id) {
+  setState('threads', threadId, 'msgs', (msgs) => (msgs || []).filter((m) => m.id !== id));
+}
+
+async function persistMessage(threadId, pendingId, payload) {
+  try {
+    const msg = await api.post('/api/threads/' + threadId + '/messages', payload);
+    removePendingMessage(threadId, pendingId);
+    mergeIncomingMessages(threadId, [msg]);
+  } catch (e) {
+    removePendingMessage(threadId, pendingId);
+    say(apiErrText(e));
   }
 }
 
 async function sendRemote(threadId, payload) {
-  try {
-    const msg = await api.post('/api/threads/' + threadId + '/messages', payload);
-    mergeIncomingMessages(threadId, [msg]);
-  } catch (e) {
-    say(apiErrText(e));
-  }
+  const pendingId = addPendingMessage(threadId, payload);
+  await persistMessage(threadId, pendingId, payload);
 }
 
 async function uploadBlob(blobUrl, filename) {
@@ -1501,10 +1641,12 @@ async function uploadBlob(blobUrl, filename) {
 }
 
 async function sendRemoteMedia(threadId, kind, blobUrl, extra) {
+  const pendingId = addPendingMessage(threadId, { kind, url: blobUrl, ...extra });
   try {
     const url = await uploadBlob(blobUrl, extra && extra.name);
-    await sendRemote(threadId, { kind, url, ...extra });
+    await persistMessage(threadId, pendingId, { kind, url, ...extra });
   } catch (e) {
+    removePendingMessage(threadId, pendingId);
     say(apiErrText(e));
   }
 }
@@ -1526,31 +1668,46 @@ export function sendMsg() {
 
 export function sendAudioMsg(url, dur) {
   const key = activeThreadKey();
-  if (key === SUPPORT_KEY) return;
+  if (key === SUPPORT_KEY) {
+    sendSupportMedia('audio', url, { dur });
+    return;
+  }
   if (isRemoteThread(key)) sendRemoteMedia(key, 'audio', url, { dur });
 }
 
 export function sendVideoMsg(url) {
   const key = activeThreadKey();
-  if (key === SUPPORT_KEY) return;
+  if (key === SUPPORT_KEY) {
+    sendSupportMedia('video', url, {});
+    return;
+  }
   if (isRemoteThread(key)) sendRemoteMedia(key, 'video', url, {});
 }
 
 export function sendImageMsg(url) {
   const key = activeThreadKey();
-  if (key === SUPPORT_KEY) return;
+  if (key === SUPPORT_KEY) {
+    sendSupportMedia('image', url, {});
+    return;
+  }
   if (isRemoteThread(key)) sendRemoteMedia(key, 'image', url, {});
 }
 
 export function sendFileMsg(url, name, size) {
   const key = activeThreadKey();
-  if (key === SUPPORT_KEY) return;
+  if (key === SUPPORT_KEY) {
+    sendSupportMedia('file', url, { name, size });
+    return;
+  }
   if (isRemoteThread(key)) sendRemoteMedia(key, 'file', url, { name, size });
 }
 
 export function sendLocationMsg(lat, lng) {
   const key = activeThreadKey();
-  if (key === SUPPORT_KEY) return;
+  if (key === SUPPORT_KEY) {
+    sendSupportLocation(lat, lng);
+    return;
+  }
   if (isRemoteThread(key)) sendRemote(key, { kind: 'location', lat, lng });
 }
 

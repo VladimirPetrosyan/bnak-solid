@@ -89,7 +89,7 @@ describe('support pseudo-thread', () => {
     setState('draft', 'need help');
     api.post.mockResolvedValue({ id: 1, threadId: 't1', sender: 'user', text: 'need help', createdAt: '2026-01-01T10:00:00Z' });
     sendMsg();
-    expect(api.post).toHaveBeenCalledWith('/api/support/messages', { text: 'need help' });
+    expect(api.post).toHaveBeenCalledWith('/api/support/messages', { kind: 'text', text: 'need help' });
     expect(state.draft).toBe('');
   });
 });

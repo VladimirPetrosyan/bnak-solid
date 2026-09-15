@@ -23,7 +23,7 @@ export default function MessageBubble(props) {
       <div
         style={`max-width:78%;padding:12px;font-size:15px;line-height:1.5;box-shadow:0 1px 2px rgba(28,27,25,.05);border-radius:${m().me ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};background:${m().me ? TEAL : '#fff'};color:${m().me ? '#fff' : INK}`}
       >
-        <Switch fallback={<div style="padding:0 4px">{m().text || ''}</div>}>
+        <Switch fallback={<div style="padding:0 4px;word-break:break-word">{m().text || ''}</div>}>
           <Match when={m().kind === 'audio'}>
             <audio controls src={m().url} style="width:224px;max-width:100%;display:block;height:36px" />
           </Match>
@@ -73,7 +73,17 @@ export default function MessageBubble(props) {
           </Match>
         </Switch>
         <Show when={m().time}>
-          <div style={`font-size:11px;margin-top:4px;padding:0 4px;color:${m().me ? 'rgba(255,255,255,.7)' : FAINT}`}>{m().time}</div>
+          <div style={`font-size:11px;margin-top:4px;padding:0 4px;display:flex;align-items:center;gap:4px;justify-content:${m().me ? 'flex-end' : 'flex-start'}`}>
+            <span style={`color:${m().me ? 'rgba(255,255,255,.7)' : FAINT}`}>{m().time}</span>
+            <Show when={m().me}>
+              <Icon
+                name={m().pending ? 'check' : 'checks'}
+                size={13}
+                weight={2.2}
+                stroke={m().readAt ? '#9fe8de' : 'rgba(255,255,255,.7)'}
+              />
+            </Show>
+          </div>
         </Show>
       </div>
     </div>

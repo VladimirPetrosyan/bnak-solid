@@ -1,5 +1,5 @@
 import { Show, onMount } from 'solid-js';
-import { state, t, txt, myItems, confirmAll, requireAuth, go, signOut, refreshTokenWallet } from '../store';
+import { state, t, txt, myItems, confirmAll, requireAuth, go, refreshTokenWallet } from '../store';
 import Icon from '../components/Icon';
 import { useCabinetRows } from './cabinet/rows';
 import TenantView from './cabinet/TenantView';
@@ -62,10 +62,11 @@ export default function Cabinet() {
         <button
           type="button"
           class="bn-tap"
-          onClick={signOut}
-          style="display:flex;align-items:center;padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:14px;font-weight:700;color:#6f6d68;white-space:nowrap"
+          onClick={() => go('profile')}
+          style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:12px;border:1px solid #e8e7e4;font-size:14px;font-weight:700;color:#4a4844;white-space:nowrap"
         >
-          {t().signOutW}
+          <Icon name="edit" size={16} weight={2} />
+          {t().editW}
         </button>
       </div>
 

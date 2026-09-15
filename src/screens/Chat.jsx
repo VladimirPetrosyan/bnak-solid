@@ -186,7 +186,7 @@ export default function Chat() {
     <div
       style={
         state.isMob
-          ? 'height:100vh;display:flex;flex-direction:column;background:#fff;animation:bnIn .15s ease'
+          ? 'height:100vh;height:100dvh;display:flex;flex-direction:column;background:#fff;animation:bnIn .15s ease;overflow:hidden'
           : 'width:100%;max-width:1400px;margin:0 auto;padding:24px clamp(16px,3vw,28px) 40px;animation:bnIn .2s ease'
       }
     >
@@ -221,7 +221,7 @@ export default function Chat() {
                 {seller().ini}
               </span>
               <div style="flex:1;min-width:0">
-                <div style="font-size:15px;font-weight:700">{seller().n[li()]}</div>
+                <div style="font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{seller().n[li()]}</div>
                 <Show when={!thread().support}>
                   <div style="font-size:13px;color:#6f6d68;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">
                     <Show when={listing()}>
@@ -245,9 +245,25 @@ export default function Chat() {
 
             <div
               ref={msgsRef}
-              style="flex:1;min-height:0;padding:24px 20px;display:flex;flex-direction:column;gap:16px;background:#fbfbfa;overflow-y:auto"
+              style="flex:1;min-height:0;padding:24px 20px;display:flex;flex-direction:column;gap:16px;background:#fbfbfa;overflow-y:auto;overflow-x:hidden"
             >
-              <For each={thread().msgs}>{(m) => <MessageBubble m={m} />}</For>
+              <For each={thread().msgs}>
+                {(m, i) => {
+                  const prevDate = () => thread().msgs[i() - 1]?.date;
+                  return (
+                    <>
+                      <Show when={m.date && m.date !== prevDate()}>
+                        <div style="display:flex;align-items:center;justify-content:center;margin:4px 0 8px">
+                          <span style="font-size:12px;font-weight:700;color:#8f8b85;background:#f0efec;padding:5px 12px;border-radius:999px">
+                            {m.date}
+                          </span>
+                        </div>
+                      </Show>
+                      <MessageBubble m={m} />
+                    </>
+                  );
+                }}
+              </For>
             </div>
 
             <div style="flex:0 0 auto">
@@ -276,46 +292,44 @@ export default function Chat() {
                   <input type="file" accept="video/*" ref={videoInputRef} style="display:none" onChange={onVideoPicked} />
                   <input type="file" ref={docInputRef} style="display:none" onChange={onDocPicked} />
 
-                  <Show when={!thread().support}>
-                    <div style="position:relative;flex:0 0 auto">
-                      <button
-                        type="button"
-                        class="bn-tap"
-                        title={t().attachTitle}
-                        aria-label={t().attachTitle}
-                        aria-haspopup="menu"
-                        aria-expanded={attachOpen()}
-                        onClick={toggleAttach}
-                        style={`${plainBtn};color:#6f6d68`}
+                  <div style="position:relative;flex:0 0 auto">
+                    <button
+                      type="button"
+                      class="bn-tap"
+                      title={t().attachTitle}
+                      aria-label={t().attachTitle}
+                      aria-haspopup="menu"
+                      aria-expanded={attachOpen()}
+                      onClick={toggleAttach}
+                      style={`${plainBtn};color:#6f6d68`}
+                    >
+                      <Icon name="paperclip" size={22} weight={1.7} />
+                    </button>
+                    <Show when={attachOpen()}>
+                      <div
+                        role="menu"
+                        onClick={(e) => e.stopPropagation()}
+                        style="position:absolute;bottom:calc(100% + 8px);left:0;z-index:30;width:208px;background:#fff;border-radius:16px;padding:6px;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7"
                       >
-                        <Icon name="paperclip" size={22} weight={1.7} />
-                      </button>
-                      <Show when={attachOpen()}>
-                        <div
-                          role="menu"
-                          onClick={(e) => e.stopPropagation()}
-                          style="position:absolute;bottom:calc(100% + 8px);left:0;z-index:30;width:208px;background:#fff;border-radius:16px;padding:6px;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7"
-                        >
-                          <button type="button" class="bn-tap" role="menuitem" onClick={pickImage} style={attachRowStyle}>
-                            <AttachIcon name="image" bg={TEAL_T} fg={TEAL} />
-                            {t().attachPhoto}
-                          </button>
-                          <button type="button" class="bn-tap" role="menuitem" onClick={pickVideo} style={attachRowStyle}>
-                            <AttachIcon name="video" bg={TEAL_T} fg={TEAL} />
-                            {t().attachVideo}
-                          </button>
-                          <button type="button" class="bn-tap" role="menuitem" onClick={pickDoc} style={attachRowStyle}>
-                            <AttachIcon name="doc" bg={SOFT} fg="#4a4844" />
-                            {t().attachDoc}
-                          </button>
-                          <button type="button" class="bn-tap" role="menuitem" onClick={shareLocation} style={attachRowStyle}>
-                            <AttachIcon name="pin" bg={RED_T} fg={RED} />
-                            {t().attachLoc}
-                          </button>
-                        </div>
-                      </Show>
-                    </div>
-                  </Show>
+                        <button type="button" class="bn-tap" role="menuitem" onClick={pickImage} style={attachRowStyle}>
+                          <AttachIcon name="image" bg={TEAL_T} fg={TEAL} />
+                          {t().attachPhoto}
+                        </button>
+                        <button type="button" class="bn-tap" role="menuitem" onClick={pickVideo} style={attachRowStyle}>
+                          <AttachIcon name="video" bg={TEAL_T} fg={TEAL} />
+                          {t().attachVideo}
+                        </button>
+                        <button type="button" class="bn-tap" role="menuitem" onClick={pickDoc} style={attachRowStyle}>
+                          <AttachIcon name="doc" bg={SOFT} fg="#4a4844" />
+                          {t().attachDoc}
+                        </button>
+                        <button type="button" class="bn-tap" role="menuitem" onClick={shareLocation} style={attachRowStyle}>
+                          <AttachIcon name="pin" bg={RED_T} fg={RED} />
+                          {t().attachLoc}
+                        </button>
+                      </div>
+                    </Show>
+                  </div>
 
                   <div
                     class="bn-ring"

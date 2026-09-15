@@ -60,6 +60,27 @@ func TestSupportUserSendTwiceReusesThread(t *testing.T) {
 	}
 }
 
+func TestSupportUserSendsImageAttachment(t *testing.T) {
+	setupTestDB(t)
+	uid := mustCreateUser(t, "tenant")
+	u := &User{ID: uid}
+
+	w := httptest.NewRecorder()
+	r := supportRequest("POST", "/api/support/messages", `{"kind":"image","url":"/uploads/x.jpg"}`, u, nil)
+	handleSendSupportMessage(w, r)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("want 201, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var m SupportMessage
+	if err := json.Unmarshal(w.Body.Bytes(), &m); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if m.Kind != "image" || m.URL != "/uploads/x.jpg" {
+		t.Fatalf("unexpected message: %+v", m)
+	}
+}
+
 func TestSupportEmptyMessageRejected(t *testing.T) {
 	setupTestDB(t)
 	uid := mustCreateUser(t, "tenant")

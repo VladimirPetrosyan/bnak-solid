@@ -599,6 +599,72 @@ func handleUpdateMe(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"name": name, "role": in.Role, "ini": ini})
 }
 
+type updatePhoneReq struct {
+	Phone string `json:"phone"`
+}
+
+func handleUpdatePhone(w http.ResponseWriter, r *http.Request) {
+	u := userFromCtx(r.Context())
+	var in updatePhoneReq
+	if err := readJSON(r, &in); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad json")
+		return
+	}
+	phone := normalizePhone(in.Phone)
+	if !validPhone(phone) {
+		writeErr(w, http.StatusBadRequest, "invalid phone")
+		return
+	}
+	if !phoneVerified(phone) {
+		writeErr(w, http.StatusBadRequest, "phone not verified")
+		return
+	}
+	if _, err := db.Exec(`UPDATE users SET phone=? WHERE id=?`, phone, u.ID); err != nil {
+		writeErr(w, http.StatusBadRequest, "phone already registered")
+		return
+	}
+	db.Exec(`DELETE FROM otp_codes WHERE phone = ?`, phone)
+	writeJSON(w, http.StatusOK, map[string]string{"phone": phone})
+}
+
+type updatePasswordReq struct {
+	Current  string `json:"current"`
+	Password string `json:"password"`
+}
+
+func handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
+	u := userFromCtx(r.Context())
+	var in updatePasswordReq
+	if err := readJSON(r, &in); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad json")
+		return
+	}
+	if !validPassword(in.Password) {
+		writeErr(w, http.StatusBadRequest, "invalid password")
+		return
+	}
+	var hash, salt string
+	if err := db.QueryRow(`SELECT password_hash, password_salt FROM users WHERE id = ?`, u.ID).Scan(&hash, &salt); err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if ok, _ := verifyUserPassword(in.Current, hash, salt); !ok {
+		writeErr(w, http.StatusBadRequest, "wrong password")
+		return
+	}
+	newHash, err := newUserPasswordHash(in.Password)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if _, err := db.Exec(`UPDATE users SET password_hash=?, password_salt='' WHERE id=?`, newHash, u.ID); err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	db.Exec(`DELETE FROM sessions WHERE user_id = ? AND token != ?`, u.ID, bearerToken(r))
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
 func initialsOf(name string) string {
 	parts := strings.Fields(name)
 	out := ""

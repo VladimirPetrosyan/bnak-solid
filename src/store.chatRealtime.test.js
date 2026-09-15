@@ -39,7 +39,9 @@ globalThis.localStorage = globalThis.localStorage || {
 
 const { api } = await import('./api');
 const { disconnectRealtime } = await import('./realtime');
-const { state, setState, receiveRealtimeMessage, loadThreadMessages, signOut } = await import('./store');
+const { state, setState, receiveRealtimeMessage, receiveRealtimeRead, loadThreadMessages, signOut } = await import(
+  './store'
+);
 
 function remoteThread(overrides) {
   return { remote: true, listing: 'L1', other: { id: 'owner1', name: 'Owner' }, msgs: [], ...overrides };
@@ -76,7 +78,15 @@ describe('receiveRealtimeMessage', () => {
     setState('threads', { th1: remoteThread() });
     setState('thread', 'other-thread');
     receiveRealtimeMessage({ message: { id: 1, senderId: 'owner1', text: 'hi' }, threadId: 'th1' });
-    expect(state.unread.th1).toBe(true);
+    expect(state.unread.th1).toBe(1);
+  });
+
+  it('increments unread count on each new message from someone else', () => {
+    setState('threads', { th1: remoteThread() });
+    setState('thread', 'other-thread');
+    receiveRealtimeMessage({ message: { id: 1, senderId: 'owner1', text: 'hi' }, threadId: 'th1' });
+    receiveRealtimeMessage({ message: { id: 2, senderId: 'owner1', text: 'again' }, threadId: 'th1' });
+    expect(state.unread.th1).toBe(2);
   });
 
   it('does not mark unread when the thread is currently open', () => {
@@ -160,7 +170,7 @@ describe('receiveRealtimeMessage', () => {
     setState('threads', { th1: remoteThread() });
     setState('thread', 'other-thread');
     receiveRealtimeMessage({ message: { id: 1, senderId: 'owner1', text: 'hi' }, threadId: 'th1' });
-    expect(state.unread.th1).toBe(true);
+    expect(state.unread.th1).toBe(1);
     expect(api.post).not.toHaveBeenCalled();
   });
 
@@ -172,6 +182,31 @@ describe('receiveRealtimeMessage', () => {
     expect(state.threads.th1.msgs[0].text).toBe('hi');
     await Promise.resolve();
     await Promise.resolve();
+  });
+});
+
+describe('receiveRealtimeRead', () => {
+  it('marks my messages as read when the other participant reports reading the thread', () => {
+    setState('threads', { th1: remoteThread({ msgs: [{ id: 1, text: 'hi', me: true, readAt: null }] }) });
+    receiveRealtimeRead({ threadId: 'th1', readerId: 'owner1', readAt: '2026-01-01T00:00:00Z' });
+    expect(state.threads.th1.msgs[0].readAt).toBe('2026-01-01T00:00:00Z');
+  });
+
+  it('does not touch messages from the other participant', () => {
+    setState('threads', { th1: remoteThread({ msgs: [{ id: 1, text: 'hi', me: false, readAt: null }] }) });
+    receiveRealtimeRead({ threadId: 'th1', readerId: 'owner1', readAt: '2026-01-01T00:00:00Z' });
+    expect(state.threads.th1.msgs[0].readAt).toBeNull();
+  });
+
+  it('ignores its own read receipt echoed back', () => {
+    setState('threads', { th1: remoteThread({ msgs: [{ id: 1, text: 'hi', me: true, readAt: null }] }) });
+    receiveRealtimeRead({ threadId: 'th1', readerId: 'me', readAt: '2026-01-01T00:00:00Z' });
+    expect(state.threads.th1.msgs[0].readAt).toBeNull();
+  });
+
+  it('ignores malformed payloads without throwing', () => {
+    expect(() => receiveRealtimeRead(null)).not.toThrow();
+    expect(() => receiveRealtimeRead({})).not.toThrow();
   });
 });
 

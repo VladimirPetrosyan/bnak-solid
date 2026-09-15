@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -115,6 +116,81 @@ func TestHandleRegisterSucceedsAndPersistsConsent(t *testing.T) {
 	}
 	if out.User.LegalAcceptedAt == nil {
 		t.Fatalf("want LegalAcceptedAt in response")
+	}
+}
+
+func authedRequest(t *testing.T, u *User, token, path string, body any, handler http.HandlerFunc) *httptest.ResponseRecorder {
+	t.Helper()
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPut, path, bytes.NewReader(b))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req = req.WithContext(context.WithValue(req.Context(), ctxUserKey, u))
+	rec := httptest.NewRecorder()
+	handler(rec, req)
+	return rec
+}
+
+func TestHandleUpdatePhone(t *testing.T) {
+	setupTestDB(t)
+	u, token, err := registerUser("37422222221", "password1", "Ann", "owner", "ru", time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := registerUser("37422222222", "password1", "Bob", "owner", "ru", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+
+	if rec := authedRequest(t, u, token, "/api/me/phone", updatePhoneReq{Phone: "+374 22 222 223"}, handleUpdatePhone); rec.Code != http.StatusBadRequest {
+		t.Fatalf("unverified: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	verifyPhoneForTest(t, "37422222222")
+	if rec := authedRequest(t, u, token, "/api/me/phone", updatePhoneReq{Phone: "37422222222"}, handleUpdatePhone); rec.Code != http.StatusBadRequest {
+		t.Fatalf("taken: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	verifyPhoneForTest(t, "37422222223")
+	if rec := authedRequest(t, u, token, "/api/me/phone", updatePhoneReq{Phone: "+374 22 222 223"}, handleUpdatePhone); rec.Code != http.StatusOK {
+		t.Fatalf("ok: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var phone string
+	db.QueryRow(`SELECT phone FROM users WHERE id = ?`, u.ID).Scan(&phone)
+	if phone != "37422222223" {
+		t.Fatalf("phone = %q", phone)
+	}
+}
+
+func TestHandleUpdatePassword(t *testing.T) {
+	setupTestDB(t)
+	u, token, err := registerUser("37433333331", "password1", "Ann", "owner", "ru", time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, _ := createSession(u.ID)
+
+	if rec := authedRequest(t, u, token, "/api/me/password", updatePasswordReq{Current: "wrong-pass", Password: "password2"}, handleUpdatePassword); rec.Code != http.StatusBadRequest {
+		t.Fatalf("wrong current: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if rec := authedRequest(t, u, token, "/api/me/password", updatePasswordReq{Current: "password1", Password: "short"}, handleUpdatePassword); rec.Code != http.StatusBadRequest {
+		t.Fatalf("short: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if rec := authedRequest(t, u, token, "/api/me/password", updatePasswordReq{Current: "password1", Password: "password2"}, handleUpdatePassword); rec.Code != http.StatusOK {
+		t.Fatalf("ok: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	var hash, salt string
+	db.QueryRow(`SELECT password_hash, password_salt FROM users WHERE id = ?`, u.ID).Scan(&hash, &salt)
+	if ok, _ := verifyUserPassword("password2", hash, salt); !ok {
+		t.Fatal("new password not saved")
+	}
+	var count int
+	db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE token = ?`, other).Scan(&count)
+	if count != 0 {
+		t.Fatal("other sessions must be revoked")
+	}
+	db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE token = ?`, token).Scan(&count)
+	if count != 1 {
+		t.Fatal("current session must stay")
 	}
 }
 

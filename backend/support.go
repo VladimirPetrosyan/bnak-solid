@@ -23,13 +23,15 @@ func getOrCreateSupportThread(userID string) (string, error) {
 	return id, nil
 }
 
+const supportMessageCols = `id, thread_id, sender, kind, text, url, name, size, dur, lat, lng, created_at, read_at`
+
 func scanSupportMessages(rows *sql.Rows) []SupportMessage {
 	out := []SupportMessage{}
 	defer rows.Close()
 	for rows.Next() {
 		var m SupportMessage
 		var readAt sql.NullTime
-		if err := rows.Scan(&m.ID, &m.ThreadID, &m.Sender, &m.Text, &m.CreatedAt, &readAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.ThreadID, &m.Sender, &m.Kind, &m.Text, &m.URL, &m.Name, &m.Size, &m.Dur, &m.Lat, &m.Lng, &m.CreatedAt, &readAt); err != nil {
 			continue
 		}
 		if readAt.Valid {
@@ -66,7 +68,7 @@ func handleListSupportMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := db.Query(`SELECT id, thread_id, sender, text, created_at, read_at
+	rows, err := db.Query(`SELECT `+supportMessageCols+`
 		FROM support_messages WHERE thread_id = ? ORDER BY id ASC`, threadID)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
@@ -95,7 +97,14 @@ func handleMarkSupportRead(w http.ResponseWriter, r *http.Request) {
 // ---------- POST /api/support/messages ----------
 
 type sendSupportMessageReq struct {
-	Text string `json:"text"`
+	Kind string  `json:"kind"` // text | image | video | audio | file | location
+	Text string  `json:"text"`
+	URL  string  `json:"url"`
+	Name string  `json:"name"`
+	Size int64   `json:"size"`
+	Dur  int     `json:"dur"`
+	Lat  float64 `json:"lat"`
+	Lng  float64 `json:"lng"`
 }
 
 func handleSendSupportMessage(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +114,10 @@ func handleSendSupportMessage(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad json")
 		return
 	}
-	if in.Text == "" {
+	if in.Kind == "" {
+		in.Kind = "text"
+	}
+	if in.Kind == "text" && in.Text == "" {
 		writeErr(w, http.StatusBadRequest, "empty message")
 		return
 	}
@@ -114,7 +126,9 @@ func handleSendSupportMessage(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
-	res, err := db.Exec(`INSERT INTO support_messages(thread_id, sender, text) VALUES (?, 'user', ?)`, threadID, in.Text)
+	res, err := db.Exec(`INSERT INTO support_messages(thread_id, sender, kind, text, url, name, size, dur, lat, lng)
+		VALUES (?, 'user', ?, ?, ?, ?, ?, ?, ?, ?)`,
+		threadID, in.Kind, in.Text, in.URL, in.Name, in.Size, in.Dur, in.Lat, in.Lng)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
@@ -122,8 +136,8 @@ func handleSendSupportMessage(w http.ResponseWriter, r *http.Request) {
 	id, _ := res.LastInsertId()
 	var m SupportMessage
 	var readAt sql.NullTime
-	err = db.QueryRow(`SELECT id, thread_id, sender, text, created_at, read_at FROM support_messages WHERE id = ?`, id).
-		Scan(&m.ID, &m.ThreadID, &m.Sender, &m.Text, &m.CreatedAt, &readAt)
+	err = db.QueryRow(`SELECT `+supportMessageCols+` FROM support_messages WHERE id = ?`, id).
+		Scan(&m.ID, &m.ThreadID, &m.Sender, &m.Kind, &m.Text, &m.URL, &m.Name, &m.Size, &m.Dur, &m.Lat, &m.Lng, &m.CreatedAt, &readAt)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
@@ -178,9 +192,9 @@ func handleAdminSupportThreads(w http.ResponseWriter, r *http.Request) {
 
 		var last SupportMessage
 		var readAt sql.NullTime
-		lastErr := db.QueryRow(`SELECT id, thread_id, sender, text, created_at, read_at
+		lastErr := db.QueryRow(`SELECT `+supportMessageCols+`
 			FROM support_messages WHERE thread_id = ? ORDER BY id DESC LIMIT 1`, threadID).
-			Scan(&last.ID, &last.ThreadID, &last.Sender, &last.Text, &last.CreatedAt, &readAt)
+			Scan(&last.ID, &last.ThreadID, &last.Sender, &last.Kind, &last.Text, &last.URL, &last.Name, &last.Size, &last.Dur, &last.Lat, &last.Lng, &last.CreatedAt, &readAt)
 
 		var unread int
 		db.QueryRow(`SELECT COUNT(*) FROM support_messages WHERE thread_id = ? AND sender = 'user' AND read_at IS NULL`,
@@ -214,7 +228,7 @@ func handleAdminListSupportMessages(w http.ResponseWriter, r *http.Request) {
 	db.Exec(`UPDATE support_messages SET read_at = ? WHERE thread_id = ? AND sender = 'user' AND read_at IS NULL`,
 		time.Now(), threadID)
 
-	rows, err := db.Query(`SELECT id, thread_id, sender, text, created_at, read_at
+	rows, err := db.Query(`SELECT `+supportMessageCols+`
 		FROM support_messages WHERE thread_id = ? ORDER BY id ASC`, threadID)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
@@ -237,11 +251,16 @@ func handleAdminSendSupportMessage(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad json")
 		return
 	}
-	if in.Text == "" {
+	if in.Kind == "" {
+		in.Kind = "text"
+	}
+	if in.Kind == "text" && in.Text == "" {
 		writeErr(w, http.StatusBadRequest, "empty message")
 		return
 	}
-	res, err := db.Exec(`INSERT INTO support_messages(thread_id, sender, text) VALUES (?, 'admin', ?)`, threadID, in.Text)
+	res, err := db.Exec(`INSERT INTO support_messages(thread_id, sender, kind, text, url, name, size, dur, lat, lng)
+		VALUES (?, 'admin', ?, ?, ?, ?, ?, ?, ?, ?)`,
+		threadID, in.Kind, in.Text, in.URL, in.Name, in.Size, in.Dur, in.Lat, in.Lng)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
@@ -249,8 +268,8 @@ func handleAdminSendSupportMessage(w http.ResponseWriter, r *http.Request) {
 	id, _ := res.LastInsertId()
 	var m SupportMessage
 	var readAt sql.NullTime
-	err = db.QueryRow(`SELECT id, thread_id, sender, text, created_at, read_at FROM support_messages WHERE id = ?`, id).
-		Scan(&m.ID, &m.ThreadID, &m.Sender, &m.Text, &m.CreatedAt, &readAt)
+	err = db.QueryRow(`SELECT `+supportMessageCols+` FROM support_messages WHERE id = ?`, id).
+		Scan(&m.ID, &m.ThreadID, &m.Sender, &m.Kind, &m.Text, &m.URL, &m.Name, &m.Size, &m.Dur, &m.Lat, &m.Lng, &m.CreatedAt, &readAt)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return

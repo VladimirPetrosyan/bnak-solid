@@ -182,7 +182,14 @@ CREATE TABLE IF NOT EXISTS support_messages (
 	id         INTEGER PRIMARY KEY AUTOINCREMENT,
 	thread_id  TEXT NOT NULL REFERENCES support_threads(id) ON DELETE CASCADE,
 	sender     TEXT NOT NULL, -- user | admin
+	kind       TEXT NOT NULL DEFAULT 'text',
 	text       TEXT NOT NULL DEFAULT '',
+	url        TEXT NOT NULL DEFAULT '',
+	name       TEXT NOT NULL DEFAULT '',
+	size       INTEGER NOT NULL DEFAULT 0,
+	dur        INTEGER NOT NULL DEFAULT 0,
+	lat        REAL NOT NULL DEFAULT 0,
+	lng        REAL NOT NULL DEFAULT 0,
 	created_at DATETIME NOT NULL DEFAULT (datetime('now')),
 	read_at    DATETIME
 );
@@ -301,6 +308,14 @@ func migrate(conn *sql.DB) error {
 		// аутентифицированном запросе, используется для перевода чата "под получателя" в
 		// реальном времени, см. translate.go userLang / chat.go publishChatMessage.
 		`ALTER TABLE users ADD COLUMN lang TEXT NOT NULL DEFAULT 'ru'`,
+		// вложения в чате с поддержкой — раньше сообщения были только текстовые.
+		`ALTER TABLE support_messages ADD COLUMN kind TEXT NOT NULL DEFAULT 'text'`,
+		`ALTER TABLE support_messages ADD COLUMN url TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE support_messages ADD COLUMN name TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE support_messages ADD COLUMN size INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE support_messages ADD COLUMN dur INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE support_messages ADD COLUMN lat REAL NOT NULL DEFAULT 0`,
+		`ALTER TABLE support_messages ADD COLUMN lng REAL NOT NULL DEFAULT 0`,
 	}
 	for _, a := range alters {
 		if _, err := conn.Exec(a); err != nil && !isIgnorableMigrationErr(err) {

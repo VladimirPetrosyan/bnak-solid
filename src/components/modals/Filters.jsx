@@ -124,8 +124,11 @@ export default function FiltersModal() {
 
   return (
     <Show when={state.filtersOpen}>
-      <div onClick={close} style={`${overlay};align-items:flex-start`}>
-        <div onClick={(e) => e.stopPropagation()} style={`${modal('960px')};margin:2vh 0;max-height:96vh;display:flex;flex-direction:column`}>
+      <div onClick={close} style={`${overlay};align-items:center;overflow:hidden`}>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={`${modal('960px')};max-height:calc(100dvh - 2*clamp(12px,3vw,24px));display:flex;flex-direction:column`}
+        >
           <div style="flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:22px 24px;border-bottom:1px solid #efeeec">
             <div style="flex:1;font-size:22px;font-weight:800;letter-spacing:-.03em">{t().filtersTitle}</div>
             <button

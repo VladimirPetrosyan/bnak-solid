@@ -1,6 +1,6 @@
 import { createStore } from 'solid-js/store';
 import { For, Show, createSignal as sig, createEffect, onMount, onCleanup } from 'solid-js';
-import { api, setAuthToken, ApiError } from './api';
+import { api, setAuthToken, ApiError, fileURL } from './api';
 import { connectRealtime, disconnectRealtime } from './realtime';
 import { readMigrated, safeSet, safeRemove } from './storage';
 import Icon from './components/Icon';
@@ -41,6 +41,13 @@ import {
 
 const TOKEN_KEY = 'hayhome.admin.token';
 const LEGACY_TOKEN_KEY = 'bnak.admin.token';
+
+const SUPPORT_ATTACH_LABEL = { image: '📷 Фото', video: '📹 Видео', audio: '🎤 Голосовое', location: '📍 Геолокация' };
+
+function supportMsgText(m) {
+  if (!m.kind || m.kind === 'text') return m.text || '';
+  return SUPPORT_ATTACH_LABEL[m.kind] || '📄 ' + (m.name || 'Файл');
+}
 
 const ROLE_LABEL = { tenant: 'Ищет жильё', owner: 'Сдаёт своё жильё', agency: 'Агентство' };
 const DEAL_LABEL = { rent: 'Аренда', daily: 'Посуточно', sale: 'Продажа', newb: 'Новостройки', comm: 'Коммерческая' };
@@ -454,7 +461,7 @@ function SupportPanel(props) {
                   </span>
                 </span>
                 <span style={`font-size:11.5px;color:${TEXT_MUTED};overflow:hidden;text-overflow:ellipsis;white-space:nowrap`}>
-                  {th.lastMessage ? (th.lastMessage.sender === 'admin' ? 'Вы: ' : '') + th.lastMessage.text : 'Нет сообщений'}
+                  {th.lastMessage ? (th.lastMessage.sender === 'admin' ? 'Вы: ' : '') + supportMsgText(th.lastMessage) : 'Нет сообщений'}
                 </span>
               </button>
             );
@@ -488,7 +495,21 @@ function SupportPanel(props) {
                   const mine = m.sender === 'admin';
                   return (
                     <div style={`max-width:76%;align-self:${mine ? 'flex-end' : 'flex-start'};background:${mine ? ACCENT : '#fff'};color:${mine ? '#fff' : INK};border:1px solid ${mine ? ACCENT : BORDER};border-radius:6px;padding:9px 12px;display:flex;flex-direction:column;gap:4px`}>
-                      <span style="font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word">{m.text}</span>
+                      <Show
+                        when={m.kind && m.kind !== 'text' && m.url}
+                        fallback={
+                          <span style="font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word">{supportMsgText(m)}</span>
+                        }
+                      >
+                        <a
+                          href={fileURL(m.url)}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={`font-size:13px;line-height:1.45;word-break:break-word;color:inherit;text-decoration:underline`}
+                        >
+                          {supportMsgText(m)}
+                        </a>
+                      </Show>
                       <span style={`font-family:${MONO};font-size:10px;color:${mine ? 'rgba(255,255,255,.7)' : TEXT_GHOST};align-self:flex-end`}>
                         {timeOf(m.createdAt)}
                       </span>

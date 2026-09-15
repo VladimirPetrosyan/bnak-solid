@@ -128,8 +128,13 @@ func handleListMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	u := userFromCtx(r.Context())
 
-	db.Exec(`UPDATE messages SET read_at = ? WHERE thread_id = ? AND sender_id != ? AND read_at IS NULL`,
-		time.Now(), t.ID, u.ID)
+	readAt := time.Now()
+	if res, err := db.Exec(`UPDATE messages SET read_at = ? WHERE thread_id = ? AND sender_id != ? AND read_at IS NULL`,
+		readAt, t.ID, u.ID); err == nil {
+		if n, _ := res.RowsAffected(); n > 0 {
+			publishChatRead(t, u.ID, readAt)
+		}
+	}
 
 	rows, err := db.Query(`SELECT id, thread_id, sender_id, kind, text, url, name, size, dur, lat, lng, created_at, read_at
 		FROM messages WHERE thread_id = ? ORDER BY id ASC`, t.ID)
@@ -252,10 +257,29 @@ func handleMarkThreadRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u := userFromCtx(r.Context())
-	if _, err := db.Exec(`UPDATE messages SET read_at = ? WHERE thread_id = ? AND sender_id != ? AND read_at IS NULL`,
-		time.Now(), t.ID, u.ID); err != nil {
+	readAt := time.Now()
+	res, err := db.Exec(`UPDATE messages SET read_at = ? WHERE thread_id = ? AND sender_id != ? AND read_at IS NULL`,
+		readAt, t.ID, u.ID)
+	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		publishChatRead(t, u.ID, readAt)
+	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+// publishChatRead уведомляет отправителя, что участник reader прочитал его сообщения в
+// треде t, чтобы галочки «прочитано» у отправителя обновились сразу, без перезагрузки.
+func publishChatRead(t *Thread, readerID string, readAt time.Time) {
+	otherID := t.TenantID
+	if readerID == t.TenantID {
+		otherID = t.OwnerID
+	}
+	realtimeHubInstance.publishToUsers([]string{otherID}, "chat.read", map[string]any{
+		"threadId": t.ID,
+		"readerId": readerID,
+		"readAt":   readAt,
+	})
 }

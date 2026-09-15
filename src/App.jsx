@@ -1,4 +1,4 @@
-import { For, Show, Switch, Match, onCleanup, onMount } from 'solid-js';
+import { For, Show, Switch, Match, createEffect, onCleanup, onMount } from 'solid-js';
 import { state, setState, t, go, requireAuth, restoreSession, byId, openLegal } from './store';
 import { photoCount, stepIndex } from './galleryNav';
 import { LEGAL_IDS, LEGAL_KEY_BY_ID } from './legalDocs';
@@ -12,6 +12,7 @@ import HowModal from './components/modals/How';
 import SmsModal from './components/modals/Sms';
 import Gallery from './components/modals/Gallery';
 import CloseDealModal from './components/modals/CloseDealModal';
+import ConfirmSignOutModal from './components/modals/ConfirmSignOut';
 
 import Search from './screens/Search';
 import MapScreen from './screens/MapScreen';
@@ -55,6 +56,24 @@ export default function App() {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('keydown', onKey);
     });
+  });
+
+  const anyModalOpen = () =>
+    state.filtersOpen ||
+    state.howOpen ||
+    !!state.reportOn ||
+    !!state.sms ||
+    !!state.gallery ||
+    !!state.closeDeal ||
+    state.signOutConfirmOpen;
+
+  createEffect(() => {
+    document.documentElement.style.overflowY = anyModalOpen() ? 'hidden' : '';
+    document.body.style.overflowY = anyModalOpen() ? 'hidden' : '';
+  });
+  onCleanup(() => {
+    document.documentElement.style.overflowY = '';
+    document.body.style.overflowY = '';
   });
 
   const showHeader = () => !(state.isMob && state.screen === 'chat');
@@ -135,9 +154,6 @@ export default function App() {
                 <button type="button" class="bn-tap" onClick={guard('cabinet')} style="text-align:left">
                   {t().cabinet}
                 </button>
-                <button type="button" class="bn-tap" onClick={guard('profile')} style="text-align:left">
-                  {t().verification}
-                </button>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
@@ -182,6 +198,7 @@ export default function App() {
       <SmsModal />
       <Gallery />
       <CloseDealModal />
+      <ConfirmSignOutModal />
       <Toast />
     </div>
   );

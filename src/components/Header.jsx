@@ -1,13 +1,34 @@
-import { For, Show } from 'solid-js';
-import { state, setState, t, go, exitAuth, setLang, requireAuth, reload, TEAL_T, TEAL_TX, MUTED, INK, SOFT } from '../store';
+import { For, Show, createSignal, onMount, onCleanup } from 'solid-js';
+import {
+  state,
+  setState,
+  t,
+  go,
+  exitAuth,
+  setLang,
+  requireAuth,
+  reload,
+  unreadTotal,
+  askSignOutConfirm,
+  TEAL_T,
+  TEAL_TX,
+  MUTED,
+  INK,
+  SOFT,
+  RED
+} from '../store';
 import Icon from './Icon';
-import { cabinetPillStyle } from './headerStyle';
 
 const DEALS = ['rent', 'sale'];
+const LANGS = ['ՀՅ', 'RU', 'EN'];
+const LANG_NAME = { ՀՅ: 'Հայերեն', RU: 'Русский', EN: 'English' };
+
+const menuItemStyle =
+  'width:100%;text-align:left;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:600;color:#1c1b19';
 
 export default function Header() {
   const favCount = () => Object.keys(state.favs).length;
-  const unread = () => Object.keys(state.unread).length;
+  const unread = () => unreadTotal();
   const onAuth = () => state.screen === 'auth';
   const guard = (screen) => () => {
     if (requireAuth({ type: 'go', to: screen })) go(screen);
@@ -16,6 +37,43 @@ export default function Header() {
     const u = state.user;
     if (!u) return t().signin;
     return u.role === 'agency' ? u.name : t().cabinet;
+  };
+
+  const [menuOpen, setMenuOpen] = createSignal(false);
+  const [langOpen, setLangOpen] = createSignal(false);
+  let menuRef, langRef;
+
+  onMount(() => {
+    const onDocClick = (e) => {
+      if (menuRef && !menuRef.contains(e.target)) setMenuOpen(false);
+      if (langRef && !langRef.contains(e.target)) setLangOpen(false);
+    };
+    document.addEventListener('click', onDocClick);
+    onCleanup(() => document.removeEventListener('click', onDocClick));
+  });
+
+  const openAvatar = () => {
+    if (!state.user) {
+      guard('cabinet')();
+      return;
+    }
+    setLangOpen(false);
+    setMenuOpen(!menuOpen());
+  };
+
+  const gotoFromMenu = (screen) => {
+    setMenuOpen(false);
+    go(screen);
+  };
+
+  const signOutFromMenu = () => {
+    setMenuOpen(false);
+    askSignOutConfirm();
+  };
+
+  const toggleLangMenu = () => {
+    setMenuOpen(false);
+    setLangOpen(!langOpen());
   };
 
   return (
@@ -56,25 +114,76 @@ export default function Header() {
         </Show>
 
         <div style="display:flex;align-items:center;gap:8px;flex:0 0 auto;margin-left:auto">
-          <div style="display:flex;align-items:center;gap:4px;height:40px;padding:0 4px;background:#f2f1ee;border-radius:999px">
-            <For each={['ՀՅ', 'RU', 'EN']}>
-              {(code) => {
-                const on = () => state.lang === code;
-                return (
-                  <button
-                    type="button"
-                    class="bn-tap"
-                    aria-pressed={on()}
-                    aria-label={`${t().langLbl}: ${code}`}
-                    onClick={() => setLang(code)}
-                    style={`padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;background:${on() ? '#fff' : 'transparent'};color:${on() ? INK : MUTED};box-shadow:${on() ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
+          <Show
+            when={!state.isMob}
+            fallback={
+              <div style="position:relative;flex:0 0 auto" ref={langRef}>
+                <button
+                  type="button"
+                  class="bn-tap"
+                  onClick={toggleLangMenu}
+                  aria-haspopup="menu"
+                  aria-expanded={langOpen()}
+                  aria-label={t().langLbl}
+                  style="display:flex;align-items:center;gap:4px;height:40px;padding:0 10px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:700;color:#1c1b19"
+                >
+                  {state.lang}
+                  <Icon name="down" size={12} weight={2.4} />
+                </button>
+                <Show when={langOpen()}>
+                  <div
+                    role="menu"
+                    onClick={(e) => e.stopPropagation()}
+                    style="position:absolute;top:calc(100% + 8px);right:0;z-index:70;width:150px;background:#fff;border-radius:14px;padding:6px;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7"
                   >
-                    {code}
-                  </button>
-                );
-              }}
-            </For>
-          </div>
+                    <For each={LANGS}>
+                      {(code) => {
+                        const on = () => state.lang === code;
+                        return (
+                          <button
+                            type="button"
+                            class="bn-tap"
+                            role="menuitem"
+                            aria-pressed={on()}
+                            onClick={() => {
+                              setLang(code);
+                              setLangOpen(false);
+                            }}
+                            style={`display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;padding:9px 10px;border-radius:10px;font-size:13px;font-weight:${on() ? 700 : 500};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : '#1c1b19'}`}
+                          >
+                            {LANG_NAME[code]}
+                            <Show when={on()}>
+                              <Icon name="check" size={13} weight={2.6} />
+                            </Show>
+                          </button>
+                        );
+                      }}
+                    </For>
+                  </div>
+                </Show>
+              </div>
+            }
+          >
+            <div style="display:flex;align-items:center;gap:4px;height:40px;padding:0 4px;background:#f2f1ee;border-radius:999px">
+              <For each={LANGS}>
+                {(code) => {
+                  const on = () => state.lang === code;
+                  return (
+                    <button
+                      type="button"
+                      class="bn-tap"
+                      aria-pressed={on()}
+                      aria-label={`${t().langLbl}: ${code}`}
+                      onClick={() => setLang(code)}
+                      style={`padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;background:${on() ? '#fff' : 'transparent'};color:${on() ? INK : MUTED};box-shadow:${on() ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
+                    >
+                      {code}
+                    </button>
+                  );
+                }}
+              </For>
+            </div>
+          </Show>
 
           <Show when={!onAuth()}>
             <Show when={!state.isMob}>
@@ -108,18 +217,45 @@ export default function Header() {
               </button>
             </Show>
 
-            <button type="button" class="bn-tap bn-cabinet-pill" onClick={guard('cabinet')} aria-label={cabinetLabel()} style={cabinetPillStyle(state.isMob)}>
-              <span
-                style={`width:28px;height:28px;border-radius:999px;background:${state.user ? TEAL_T : SOFT};color:${state.user ? TEAL_TX : MUTED};font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center`}
+            <div style="position:relative;flex:0 0 auto" ref={menuRef}>
+              <button
+                type="button"
+                class="bn-tap"
+                onClick={openAvatar}
+                aria-label={cabinetLabel()}
+                aria-haspopup={state.user ? 'menu' : undefined}
+                aria-expanded={state.user ? menuOpen() : undefined}
+                style="display:flex;align-items:center;gap:8px"
               >
-                {state.user ? state.user.ini : '?'}
-              </span>
-              <Show when={!state.isMob}>
-                <span class="bn-hide-narrow" style="font-size:14px;font-weight:600;white-space:nowrap">
-                  {cabinetLabel()}
+                <span
+                  style={`width:40px;height:40px;border-radius:999px;background:${state.user ? TEAL_T : SOFT};color:${state.user ? TEAL_TX : MUTED};font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto`}
+                >
+                  {state.user ? state.user.ini : '?'}
                 </span>
+                <Show when={!state.isMob}>
+                  <span class="bn-hide-narrow" style="font-size:14px;font-weight:600;white-space:nowrap">
+                    {cabinetLabel()}
+                  </span>
+                </Show>
+              </button>
+              <Show when={state.user && menuOpen()}>
+                <div
+                  role="menu"
+                  onClick={(e) => e.stopPropagation()}
+                  style="position:absolute;top:calc(100% + 8px);right:0;z-index:70;width:210px;background:#fff;border-radius:16px;padding:6px;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7"
+                >
+                  <button type="button" class="bn-tap" role="menuitem" onClick={() => gotoFromMenu('cabinet')} style={menuItemStyle}>
+                    <Icon name="home" size={16} weight={1.9} />
+                    {t().cabinet}
+                  </button>
+                  <div style="height:1px;background:#ebeae7;margin:6px 4px" />
+                  <button type="button" class="bn-tap" role="menuitem" onClick={signOutFromMenu} style={`${menuItemStyle};color:${RED}`}>
+                    <Icon name="close" size={16} weight={2.2} stroke={RED} />
+                    {t().signOutW}
+                  </button>
+                </div>
               </Show>
-            </button>
+            </div>
 
             <button
               type="button"

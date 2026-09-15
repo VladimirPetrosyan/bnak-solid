@@ -136,7 +136,14 @@ type SupportMessage struct {
 	ID        int64      `json:"id"`
 	ThreadID  string     `json:"threadId"`
 	Sender    string     `json:"sender"` // user | admin
-	Text      string     `json:"text"`
+	Kind      string     `json:"kind"`   // text | image | video | audio | file | location
+	Text      string     `json:"text,omitempty"`
+	URL       string     `json:"url,omitempty"`
+	Name      string     `json:"name,omitempty"`
+	Size      int64      `json:"size,omitempty"`
+	Dur       int        `json:"dur,omitempty"`
+	Lat       float64    `json:"lat,omitempty"`
+	Lng       float64    `json:"lng,omitempty"`
 	CreatedAt time.Time  `json:"createdAt"`
 	ReadAt    *time.Time `json:"readAt,omitempty"`
 }

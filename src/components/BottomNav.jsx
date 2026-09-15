@@ -1,5 +1,5 @@
 import { For, Show } from 'solid-js';
-import { state, t, go, requireAuth, TEAL, MUTED } from '../store';
+import { state, t, go, requireAuth, unreadTotal, TEAL, MUTED } from '../store';
 import Icon from './Icon';
 import { bottomNavButtonStyle, bottomNavIconWrapStyle, bottomNavLabelStyle, bottomNavBadgeStyle } from './bottomNavStyle';
 
@@ -18,7 +18,7 @@ export default function BottomNav() {
       key: 'chat',
       label: t().messages,
       icon: 'chat',
-      badge: Object.keys(state.unread).length,
+      badge: unreadTotal(),
       open: () => requireAuth({ type: 'go', to: 'chat' }) && go('chat')
     },
     { key: 'cabinet', label: t().cabinet, icon: 'user', open: () => requireAuth({ type: 'go', to: 'cabinet' }) && go('cabinet') }
@@ -28,7 +28,7 @@ export default function BottomNav() {
     <nav aria-label={t().mainNav} style="position:fixed;bottom:0;left:0;right:0;z-index:80;background:#fff;box-shadow:0 -1px 0 #ebeae7;display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom))">
       <For each={items()}>
         {(item) => {
-          const on = () => state.screen === item.key;
+          const on = () => state.screen === item.key || (item.key === 'cabinet' && state.screen === 'profile');
           return (
             <button type="button" class="bn-tap" onClick={item.open} aria-current={on() ? 'page' : undefined} style={bottomNavButtonStyle(on(), TEAL, MUTED)}>
               <span style={bottomNavIconWrapStyle}>
