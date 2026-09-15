@@ -241,6 +241,17 @@ CREATE TABLE IF NOT EXISTS exchange_rate_snapshot (
 	published_at DATETIME NOT NULL,
 	updated_at   DATETIME NOT NULL
 );
+
+-- Кэш переводов пользовательского текста (описания объявлений, сообщения чата) через
+-- Yandex Translate, см. translate.go. hash = sha256(lang + текст), чтобы один и тот же
+-- текст не переводился (и не оплачивался) повторно при каждом запросе.
+CREATE TABLE IF NOT EXISTS translations (
+	hash       TEXT NOT NULL,
+	lang       TEXT NOT NULL,
+	text       TEXT NOT NULL,
+	created_at DATETIME NOT NULL,
+	PRIMARY KEY (hash, lang)
+);
 `
 
 func openDB(path string) *sql.DB {
@@ -286,6 +297,10 @@ func migrate(conn *sql.DB) error {
 		`ALTER TABLE otp_codes ADD COLUMN requested_at DATETIME`,
 		`ALTER TABLE otp_codes ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active'`,
+		// язык интерфейса пользователя — обновляется из X-Lang в withUser (auth.go) на каждом
+		// аутентифицированном запросе, используется для перевода чата "под получателя" в
+		// реальном времени, см. translate.go userLang / chat.go publishChatMessage.
+		`ALTER TABLE users ADD COLUMN lang TEXT NOT NULL DEFAULT 'ru'`,
 	}
 	for _, a := range alters {
 		if _, err := conn.Exec(a); err != nil && !isIgnorableMigrationErr(err) {

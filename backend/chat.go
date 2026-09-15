@@ -151,6 +151,22 @@ func handleListMessages(w http.ResponseWriter, r *http.Request) {
 		}
 		out = append(out, m)
 	}
+	if lang := requestLang(r); lang != "" {
+		texts := make([]string, 0, len(out))
+		idx := make([]int, 0, len(out))
+		for i, m := range out {
+			if m.Kind == "text" && m.Text != "" && userLang(m.SenderID) != lang {
+				texts = append(texts, m.Text)
+				idx = append(idx, i)
+			}
+		}
+		if len(texts) > 0 {
+			translated := translateBatch(texts, lang)
+			for j, i := range idx {
+				out[i].Text = translated[j]
+			}
+		}
+	}
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -203,13 +219,31 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusCreated, m)
 
-	realtimeHubInstance.publishToUsers([]string{t.TenantID, t.OwnerID}, "chat.message", map[string]any{
-		"message":   m,
-		"threadId":  t.ID,
-		"listingId": t.ListingID,
-		"tenantId":  t.TenantID,
-		"ownerId":   t.OwnerID,
-	})
+	publishChatMessage(m, t)
+}
+
+// publishChatMessage рассылает новое сообщение обоим участникам треда по WebSocket,
+// переводя текст под сохранённый язык интерфейса каждого получателя (users.lang, см.
+// auth.go withUser) — получатель видит перевод сразу, без повторного запроса. Если язык
+// получателя совпадает с языком отправителя, перевод не запрашивается: текст почти
+// наверняка уже на нужном языке, а лишний вызов Yandex Translate только стоил бы денег.
+func publishChatMessage(m Message, t *Thread) {
+	senderLang := userLang(m.SenderID)
+	for _, uid := range []string{t.TenantID, t.OwnerID} {
+		out := m
+		if m.Kind == "text" && m.Text != "" {
+			if lang := userLang(uid); lang != "" && lang != senderLang {
+				out.Text = translateCached(m.Text, lang)
+			}
+		}
+		realtimeHubInstance.publishToUsers([]string{uid}, "chat.message", map[string]any{
+			"message":   out,
+			"threadId":  t.ID,
+			"listingId": t.ListingID,
+			"tenantId":  t.TenantID,
+			"ownerId":   t.OwnerID,
+		})
+	}
 }
 
 func handleMarkThreadRead(w http.ResponseWriter, r *http.Request) {

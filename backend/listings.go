@@ -158,6 +158,17 @@ func handleListListings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if lang := requestLang(r); lang != "" {
+		descs := make([]string, len(list))
+		for i, l := range list {
+			descs[i] = l.Description
+		}
+		translated := translateBatch(descs, lang)
+		for i, l := range list {
+			l.Description = translated[i]
+		}
+	}
+
 	out := []map[string]any{}
 	for _, l := range list {
 		l.Photos = loadPhotos(l.ID)
@@ -196,6 +207,9 @@ func handleGetListing(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
+	}
+	if lang := requestLang(r); lang != "" {
+		l.Description = translateCached(l.Description, lang)
 	}
 	out := attachOwnerAndPhotos(l)
 	requesterID := ""

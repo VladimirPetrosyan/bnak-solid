@@ -3,7 +3,7 @@ import { createEffect, createRoot } from 'solid-js';
 import { CITY, DIST, FEAT, nf } from './data';
 import { dict, tr, LI } from './i18n';
 import { TEAL, TEAL_T, TEAL_TX, INK, MUTED, FAINT, SOFT, RED, RED_T, RED_TX } from './theme';
-import { api, setAuthToken, fileURL, ApiError } from './api';
+import { api, setAuthToken, setApiLang, fileURL, ApiError } from './api';
 import { documentFile, clearDocumentFile, buildListingFormData } from './documentUpload';
 import { isValidOutcomeSource } from './closeDeal';
 import { formatListingDate } from './listingStats';
@@ -261,6 +261,7 @@ export const t = () => dict(state.lang);
 export const txt = (key, vars) => tr(state.lang, key, vars);
 export const li = () => LI[state.lang] ?? 1;
 export const langCode = () => ['hy', 'ru', 'en'][li()];
+setApiLang(langCode());
 
 export const cityK = () => (CITY[state.city] ? state.city : 'yerevan');
 export const cityObj = () => CITY[cityK()];
@@ -936,7 +937,17 @@ export async function toggleFav(id) {
 
 export function setLang(code) {
   setState('lang', code);
+  setApiLang(langCode());
   say(txt('langToast', { x: code }));
+  // переводимый текст (описания объявлений, сообщения чата) приходит с сервера уже на
+  // нужном языке — при смене языка перезапрашиваем то, что сейчас на экране, чтобы не
+  // ждать следующей навигации
+  loadRemoteListings();
+  if (state.screen === 'listing' && state.active) refreshListingDetail(state.active);
+  if (state.thread && state.thread !== SUPPORT_KEY) {
+    const th = threadsAll()[state.thread];
+    if (th && th.remote) loadThreadMessages(state.thread, th.listing, th.other);
+  }
 }
 
 export function toggleStrict() {

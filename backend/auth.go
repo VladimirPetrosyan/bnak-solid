@@ -686,6 +686,12 @@ func withUser(next http.HandlerFunc) http.HandlerFunc {
 			}
 			ctx := context.WithValue(r.Context(), ctxUserKey, &u)
 			r = r.WithContext(ctx)
+			// запоминаем текущий язык интерфейса пользователя (фронтенд шлёт его на каждый
+			// запрос, см. src/api.js setApiLang) — нужен, чтобы переводить чат под получателя
+			// в реальном времени, а не только по явному запросу, см. chat.go publishChatMessage.
+			if lang := r.Header.Get("X-Lang"); supportedTranslateLangs[lang] {
+				db.Exec(`UPDATE users SET lang = ? WHERE id = ? AND lang != ?`, lang, u.ID, lang)
+			}
 		}
 		next(w, r)
 	}

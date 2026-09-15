@@ -15,6 +15,11 @@ export function getAuthToken() {
   return token;
 }
 
+let apiLang = null;
+export function setApiLang(l) {
+  apiLang = l;
+}
+
 export function fileURL(path) {
   if (!path) return path;
   if (/^https?:\/\//.test(path) || path.startsWith('blob:')) return path;
@@ -25,6 +30,7 @@ async function request(method, path, { json, form, headers: extraHeaders } = {})
   const headers = { ...extraHeaders };
   if (json !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers['Authorization'] = 'Bearer ' + token;
+  if (apiLang) headers['X-Lang'] = apiLang;
 
   let res;
   try {

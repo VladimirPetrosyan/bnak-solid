@@ -41,6 +41,8 @@ var (
 	operatorCity        string
 	notificoreAPIKey    string
 	notificoreSender    string
+	yandexTranslateKey  string
+	yandexFolderID      string
 )
 
 func main() {
@@ -67,6 +69,11 @@ func main() {
 	}
 	notificoreAPIKey = os.Getenv("NOTIFICORE_API_KEY")
 	notificoreSender = envOr("NOTIFICORE_SENDER", "HayHome")
+	// Yandex Translate — перевод пользовательского текста (описания объявлений, сообщения
+	// в чате) под язык интерфейса, см. translate.go. Необязательные: без ключа/folderId
+	// перевод молча не работает и текст отдаётся как есть.
+	yandexTranslateKey = os.Getenv("YANDEX_TRANSLATE_API_KEY")
+	yandexFolderID = os.Getenv("YANDEX_FOLDER_ID")
 
 	db = openDB(dbPath)
 	defer db.Close()
@@ -231,7 +238,7 @@ func withCORS(rawOrigins string, next http.Handler) http.Handler {
 			w.Header().Set("Vary", "Origin")
 		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, "+browserIDHeader)
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Lang, "+browserIDHeader)
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
