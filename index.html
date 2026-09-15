@@ -2,7 +2,12 @@
 <html lang="ru">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
+    <script>
+      if (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+        document.querySelector('meta[name=viewport]').content += ', maximum-scale=1';
+      }
+    </script>
     <title>HayHome — жильё в Армении</title>
     <link rel="icon" type="image/png" sizes="16x16" href="/brand/hayhome-icon-16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/brand/hayhome-icon-32.png" />
@@ -25,6 +30,7 @@
         max-width: 100%;
         overflow-x: hidden;
         overflow-x: clip;
+        overscroll-behavior-x: none;
       }
       body {
         margin: 0;

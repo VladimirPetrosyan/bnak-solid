@@ -1,4 +1,4 @@
-import { For, Show, createSignal, createEffect, onCleanup } from 'solid-js';
+import { For, Show, createSignal, createEffect, onCleanup, onMount } from 'solid-js';
 import {
   state,
   setState,
@@ -102,6 +102,25 @@ export default function Chat() {
     if (!hasThread() && mView() !== 'list') setMView('list');
   });
 
+  const [viewport, setViewport] = createSignal(null);
+  onMount(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const sync = () => setViewport({ height: vv.height, top: vv.offsetTop });
+    sync();
+    vv.addEventListener('resize', sync);
+    vv.addEventListener('scroll', sync);
+    onCleanup(() => {
+      vv.removeEventListener('resize', sync);
+      vv.removeEventListener('scroll', sync);
+    });
+  });
+  const mobileFrame = () => {
+    const v = viewport();
+    const size = v ? `height:${v.height}px;transform:translateY(${v.top}px)` : 'height:100dvh';
+    return `position:fixed;top:0;left:0;right:0;z-index:40;${size};display:flex;flex-direction:column;background:#fff;overflow:hidden;overscroll-behavior:contain;animation:bnIn .15s ease`;
+  };
+
   const [emojiOpen, setEmojiOpen] = createSignal(false);
   const [attachOpen, setAttachOpen] = createSignal(false);
   let videoInputRef, imageInputRef, docInputRef, msgsRef;
@@ -116,7 +135,7 @@ export default function Chat() {
   });
 
   createEffect(() => {
-    const trigger = [thread()?.msgs.length || 0, currentKey()];
+    const trigger = [thread()?.msgs.length || 0, currentKey(), viewport()?.height];
     if (msgsRef)
       queueMicrotask(() => {
         msgsRef.scrollTop = msgsRef.scrollHeight;
@@ -186,8 +205,8 @@ export default function Chat() {
     <div
       style={
         state.isMob
-          ? 'height:100vh;height:100dvh;display:flex;flex-direction:column;background:#fff;animation:bnIn .15s ease;overflow:hidden'
-          : 'width:100%;max-width:1400px;margin:0 auto;padding:24px clamp(16px,3vw,28px) 40px;animation:bnIn .2s ease'
+          ? mobileFrame()
+          :'width:100%;max-width:1400px;margin:0 auto;padding:24px clamp(16px,3vw,28px) 40px;animation:bnIn .2s ease'
       }
     >
       <div
