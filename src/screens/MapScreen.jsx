@@ -214,7 +214,7 @@ export default function MapScreen() {
         </Show>
 
         <div
-          style={`flex:999 1 520px;min-width:280px;position:relative;border-radius:18px;overflow:hidden;background:#eceae5;min-height:${state.isMob ? '58vh' : '520px'};max-height:76vh;box-shadow:0 1px 2px rgba(28,27,25,.05);display:${showMap() ? 'block' : 'none'}`}
+          style={`flex:999 1 520px;min-width:280px;position:relative;isolation:isolate;border-radius:18px;overflow:hidden;background:#eceae5;min-height:${state.isMob ? '58vh' : '520px'};max-height:76vh;box-shadow:0 1px 2px rgba(28,27,25,.05);display:${showMap() ? 'block' : 'none'}`}
         >
           <div ref={host} class="bn-yamap" style={`position:absolute;inset:0;display:${yandexHostVisible(status()) ? 'block' : 'none'}`} />
           <Show when={status() === 'loading'}>
