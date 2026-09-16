@@ -30,14 +30,47 @@ var allowedChatUploadMIME = map[string]string{
 	"video/mp4":       ".mp4",
 	"video/webm":      ".webm",
 	"video/quicktime": ".mov",
+	"audio/webm":      ".weba",
+	"audio/ogg":       ".oga",
+	"application/ogg": ".oga",
+	"audio/mpeg":      ".mp3",
+	"audio/wave":      ".wav",
+	"audio/x-wav":     ".wav",
 }
+
+// audioFallbackByDeclaredType — контейнеры вида .m4a/.mp4 (голосовые из Safari/iOS)
+// содержат вариативный набор брендов в ftyp-боксе, и http.DetectContentType по спецификации
+// WHATWG узнаёт среди них только те, что буквально содержат подстроку "mp4" — бренды вроде
+// "M4A ISOM ISO2" (именно так их пишет AVFoundation) её не содержат и сниффер отдаёт
+// application/octet-stream. Аудио/видео-контейнер не может быть исполнен браузером как код
+// (в отличие от HTML/SVG), поэтому в этом случае безопасно подстраховаться заголовком
+// Content-Type, который выставил сам браузер при записи Blob через MediaRecorder.
+var audioFallbackByDeclaredType = map[string]string{
+	"audio/mp4":   ".m4a",
+	"audio/x-m4a": ".m4a",
+	"audio/webm":  ".weba",
+	"audio/ogg":   ".oga",
+	"audio/mpeg":  ".mp3",
+	"audio/wav":   ".wav",
+	"audio/wave":  ".wav",
+}
+
+var allowedVideoUploadMIME = map[string]string{
+	"video/mp4":       ".mp4",
+	"video/webm":      ".webm",
+	"video/quicktime": ".mov",
+}
+
+const maxListingVideos = 3
 
 // saveUploadedFile сохраняет один файл из multipart-формы в uploadsDir/subdir и
 // возвращает публичный URL вида /uploads/<subdir>/<имя>. Тип файла определяется
 // по содержимому (не по расширению/заголовку клиента) и сверяется с allowed —
 // иначе загруженный файл мог бы отдаться браузеру как HTML/SVG того же origin.
-func saveUploadedFile(r *http.Request, field, subdir string, allowed map[string]string) (string, error) {
-	file, _, err := r.FormFile(field)
+// allowAudioFallback разрешает подстраховаться заголовком Content-Type для голосовых/видео
+// сообщений чата, см. audioFallbackByDeclaredType — для листингов (фото/видео) не используется.
+func saveUploadedFile(r *http.Request, field, subdir string, allowed map[string]string, allowAudioFallback bool) (string, error) {
+	file, header, err := r.FormFile(field)
 	if err != nil {
 		return "", err
 	}
@@ -52,6 +85,10 @@ func saveUploadedFile(r *http.Request, field, subdir string, allowed map[string]
 
 	mimeType := strings.SplitN(http.DetectContentType(sniff), ";", 2)[0]
 	ext, ok := allowed[mimeType]
+	if !ok && allowAudioFallback && mimeType == "application/octet-stream" {
+		declared := strings.SplitN(header.Header.Get("Content-Type"), ";", 2)[0]
+		ext, ok = audioFallbackByDeclaredType[declared]
+	}
 	if !ok {
 		return "", errUploadBadType
 	}
@@ -114,7 +151,7 @@ func handleUploadListingPhoto(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad multipart form")
 		return
 	}
-	url, err := saveUploadedFile(r, "photo", "listings/"+l.ID, allowedImageUploadMIME)
+	url, err := saveUploadedFile(r, "photo", "listings/"+l.ID, allowedImageUploadMIME, false)
 	if err != nil {
 		if errors.Is(err, errUploadBadType) {
 			writeErr(w, http.StatusBadRequest, "unsupported image type")
@@ -199,6 +236,92 @@ func handleDeleteListingPhoto(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
+// ---------- POST /api/listings/{id}/videos ----------
+
+func handleUploadListingVideo(w http.ResponseWriter, r *http.Request) {
+	l, ok := ownedListingOr403(w, r)
+	if !ok {
+		return
+	}
+	if l.Status != "pending" {
+		writeErr(w, http.StatusConflict, "changes_require_review")
+		return
+	}
+	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad multipart form")
+		return
+	}
+	count, err := videoCountTx(db, l.ID)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if count >= maxListingVideos {
+		writeErr(w, http.StatusBadRequest, "too_many_videos")
+		return
+	}
+	url, err := saveUploadedFile(r, "video", "listings/"+l.ID, allowedVideoUploadMIME, false)
+	if err != nil {
+		if errors.Is(err, errUploadBadType) {
+			writeErr(w, http.StatusBadRequest, "unsupported video type")
+			return
+		}
+		writeErr(w, http.StatusBadRequest, "no video file (field 'video')")
+		return
+	}
+	if err := addListingVideo(l.ID, url); err != nil {
+		removeUploadedFile(url)
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]string{"url": url})
+}
+
+func videoCountTx(q interface {
+	QueryRow(query string, args ...any) *sql.Row
+}, listingID string) (int, error) {
+	var count int
+	err := q.QueryRow(`SELECT COUNT(*) FROM listing_videos WHERE listing_id = ?`, listingID).Scan(&count)
+	return count, err
+}
+
+func addListingVideo(listingID, url string) error {
+	var pos int
+	if err := db.QueryRow(`SELECT COALESCE(MAX(position), -1) + 1 FROM listing_videos WHERE listing_id = ?`, listingID).Scan(&pos); err != nil {
+		return err
+	}
+	_, err := db.Exec(`INSERT INTO listing_videos(listing_id, url, position) VALUES (?, ?, ?)`, listingID, url, pos)
+	return err
+}
+
+// ---------- DELETE /api/listings/{id}/videos ----------
+// ?url=/uploads/listings/xxx/yyy.mp4
+
+func handleDeleteListingVideo(w http.ResponseWriter, r *http.Request) {
+	l, ok := ownedListingOr403(w, r)
+	if !ok {
+		return
+	}
+	if l.Status != "pending" {
+		writeErr(w, http.StatusConflict, "changes_require_review")
+		return
+	}
+	url := r.URL.Query().Get("url")
+	if url == "" {
+		writeErr(w, http.StatusBadRequest, "missing url")
+		return
+	}
+	res, err := db.Exec(`DELETE FROM listing_videos WHERE listing_id = ? AND url = ?`, l.ID, url)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		removeUploadedFile(url)
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
 // ---------- POST /api/uploads ----------
 // Универсальная загрузка для вложений чата (фото, видео). Поле формы: "file".
 
@@ -212,7 +335,7 @@ func handleGenericUpload(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "no file (field 'file')")
 		return
 	}
-	url, err := saveUploadedFile(r, "file", "chat", allowedChatUploadMIME)
+	url, err := saveUploadedFile(r, "file", "chat", allowedChatUploadMIME, true)
 	if err != nil {
 		if errors.Is(err, errUploadBadType) {
 			writeErr(w, http.StatusBadRequest, "unsupported file type")

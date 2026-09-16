@@ -19,7 +19,7 @@ import {
 } from '../store';
 import Icon from './Icon';
 
-const DEALS = ['rent', 'sale'];
+const DEALS = ['rent', 'hotel', 'sale'];
 const LANGS = ['ՀՅ', 'RU', 'EN'];
 const LANG_NAME = { ՀՅ: 'Հայերեն', RU: 'Русский', EN: 'English' };
 
@@ -92,7 +92,8 @@ export default function Header() {
           <nav style="display:flex;align-items:center;gap:4px;flex:1 1 340px;min-width:0;overflow-x:auto">
             <For each={DEALS}>
               {(key) => {
-                const on = () => state.deal === key && state.screen === 'search';
+                const on = () =>
+                  (key === 'rent' ? state.deal === 'rent' || state.deal === 'daily' : state.deal === key) && state.screen === 'search';
                 return (
                   <button
                     type="button"

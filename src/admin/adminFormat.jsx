@@ -8,6 +8,7 @@ export const addrLine = (l) => {
 };
 
 export const roomsLabel = (l) => {
+  if (l.deal === 'hotel') return l.title || 'Отель';
   if (l.deal === 'comm') return 'помещение';
   if (l.rooms === 0) return 'Студия';
   return l.rooms + ' комн.';

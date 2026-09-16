@@ -44,4 +44,16 @@ describe('buildListingPayload', () => {
   it('does not silently invent a repair condition when none was chosen', () => {
     expect(buildListingPayload(baseDraft({ repair: '' })).repairCondition).toBe('');
   });
+
+  it('sends hotel fields and drops apartment-only values for a hotel', () => {
+    const body = buildListingPayload(
+      baseDraft({ deal: 'hotel', title: '  Ararat Hostel ', stayKind: 'hostel', checkInTime: '14:00', checkOutTime: '11:00' })
+    );
+    expect(body).toMatchObject({ title: 'Ararat Hostel', stayKind: 'hostel', checkIn: '14:00', checkOut: '11:00' });
+    expect(body).toMatchObject({ price: 0, area: 0, cadastreCode: '', repairCondition: '' });
+  });
+
+  it('does not send hotel fields for regular listings', () => {
+    expect(buildListingPayload(baseDraft())).not.toHaveProperty('title');
+  });
 });

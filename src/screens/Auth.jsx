@@ -89,7 +89,8 @@ export default function Auth() {
   const roles = () => [
     { key: 'tenant', label: t().roleTenant, note: t().roleTenantN },
     { key: 'owner', label: t().roleOwner, note: t().roleOwnerN },
-    { key: 'agency', label: t().roleAgency, note: t().roleAgencyN }
+    { key: 'agency', label: t().roleAgency, note: t().roleAgencyN },
+    { key: 'hotel', label: t().roleHotel, note: t().roleHotelN }
   ];
 
   const phoneFull = () => '+' + country().cc + ' ' + a().phone;

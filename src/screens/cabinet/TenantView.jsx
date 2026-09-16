@@ -1,11 +1,13 @@
-import { For } from 'solid-js';
-import { state, setState, t, txt, byId, cardOf, statusOf, threadsAll, saveSearch, reload, openListing } from '../../store';
+import { For, Show } from 'solid-js';
+import { state, setState, t, byId, cardOf, statusOf, threadsAll, saveSearch, reload, openListing } from '../../store';
 import { TEAL_T, TEAL_TX, SOFT, FAINT } from '../../theme';
 import PhotoSlot from '../../components/PhotoSlot';
 import Kpi from './Kpi';
+import BookingList from './BookingList';
 
 export default function TenantView() {
   const favItems = () => Object.keys(state.favs).map(byId).filter(Boolean);
+  const myBookings = () => state.bookings.filter((b) => state.user && b.guestId === state.user.id);
 
   return (
     <>
@@ -22,6 +24,13 @@ export default function TenantView() {
           note={t().moderation}
         />
       </div>
+
+      <Show when={myBookings().length}>
+        <div style="margin-top:20px;background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
+          <div style="font-size:16px;font-weight:800;margin-bottom:14px">{t().myBookings}</div>
+          <BookingList items={myBookings()} mode="guest" />
+        </div>
+      </Show>
 
       <div style="margin-top:20px;background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">

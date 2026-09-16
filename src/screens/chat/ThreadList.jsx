@@ -15,7 +15,9 @@ const lastPreviewBody = (last) =>
           ? '📄 ' + (last.name || t().fileMsg)
           : last.kind === 'location'
             ? '📍 ' + t().locMsg
-            : last.text || '';
+            : last.kind === 'booking'
+              ? '🗓 ' + (last.text === 'request' ? t().bookingRequestT : t()[{ confirmed: 'bkEvConfirmed', declined: 'bkEvDeclined', cancelled: 'bkEvCancelled' }[last.text]])
+              : last.text || '';
 
 const lastPreview = (last) => (last.id == null ? '' : (last.me ? t().youPrefix + ' ' : '') + lastPreviewBody(last));
 

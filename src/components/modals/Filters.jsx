@@ -5,8 +5,8 @@ import { REPAIR_CONDITIONS, REPAIR_LABELS } from '../../repairCondition';
 import { pillStyle, radio, label as labelStyle, overlay, modal, TEAL, TEAL_T, TEAL_TX, INK } from '../../theme';
 import Icon from '../Icon';
 
-const DEALS = ['rent', 'daily', 'sale', 'newb', 'comm'];
-const DEAL_ICON = { rent: 'home', daily: 'calendar', sale: 'doc', newb: 'building', comm: 'archive' };
+const DEALS = ['all', 'rent', 'daily', 'sale', 'newb', 'comm', 'hotel'];
+const DEAL_ICON = { all: 'list', rent: 'home', daily: 'calendar', sale: 'doc', newb: 'building', comm: 'archive', hotel: 'building' };
 
 const card = 'background:#fff;border:1px solid #e8e7e4;border-radius:18px;padding:18px 20px';
 

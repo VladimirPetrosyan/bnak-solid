@@ -23,9 +23,10 @@ import { promotedOf } from '../vip';
 import { pillStyle } from '../theme';
 import ListingCard from '../components/ListingCard';
 import VipCarousel from '../components/VipCarousel';
+import StayPicker from '../components/StayPicker';
 import Icon from '../components/Icon';
 
-const DEALS = ['rent', 'sale'];
+const DEALS = ['rent', 'hotel', 'sale'];
 const SORTS = [
   ['fresh', 'sortFresh'],
   ['cheap', 'sortCheap'],
@@ -49,7 +50,10 @@ export default function Search() {
     setVipOnly(false);
     setState('shown', 12);
   };
-  const titleKey = () => ({ rent: 'titleRent', daily: 'titleDaily', sale: 'titleSale', newb: 'titleNew', comm: 'titleComm' })[state.deal];
+  const titleKey = () =>
+    ({ rent: 'titleRent', daily: 'titleDaily', sale: 'titleSale', newb: 'titleNew', comm: 'titleComm', hotel: 'titleHotel', all: 'titleAll' })[state.deal];
+  const hotel = () => state.deal === 'hotel';
+  const daily = () => state.deal === 'daily';
   const activeFilters = activeFilterCount;
 
   return (
@@ -84,7 +88,7 @@ export default function Search() {
             <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:48px;padding:4px;background:#f2f1ee;border-radius:12px;flex:1 1 auto">
               <For each={DEALS}>
                 {(key) => {
-                  const on = () => state.deal === key;
+                  const on = () => (key === 'rent' ? state.deal === 'rent' || state.deal === 'daily' : state.deal === key);
                   return (
                     <button
                       type="button"
@@ -115,6 +119,12 @@ export default function Search() {
           </button>
         </div>
 
+        <Show when={hotel() || daily()}>
+          <div style="margin-top:12px">
+            <StayPicker guests={hotel()} />
+          </div>
+        </Show>
+
         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center">
           <button
             type="button"
@@ -129,21 +139,23 @@ export default function Search() {
             <span>{t().onlyVerified}</span>
           </button>
 
-          <button
-            type="button"
-            class="bn-tap"
-            onClick={() => {
-              setState('agencies', !state.agencies);
-              reload();
-            }}
-            aria-pressed={!state.agencies}
-            style={pillStyle(!state.agencies)}
-          >
-            {t().noAgency}
-          </button>
-          <button type="button" class="bn-tap" onClick={() => setState('filtersOpen', true)} style={pillStyle(state.rooms !== 'all')}>
-            {state.rooms === 'all' ? t().roomsW : state.rooms === 'studio' ? t().studio : txt('roomsN', { n: state.rooms })}
-          </button>
+          <Show when={!hotel()}>
+            <button
+              type="button"
+              class="bn-tap"
+              onClick={() => {
+                setState('agencies', !state.agencies);
+                reload();
+              }}
+              aria-pressed={!state.agencies}
+              style={pillStyle(!state.agencies)}
+            >
+              {t().noAgency}
+            </button>
+            <button type="button" class="bn-tap" onClick={() => setState('filtersOpen', true)} style={pillStyle(state.rooms !== 'all')}>
+              {state.rooms === 'all' ? t().roomsW : state.rooms === 'studio' ? t().studio : txt('roomsN', { n: state.rooms })}
+            </button>
+          </Show>
           <button type="button" class="bn-tap" onClick={() => setState('filtersOpen', true)} style={pillStyle(true)}>
             {cityObj().n[li()]}
           </button>

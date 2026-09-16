@@ -45,6 +45,7 @@ go build -o bnak-backend .
 | `ADMIN_PASSWORD` | пусто | пароль супер-пользователя, вместе с `ADMIN_USERNAME` — см. ниже |
 | `YANDEX_TRANSLATE_API_KEY` | не задан | API-ключ Yandex Translate (Yandex Cloud → сервисный аккаунт → API-ключ). Пока пуст — описания объявлений и сообщения чата отдаются как есть, без перевода. См. `translate.go` |
 | `YANDEX_FOLDER_ID` | не задан | ID каталога Yandex Cloud, к которому привязан сервисный аккаунт из `YANDEX_TRANSLATE_API_KEY` |
+| `YANDEX_SPEECHKIT_API_KEY` | не задан | API-ключ Yandex SpeechKit (сервисному аккаунту нужна роль `ai.speechkit-stt.user`), тот же `YANDEX_FOLDER_ID`. Расшифровка голосовых сообщений по кнопке в чате — пока пуст, кнопка вернёт ошибку. Требует `ffmpeg` в `PATH` на сервере (голосовые пишутся в webm/ogg, SpeechKit понимает только oggopus/lpcm/mp3). См. `speechkit.go` |
 
 Язык интерфейса каждого пользователя запоминается в `users.lang` (обновляется из заголовка
 `X-Lang`, который фронтенд шлёт на каждый запрос, см. `withUser` в `auth.go`). Это позволяет

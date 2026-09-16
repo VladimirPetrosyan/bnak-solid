@@ -26,10 +26,17 @@ package main
 
 import (
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"time"
 )
+
+func init() {
+	mime.AddExtensionType(".weba", "audio/webm")
+	mime.AddExtensionType(".oga", "audio/ogg")
+	mime.AddExtensionType(".m4a", "audio/mp4")
+}
 
 var (
 	devMode             bool
@@ -43,6 +50,7 @@ var (
 	notificoreSender    string
 	yandexTranslateKey  string
 	yandexFolderID      string
+	yandexSpeechKey     string
 )
 
 func main() {
@@ -74,6 +82,11 @@ func main() {
 	// перевод молча не работает и текст отдаётся как есть.
 	yandexTranslateKey = os.Getenv("YANDEX_TRANSLATE_API_KEY")
 	yandexFolderID = os.Getenv("YANDEX_FOLDER_ID")
+	// Yandex SpeechKit — расшифровка голосовых сообщений в текст по кнопке в чате, см.
+	// speechkit.go. Отдельный ключ (роль ai.speechkit-stt.user), тот же folderId. Без ключа
+	// кнопка «показать текст» в чате вернёт ошибку — сама расшифровка не обязательна для
+	// работы чата.
+	yandexSpeechKey = os.Getenv("YANDEX_SPEECHKIT_API_KEY")
 
 	db = openDB(dbPath)
 	defer db.Close()
@@ -147,9 +160,23 @@ func main() {
 	mux.HandleFunc("POST /api/listings/{id}/resolve", requireAuth(handleResolveReport))
 	mux.HandleFunc("POST /api/listings/{id}/photos", requireAuth(handleUploadListingPhoto))
 	mux.HandleFunc("DELETE /api/listings/{id}/photos", requireAuth(handleDeleteListingPhoto))
+	mux.HandleFunc("POST /api/listings/{id}/videos", requireAuth(handleUploadListingVideo))
+	mux.HandleFunc("DELETE /api/listings/{id}/videos", requireAuth(handleDeleteListingVideo))
 	mux.HandleFunc("POST /api/listings/{id}/promote", requireAuth(handlePromoteListing))
 	mux.HandleFunc("GET /api/listings/{id}/document", requireAuth(handleGetListingDocument))
 	mux.HandleFunc("GET /api/listings/{id}/revision", requireAuth(handleGetListingRevision))
+
+	// отели и хостелы: номера, календарь, брони — см. stays.go
+	mux.HandleFunc("GET /api/listings/{id}/rooms", handleListRooms)
+	mux.HandleFunc("POST /api/listings/{id}/rooms", requireAuth(handleCreateRoom))
+	mux.HandleFunc("PUT /api/listings/{id}/rooms/{roomId}", requireAuth(handleUpdateRoom))
+	mux.HandleFunc("DELETE /api/listings/{id}/rooms/{roomId}", requireAuth(handleDeleteRoom))
+	mux.HandleFunc("GET /api/listings/{id}/rooms/{roomId}/calendar", requireAuth(handleRoomCalendar))
+	mux.HandleFunc("PUT /api/listings/{id}/rooms/{roomId}/closures", requireAuth(handleSetClosures))
+	mux.HandleFunc("POST /api/listings/{id}/bookings", requireAuth(handleCreateBooking))
+	mux.HandleFunc("GET /api/bookings", requireAuth(handleListBookings))
+	mux.HandleFunc("POST /api/bookings/{id}/decision", requireAuth(handleDecideBooking))
+	mux.HandleFunc("POST /api/bookings/{id}/cancel", requireAuth(handleCancelBooking))
 
 	// внутренние токены и VIP
 	mux.HandleFunc("GET /api/tokens", requireAuth(handleGetTokens))
@@ -167,11 +194,13 @@ func main() {
 	mux.HandleFunc("POST /api/threads", requireAuth(handleOpenThread))
 	mux.HandleFunc("GET /api/threads/{id}/messages", requireAuth(handleListMessages))
 	mux.HandleFunc("POST /api/threads/{id}/messages", requireAuth(handleSendMessage))
+	mux.HandleFunc("POST /api/threads/{id}/messages/{mid}/transcript", requireAuth(handleTranscribeMessage))
 	mux.HandleFunc("POST /api/threads/{id}/read", requireAuth(handleMarkThreadRead))
 
 	// поддержка
 	mux.HandleFunc("GET /api/support/messages", requireAuth(handleListSupportMessages))
 	mux.HandleFunc("POST /api/support/messages", requireAuth(handleSendSupportMessage))
+	mux.HandleFunc("POST /api/support/messages/{mid}/transcript", requireAuth(handleTranscribeSupportMessage))
 	mux.HandleFunc("POST /api/support/read", requireAuth(handleMarkSupportRead))
 
 	mux.HandleFunc("POST /api/realtime/ticket", requireAuth(handleIssueRealtimeTicket))

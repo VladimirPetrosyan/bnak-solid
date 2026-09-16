@@ -30,6 +30,7 @@ import {
 import Icon from '../components/Icon';
 import ThreadList from './chat/ThreadList';
 import MessageBubble from './chat/MessageBubble';
+import VoiceMiniPlayer from './chat/VoiceMiniPlayer';
 import { useVoiceRecorder } from './chat/useVoiceRecorder';
 import { fmtSec } from './chat/format';
 import { pickThreadKey } from './chat/threadSelection';
@@ -262,6 +263,8 @@ export default function Chat() {
               </Show>
             </div>
 
+            <VoiceMiniPlayer title={seller().n[li()]} />
+
             <div
               ref={msgsRef}
               style="flex:1;min-height:0;padding:24px 20px;display:flex;flex-direction:column;gap:16px;background:#fbfbfa;overflow-y:auto;overflow-x:hidden"
@@ -446,10 +449,15 @@ export default function Chat() {
                   >
                     <Icon name="trash" size={18} weight={1.9} />
                   </button>
-                  <div style="flex:1;display:flex;align-items:center;gap:9px;padding:13px 16px;border-radius:14px;background:#fceeeb">
-                    <span style="width:9px;height:9px;border-radius:999px;background:#c2452f;display:block;animation:bnPulse 1.2s infinite" />
-                    <span style="font-size:14px;font-weight:700;color:#93331f;font-variant-numeric:tabular-nums">
-                      {t().recRec} · {fmtSec(voice.seconds())}
+                  <div style="flex:1;display:flex;align-items:center;gap:9px;padding:13px 16px;border-radius:14px;background:#fceeeb;min-width:0">
+                    <span style="width:9px;height:9px;border-radius:999px;background:#c2452f;display:block;animation:bnPulse 1.2s infinite;flex:0 0 auto" />
+                    <div style="flex:1;display:flex;align-items:center;gap:2px;height:20px;min-width:0">
+                      <For each={voice.levels()}>
+                        {(v) => <div style={`flex:1;min-width:2px;height:${3 + Math.min(1, v * 6) * 17}px;border-radius:999px;background:#c2452f;transition:height .08s linear`} />}
+                      </For>
+                    </div>
+                    <span style="font-size:14px;font-weight:700;color:#93331f;font-variant-numeric:tabular-nums;flex:0 0 auto">
+                      {fmtSec(voice.seconds())}
                     </span>
                   </div>
                   <button

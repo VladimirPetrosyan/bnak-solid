@@ -35,6 +35,12 @@ import rawEdit from '@tabler/icons/outline/edit.svg?raw';
 import rawEye from '@tabler/icons/outline/eye.svg?raw';
 import rawCalendar from '@tabler/icons/outline/calendar.svg?raw';
 import rawRefresh from '@tabler/icons/outline/refresh.svg?raw';
+import rawPlay from '@tabler/icons/filled/player-play.svg?raw';
+import rawPause from '@tabler/icons/filled/player-pause.svg?raw';
+import rawVolume from '@tabler/icons/outline/volume.svg?raw';
+import rawVolumeOff from '@tabler/icons/outline/volume-off.svg?raw';
+import rawMaximize from '@tabler/icons/outline/maximize.svg?raw';
+import rawMessageLanguage from '@tabler/icons/outline/message-language.svg?raw';
 
 function shapesOf(svg) {
   const shapes = [...svg.matchAll(/<(path|circle)\b([^>]*)\/?>/g)]
@@ -84,28 +90,31 @@ const ICONS = {
   edit: shapesOf(rawEdit),
   eye: shapesOf(rawEye),
   calendar: shapesOf(rawCalendar),
-  refresh: shapesOf(rawRefresh)
+  refresh: shapesOf(rawRefresh),
+  play: shapesOf(rawPlay),
+  pause: shapesOf(rawPause),
+  volume: shapesOf(rawVolume),
+  volumeOff: shapesOf(rawVolumeOff),
+  maximize: shapesOf(rawMaximize),
+  messageLanguage: shapesOf(rawMessageLanguage)
 };
 
-const FILLED = new Set(['stop']);
+const FILLED = new Set(['stop', 'play', 'pause']);
 
 export default function Icon(props) {
-  const shapes = ICONS[props.name];
-  if (!shapes) return null;
-  const filled = FILLED.has(props.name);
   return (
     <svg
       width={props.size || 16}
       height={props.size || 16}
       viewBox="0 0 24 24"
-      fill={filled ? props.stroke || 'currentColor' : 'none'}
-      stroke={filled ? 'none' : props.stroke || 'currentColor'}
+      fill={FILLED.has(props.name) ? props.stroke || 'currentColor' : 'none'}
+      stroke={FILLED.has(props.name) ? 'none' : props.stroke || 'currentColor'}
       stroke-width={props.weight || 1.8}
       stroke-linecap="round"
       stroke-linejoin="round"
       style={props.style}
     >
-      {shapes.map((s) => (s.tag === 'circle' ? <circle cx={s.cx} cy={s.cy} r={s.r} /> : <path d={s.d} />))}
+      {(ICONS[props.name] || []).map((s) => (s.tag === 'circle' ? <circle cx={s.cx} cy={s.cy} r={s.r} /> : <path d={s.d} />))}
     </svg>
   );
 }

@@ -1,10 +1,13 @@
 import { For, Show } from 'solid-js';
-import { cardOf, openListing, toggleFav, openReport, t, TEAL } from '../store';
+import { cardOf, openListing, toggleFav, openReport, hotelPriceOf, dailyPriceOf, t, TEAL, TEAL_TX } from '../store';
 import PhotoSlot from './PhotoSlot';
 import Icon from './Icon';
 
 export default function ListingCard(props) {
   const c = () => cardOf(props.listing);
+  const hotel = () => props.listing.deal === 'hotel';
+  const daily = () => props.listing.deal === 'daily';
+  const hp = () => (hotel() ? hotelPriceOf(props.listing) : dailyPriceOf(props.listing));
 
   return (
     <article class="bn-card" style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(28,27,25,.05);animation:bnUp .26s ease both;transition:box-shadow .18s,transform .18s;display:flex;flex-direction:column">
@@ -41,11 +44,31 @@ export default function ListingCard(props) {
       </div>
 
       <div style="padding:16px 18px 0;position:relative">
-        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-          <span style="font-size:22px;font-weight:800;letter-spacing:-.03em">{c().price}</span>
-          <span style="font-size:14px;font-weight:600;color:#6f6d68">{c().per}</span>
-          <span style="margin-left:auto;font-size:13px;color:#9a9793">{c().alt}</span>
-        </div>
+        <Show
+          when={hotel() || daily()}
+          fallback={
+            <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+              <span style="font-size:22px;font-weight:800;letter-spacing:-.03em">{c().price}</span>
+              <span style="font-size:14px;font-weight:600;color:#6f6d68">{c().per}</span>
+              <span style="margin-left:auto;font-size:13px;color:#9a9793">{c().alt}</span>
+            </div>
+          }
+        >
+          <Show when={hotel()}>
+            <div style="font-size:17px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{c().title}</div>
+          </Show>
+          <div style={`display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;${hotel() ? 'margin-top:6px' : ''}`}>
+            <span style="font-size:22px;font-weight:800;letter-spacing:-.03em">{hp().main}</span>
+            <span style="font-size:14px;font-weight:600;color:#6f6d68">{hp().per}</span>
+            <span style="margin-left:auto;font-size:13px;color:#9a9793">{hp().sub}</span>
+          </div>
+          <Show when={hotel() && props.listing.stay && props.listing.stay.nights > 0}>
+            <div style={`margin-top:8px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:${TEAL_TX}`}>
+              <Icon name="check" size={13} weight={2.6} />
+              {t().freeForDates}
+            </div>
+          </Show>
+        </Show>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
           <For each={c().tags}>
             {(tag) => (

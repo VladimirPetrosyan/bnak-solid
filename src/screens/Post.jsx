@@ -1,8 +1,8 @@
 import { createSignal, For, Show } from 'solid-js';
-import { state, setState, t, txt, li, postState, setPost, say, publishListing, byId } from '../store';
+import { state, setState, t, txt, li, postState, setPost, say, publishListing, byId, STAY_KINDS, stayKindLabel } from '../store';
 import { CITY, DIST, FEAT, nf } from '../data';
 import { pillStyle, label as labelStyle, input as inputStyle, TEAL, TEAL_T, TEAL_TX, INK } from '../theme';
-import PhotoSlot, { droppedFile } from '../components/PhotoSlot';
+import MediaShelf from '../components/MediaShelf';
 import Icon from '../components/Icon';
 import InfoTooltip from '../components/InfoTooltip';
 import { documentFile, setDocumentFile, validateDocumentFile, formatFileSize } from '../documentUpload';
@@ -18,10 +18,21 @@ const STEPS = [
   ['4', 'st4']
 ];
 
+const DEALS = ['rent', 'daily', 'sale', 'newb', 'comm', 'hotel'];
+
 export default function Post() {
   const p = () => postState();
+  const hotel = () => p().deal === 'hotel';
+  const deals = () => (p().editId ? DEALS.filter((key) => (key === 'hotel') === hotel()) : DEALS);
   const [cityOpen, setCityOpen] = createSignal(false);
+  const [media, setMedia] = createSignal([]);
+  const setMediaFiles = (next) => {
+    setMedia(next);
+    setPost({ photos: next.filter((f) => f.kind === 'image').length });
+  };
   const price = () => parseInt(String(p().price).replace(/\s/g, ''), 10) || 0;
+  const mainPhotoUrl = () =>
+    p().editId ? ((byId(p().editId) || {}).photos || [])[0] : (media().find((f) => f.kind === 'image') || {}).url;
   let docInput;
 
   const valid = (step) => {
@@ -33,9 +44,13 @@ export default function Post() {
   const next = () => {
     if (!valid(p().step)) return;
     if (p().step === 4) {
-      const n = Math.max(5, p().photos);
-      const files = Array.from({ length: n }, (_, i) => droppedFile(`ph-new-${i}`)).filter(Boolean);
-      publishListing(files);
+      const photos = media()
+        .filter((f) => f.kind === 'image')
+        .map((f) => f.file);
+      const videos = media()
+        .filter((f) => f.kind === 'video')
+        .map((f) => f.file);
+      publishListing(photos, videos);
     } else {
       setPost({ step: p().step + 1 });
     }
@@ -49,6 +64,16 @@ export default function Post() {
 
   return (
     <div style="width:100%;max-width:1100px;margin:0 auto;padding:32px clamp(16px,3vw,28px) 48px;animation:bnIn .2s ease">
+      <button
+        type="button"
+        class="bn-tap"
+        onClick={() => setState({ post: null, screen: 'cabinet' })}
+        style="display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#6f6d68;margin-bottom:16px"
+      >
+        <Icon name="back" size={15} weight={2.2} />
+        <span>{t().backW}</span>
+      </button>
+
       <h1 style="margin:0 0 8px;font-size:clamp(24px,4vw,30px);font-weight:800;letter-spacing:-.03em">{t().postTitle}</h1>
       <div style="font-size:15px;color:#6f6d68;max-width:64ch">{t().postSub}</div>
 
@@ -83,7 +108,7 @@ export default function Post() {
             <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05);animation:bnIn .18s ease">
               <div style={labelStyle}>{t().dealLbl}</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                <For each={['rent', 'daily', 'sale', 'newb', 'comm']}>
+                <For each={deals()}>
                   {(key) => (
                     <button
                       type="button"
@@ -92,11 +117,40 @@ export default function Post() {
                       onClick={() => setPost({ deal: key })}
                       style={pillStyle(p().deal === key)}
                     >
-                      {t()[key]}
+                      {key === 'hotel' ? t().vHotel : t()[key]}
                     </button>
                   )}
                 </For>
               </div>
+
+              <Show when={hotel()}>
+                <div style="animation:bnUp .2s ease both">
+                  <div style={`${labelStyle};margin-top:24px`}>{t().stayKindLbl}</div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                    <For each={STAY_KINDS}>
+                      {(key) => (
+                        <button
+                          type="button"
+                          class="bn-tap"
+                          aria-pressed={p().stayKind === key}
+                          onClick={() => setPost({ stayKind: key })}
+                          style={pillStyle(p().stayKind === key)}
+                        >
+                          {stayKindLabel(key)}
+                        </button>
+                      )}
+                    </For>
+                  </div>
+                  <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().hotelNameLbl}</div>
+                  <input
+                    value={p().title}
+                    onInput={(e) => setPost({ title: e.currentTarget.value })}
+                    placeholder={t().hotelNamePh}
+                    maxLength={80}
+                    style={`${inputStyle};font-weight:700`}
+                  />
+                </div>
+              </Show>
 
               <div style={`${labelStyle};margin-top:24px`}>{t().cityLbl}</div>
               <div style="position:relative;max-width:320px;margin-top:12px">
@@ -172,20 +226,9 @@ export default function Post() {
                 <div>
                   <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().postPhoneLbl}</div>
                   <div
-                    class="bn-ring"
-                    style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa"
+                    style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:13px;border:1px solid #e8e7e4;background:#f2f1ee"
                   >
-                    <span style="font-size:15px;font-weight:700;color:#4a4844">+374</span>
-                    <input
-                      value={p().phone}
-                      onInput={(e) => {
-                        const v = e.currentTarget.value.replace(/[^\d\s]/g, '');
-                        e.currentTarget.value = v;
-                        setPost({ phone: v });
-                      }}
-                      placeholder="55 214 806"
-                      style="flex:1;min-width:0;border:0;background:transparent;font-size:15px;padding:0"
-                    />
+                    <span style="font-size:15px;font-weight:700;color:#4a4844">{(state.user && state.user.phone) || ''}</span>
                   </div>
                   <div style="font-size:12px;color:#9a9793;margin-top:8px;line-height:1.45">{t().postPhoneNote}</div>
                 </div>
@@ -195,6 +238,19 @@ export default function Post() {
 
           <Show when={p().step === 2}>
             <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05);animation:bnIn .18s ease">
+              <Show when={hotel()}>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:16px;margin-bottom:24px">
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().checkInTimeLbl}</div>
+                    <input type="time" value={p().checkInTime} onInput={(e) => setPost({ checkInTime: e.currentTarget.value })} style={inputStyle} />
+                  </div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().checkOutTimeLbl}</div>
+                    <input type="time" value={p().checkOutTime} onInput={(e) => setPost({ checkOutTime: e.currentTarget.value })} style={inputStyle} />
+                  </div>
+                </div>
+              </Show>
+              <Show when={!hotel()}>
               <div style={labelStyle}>{t().roomsLbl}</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                 <For
@@ -234,8 +290,9 @@ export default function Post() {
                   <input value={p().fls} onInput={(e) => setPost({ fls: digitsOnly(e) })} placeholder="9" style={inputStyle} />
                 </div>
               </div>
+              </Show>
 
-              <div style={`${labelStyle};margin-top:24px`}>{t().featLbl}</div>
+              <div style={`${labelStyle};margin-top:${hotel() ? 0 : 24}px`}>{t().featLbl}</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                 <For each={Object.keys(FEAT)}>
                   {(key) => (
@@ -252,6 +309,7 @@ export default function Post() {
                 </For>
               </div>
 
+              <Show when={!hotel()}>
               <div style={`${labelStyle};margin-top:24px;display:flex;align-items:center`}>
                 <span>{t().kReno}</span>
                 <InfoTooltip label={t().repairInfoLabel}>
@@ -282,6 +340,7 @@ export default function Post() {
                   )}
                 </For>
               </div>
+              </Show>
 
               <div style={`${labelStyle};margin-top:24px`}>{t().photosLbl}</div>
               <Show
@@ -296,40 +355,20 @@ export default function Post() {
                           </div>
                         )}
                       </For>
+                      <For each={(byId(p().editId) || {}).videos || []}>
+                        {(url) => (
+                          <div style="height:96px;border-radius:12px;overflow:hidden;background:#000">
+                            <video src={url} muted style="width:100%;height:100%;object-fit:cover" />
+                          </div>
+                        )}
+                      </For>
                     </div>
                     <div style="font-size:12px;color:#9a9793;margin-top:12px">{t().editPhotosLocked}</div>
                   </>
                 }
               >
-                <div style="display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap">
-                  <div style="flex:1 1 200px;min-width:160px">
-                    <div style="height:8px;border-radius:999px;background:#f2f1ee;overflow:hidden">
-                      <div
-                        style={`width:${Math.min(100, (p().photos / 5) * 100)}%;height:100%;border-radius:999px;background:${p().photos >= 5 ? '#0e7c73' : '#e4b5a9'}`}
-                      />
-                    </div>
-                    <div style="font-size:13px;color:#6f6d68;margin-top:8px">{txt('photosCount', { n: p().photos })}</div>
-                  </div>
-                  <button
-                    type="button"
-                    class="bn-tap"
-                    onClick={() => setPost({ photos: Math.min(12, p().photos + 1) })}
-                    style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:12px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700"
-                  >
-                    <Icon name="plus" size={14} weight={2.4} />
-                    <span>{t().addPhoto}</span>
-                  </button>
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(140px,100%),1fr));gap:12px;margin-top:16px">
-                  <For each={Array.from({ length: Math.max(5, p().photos) }, (_, i) => i)}>
-                    {(i) => (
-                      <div
-                        style={`height:96px;border-radius:12px;overflow:hidden;background:#f2f1ee;position:relative;opacity:${i < p().photos ? 1 : 0.45}`}
-                      >
-                        <PhotoSlot id={`ph-new-${i}`} label="фото" />
-                      </div>
-                    )}
-                  </For>
+                <div style="margin-top:12px">
+                  <MediaShelf files={media()} onFiles={setMediaFiles} />
                 </div>
                 <div style="font-size:12px;color:#9a9793;margin-top:12px">{t().photosNote}</div>
               </Show>
@@ -346,6 +385,15 @@ export default function Post() {
 
           <Show when={p().step === 3}>
             <div style="animation:bnIn .18s ease">
+              <Show when={hotel()}>
+                <div style={`display:flex;gap:16px;align-items:center;padding:24px;border-radius:18px;background:${TEAL_T}`}>
+                  <span style="width:44px;height:44px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                    <Icon name="building" size={20} stroke={TEAL} weight={1.9} />
+                  </span>
+                  <div style={`font-size:15px;line-height:1.55;color:${TEAL_TX};font-weight:600`}>{t().hotelRoomsLater}</div>
+                </div>
+              </Show>
+              <Show when={!hotel()}>
               <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:16px">
                   <div>
@@ -363,6 +411,7 @@ export default function Post() {
                   </div>
                 </div>
               </div>
+              </Show>
             </div>
           </Show>
 
@@ -370,7 +419,7 @@ export default function Post() {
             <div style="animation:bnIn .18s ease">
               <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
                 <h3 style="margin:0 0 8px;font-size:18px;font-weight:800;letter-spacing:-.01em">{t().docTitle}</h3>
-                <div style="font-size:14px;color:#4a4844;line-height:1.55">{t().docNote}</div>
+                <div style="font-size:14px;color:#4a4844;line-height:1.55">{hotel() ? t().hotelDocNote : t().docNote}</div>
                 <input
                   ref={docInput}
                   type="file"
@@ -404,16 +453,18 @@ export default function Post() {
                   </span>
                 </button>
 
-                <div style="margin-top:20px;padding-top:20px;border-top:1px solid #f0efec">
-                  <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().cadastreLbl}</div>
-                  <input
-                    value={p().cadastreCode}
-                    onInput={(e) => setPost({ cadastreCode: e.currentTarget.value })}
-                    placeholder={t().cadastrePh}
-                    style={inputStyle}
-                  />
-                  <div style="font-size:12px;color:#9a9793;margin-top:8px;line-height:1.5">{t().cadastreNote}</div>
-                </div>
+                <Show when={!hotel()}>
+                  <div style="margin-top:20px;padding-top:20px;border-top:1px solid #f0efec">
+                    <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().cadastreLbl}</div>
+                    <input
+                      value={p().cadastreCode}
+                      onInput={(e) => setPost({ cadastreCode: e.currentTarget.value })}
+                      placeholder={t().cadastrePh}
+                      style={inputStyle}
+                    />
+                    <div style="font-size:12px;color:#9a9793;margin-top:8px;line-height:1.5">{t().cadastreNote}</div>
+                  </div>
+                </Show>
               </div>
 
               <div style="margin-top:20px;background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
@@ -425,7 +476,7 @@ export default function Post() {
                     <Icon name="phone" size={16} stroke={TEAL} weight={2} />
                   </span>
                   <div style="flex:1">
-                    <div style="font-size:15px;font-weight:700">{txt('ch1', { p: '+374 ' + p().phone })}</div>
+                    <div style="font-size:15px;font-weight:700">{txt('ch1', { p: (state.user && state.user.phone) || '' })}</div>
                     <div style="font-size:13px;color:#6f6d68;margin-top:4px">
                       {t().ch1n} · {t().confPhoneEdit}
                     </div>
@@ -475,11 +526,23 @@ export default function Post() {
           <div style="background:#fff;border-radius:18px;padding:20px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
             <div style={labelStyle}>{t().previewW}</div>
             <div style="margin-top:16px;height:130px;border-radius:14px;background:#f2f1ee;position:relative;overflow:hidden">
-              <PhotoSlot id="ph-new-0" label="Главное фото" />
+              <Show when={mainPhotoUrl()}>
+                <img src={mainPhotoUrl()} alt="" style="width:100%;height:100%;object-fit:cover;display:block" />
+              </Show>
               <div style="position:absolute;top:10px;left:10px;padding:8px 12px;border-radius:999px;background:#fceeeb;color:#93331f;font-size:11px;font-weight:700;pointer-events:none">
                 {t().awaitConf}
               </div>
             </div>
+            <Show when={hotel()}>
+              <div style="margin-top:16px;font-size:20px;font-weight:800;letter-spacing:-.02em;overflow-wrap:anywhere">{p().title || '—'}</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">{stayKindLabel(p().stayKind)}</span>
+                <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">
+                  {p().checkInTime || '—'} / {p().checkOutTime || '—'}
+                </span>
+              </div>
+            </Show>
+            <Show when={!hotel()}>
             <div style="margin-top:16px;font-size:22px;font-weight:800;letter-spacing:-.02em">{price() ? nf(price()) + ' ֏' : '— ֏'}</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
               <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">
@@ -492,12 +555,13 @@ export default function Post() {
                 {p().fl || '—'}/{p().fls || '—'}
               </span>
             </div>
+            </Show>
             <div style="font-size:13px;color:#6f6d68;margin-top:12px">
               {(DIST[p().dist] || DIST.center)[li()]}
               {p().street ? ', ' + p().street : ''}
             </div>
             <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0efec;font-size:13px;color:#4a4844;line-height:1.5">
-              {t().docNote}
+              {hotel() ? t().hotelRoomsLater : t().docNote}
             </div>
           </div>
         </aside>

@@ -1,9 +1,22 @@
 import { Show, Switch, Match } from 'solid-js';
-import { t } from '../../store';
-import { TEAL, RED, RED_T, SOFT, FAINT, INK } from '../../theme';
+import { state, t, txtN, stayDatesLabel, bookingStatusLabel, decideBooking, cancelBooking, transcribeAudioMessage } from '../../store';
+import { TEAL, TEAL_T, TEAL_TX, RED, RED_T, RED_TX, SOFT, FAINT, INK, MUTED } from '../../theme';
+import { nf } from '../../data';
 import Icon from '../../components/Icon';
 import { fmtSize } from './format';
 import { viewUrl } from '../../listingLocation';
+import VoiceMessage from './VoiceMessage';
+import VideoMessage from './VideoMessage';
+
+function audioWaveform(waveform) {
+  if (!waveform) return null;
+  try {
+    const arr = JSON.parse(waveform);
+    return Array.isArray(arr) ? arr.map((v) => Math.min(1, Math.max(0, v / 100))) : null;
+  } catch {
+    return null;
+  }
+}
 
 function AttachIcon(props) {
   return (
@@ -15,27 +28,107 @@ function AttachIcon(props) {
   );
 }
 
+const BOOKING_EVENT = { confirmed: 'bkEvConfirmed', declined: 'bkEvDeclined', cancelled: 'bkEvCancelled' };
+const BOOKING_TONE = { pending: ['#fdf3dc', '#8a5a00'], confirmed: [TEAL_T, TEAL_TX], declined: [RED_T, RED_TX], cancelled: [SOFT, MUTED] };
+
+function BookingCard(props) {
+  const b = () => props.m.booking;
+  const host = () => !!(state.user && b().ownerId === state.user.id);
+  const tone = () => BOOKING_TONE[b().status] || BOOKING_TONE.pending;
+  const btn = 'flex:1 1 auto;padding:10px 12px;border-radius:11px;font-size:13px;font-weight:700';
+
+  return (
+    <Show
+      when={props.m.text === 'request'}
+      fallback={
+        <div style="display:flex;justify-content:center">
+          <span style={`display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-size:13px;font-weight:700;background:${tone()[0]};color:${tone()[1]}`}>
+            {t()[BOOKING_EVENT[props.m.text]] || bookingStatusLabel(b().status)} · {props.m.time}
+          </span>
+        </div>
+      }
+    >
+      <div style={`display:flex;justify-content:${props.m.me ? 'flex-end' : 'flex-start'}`}>
+        <div style="width:min(320px,86%);border-radius:18px;background:#fff;border:1px solid #eeedea;box-shadow:0 8px 24px -18px rgba(28,27,25,.45);overflow:hidden">
+          <div style={`display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:${tone()[0]}`}>
+            <span style={`display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:${tone()[1]}`}>
+              <Icon name="calendar" size={15} weight={2} />
+              {t().bookingRequestT}
+            </span>
+            <span style={`font-size:12px;font-weight:700;color:${tone()[1]}`}>{bookingStatusLabel(b().status)}</span>
+          </div>
+          <div style="padding:12px 14px">
+            <div style="font-size:15px;font-weight:800">{b().roomName}</div>
+            <div style="font-size:13px;color:#6f6d68;margin-top:4px">
+              {stayDatesLabel(b().checkIn, b().checkOut)} · {txtN('nightsN', b().nights)} · {b().guests} {txtN('guestWord', b().guests)}
+            </div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:10px">
+              <span style="font-size:18px;font-weight:800">{nf(b().total)} ֏</span>
+              <span style={`font-size:11px;color:${FAINT}`}>{props.m.time}</span>
+            </div>
+            <Show when={b().status === 'pending'}>
+              <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+                <Show
+                  when={host()}
+                  fallback={
+                    <button type="button" class="bn-tap" onClick={() => cancelBooking(b().id)} style={`${btn};border:1px solid #e8e7e4;color:#6f6d68`}>
+                      {t().cancelBookingW}
+                    </button>
+                  }
+                >
+                  <button type="button" class="bn-tap" onClick={() => decideBooking(b().id, 'confirmed')} style={`${btn};background:${TEAL};color:#fff`}>
+                    {t().confirmW}
+                  </button>
+                  <button type="button" class="bn-tap" onClick={() => decideBooking(b().id, 'declined')} style={`${btn};background:${RED_T};color:${RED_TX}`}>
+                    {t().declineW}
+                  </button>
+                </Show>
+              </div>
+            </Show>
+          </div>
+        </div>
+      </div>
+    </Show>
+  );
+}
+
 export default function MessageBubble(props) {
   const m = () => props.m;
+  const isMedia = () => m().kind === 'video' || m().kind === 'image';
+
+  if (m().kind === 'booking' && m().booking) return <BookingCard m={m()} />;
 
   return (
     <div style={`display:flex;justify-content:${m().me ? 'flex-end' : 'flex-start'}`}>
       <div
-        style={`max-width:78%;padding:12px;font-size:15px;line-height:1.5;box-shadow:0 1px 2px rgba(28,27,25,.05);border-radius:${m().me ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};background:${m().me ? TEAL : '#fff'};color:${m().me ? '#fff' : INK}`}
+        style={`max-width:78%;padding:${isMedia() ? '3px' : '12px'};font-size:15px;line-height:1.5;box-shadow:0 1px 2px rgba(28,27,25,.05);border-radius:${m().me ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};background:${m().me ? TEAL : '#fff'};color:${m().me ? '#fff' : INK}`}
       >
         <Switch fallback={<div style="padding:0 4px;word-break:break-word">{m().text || ''}</div>}>
           <Match when={m().kind === 'audio'}>
-            <audio controls src={m().url} style="width:224px;max-width:100%;display:block;height:36px" />
+            <VoiceMessage
+              url={m().url}
+              dur={m().dur}
+              me={m().me}
+              waveform={audioWaveform(m().waveform)}
+              transcript={m().transcript}
+              onTranscribe={() => transcribeAudioMessage(m().id)}
+            />
           </Match>
           <Match when={m().kind === 'video'}>
-            <video controls src={m().url} style="max-width:240px;max-height:240px;border-radius:10px;display:block;background:#000" />
+            <VideoMessage url={m().url} time={m().time} readAt={m().readAt} pending={m().pending} me={m().me} />
           </Match>
           <Match when={m().kind === 'image'}>
-            <img
-              src={m().url}
-              alt={t().imgMsg}
-              style="max-width:240px;max-height:280px;border-radius:10px;display:block;object-fit:cover"
-            />
+            <div style="position:relative;width:220px;height:220px;max-width:100%;border-radius:14px;overflow:hidden">
+              <img src={m().url} alt={t().imgMsg} style="display:block;width:100%;height:100%;object-fit:cover" />
+              <Show when={m().time}>
+                <div style="position:absolute;right:8px;bottom:8px;display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.5)">
+                  <span style="font-size:11px;color:#fff">{m().time}</span>
+                  <Show when={m().me}>
+                    <Icon name={m().pending ? 'check' : 'checks'} size={12} weight={2.2} stroke={m().readAt ? '#fff' : 'rgba(255,255,255,.5)'} />
+                  </Show>
+                </div>
+              </Show>
+            </div>
           </Match>
           <Match when={m().kind === 'file'}>
             <a
@@ -72,7 +165,7 @@ export default function MessageBubble(props) {
             </a>
           </Match>
         </Switch>
-        <Show when={m().time}>
+        <Show when={m().time && !isMedia()}>
           <div style={`font-size:11px;margin-top:4px;padding:0 4px;display:flex;align-items:center;gap:4px;justify-content:${m().me ? 'flex-end' : 'flex-start'}`}>
             <span style={`color:${m().me ? 'rgba(255,255,255,.7)' : FAINT}`}>{m().time}</span>
             <Show when={m().me}>
@@ -80,7 +173,7 @@ export default function MessageBubble(props) {
                 name={m().pending ? 'check' : 'checks'}
                 size={13}
                 weight={2.2}
-                stroke={m().readAt ? '#9fe8de' : 'rgba(255,255,255,.7)'}
+                stroke={m().readAt ? '#fff' : 'rgba(255,255,255,.5)'}
               />
             </Show>
           </div>

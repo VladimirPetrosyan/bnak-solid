@@ -302,12 +302,14 @@ func verifyUserPassword(password, hash, salt string) (ok bool, legacy bool) {
 	return subtle.ConstantTimeCompare([]byte(got), []byte(hash)) == 1, true
 }
 
+var validRoles = map[string]bool{"tenant": true, "owner": true, "agency": true, "hotel": true}
+
 func registerUser(phone, password, name, role, legalLanguage string, now time.Time) (*User, string, error) {
 	trimmedName := strings.TrimSpace(name)
-	profileComplete := trimmedName != "" && (role == "owner" || role == "agency" || role == "tenant")
+	profileComplete := trimmedName != "" && validRoles[role]
 
 	finalRole := role
-	if finalRole != "owner" && finalRole != "agency" {
+	if !validRoles[finalRole] {
 		finalRole = "tenant"
 	}
 	finalName := trimmedName
@@ -566,7 +568,7 @@ func handleUpdateMe(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad json")
 		return
 	}
-	if in.Role != "owner" && in.Role != "agency" && in.Role != "tenant" {
+	if !validRoles[in.Role] {
 		in.Role = u.Role
 	}
 	name := strings.TrimSpace(in.Name)
@@ -586,7 +588,7 @@ func handleUpdateMe(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
-	if name != "" && (in.Role == "owner" || in.Role == "agency" || in.Role == "tenant") {
+	if name != "" && validRoles[in.Role] {
 		if _, err := grantTokens(tx, time.Now(), grantInput{userID: u.ID, amount: rewardProfile, kind: kindProfileComplete, eventKey: "profile_complete:" + u.ID}); err != nil {
 			writeErr(w, http.StatusInternalServerError, "db error")
 			return

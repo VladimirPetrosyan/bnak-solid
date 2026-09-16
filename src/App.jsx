@@ -95,7 +95,7 @@ export default function App() {
         <Match when={state.screen === 'map'}>
           <MapScreen />
         </Match>
-        <Match when={state.screen === 'listing'}>
+        <Match when={state.screen === 'listing' && byId(state.active)}>
           <Listing />
         </Match>
         <Match when={state.screen === 'fav'}>

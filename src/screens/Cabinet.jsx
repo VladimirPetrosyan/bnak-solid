@@ -6,6 +6,7 @@ import TenantView from './cabinet/TenantView';
 import OwnerView from './cabinet/OwnerView';
 import AgencyView from './cabinet/AgencyView';
 import TokenWallet from './cabinet/TokenWallet';
+import HotelView from './cabinet/HotelView';
 
 export default function Cabinet() {
   const user = () => state.user || { role: 'tenant', name: '', ini: '?' };
@@ -21,10 +22,10 @@ export default function Cabinet() {
       <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
         <div style="flex:1 1 320px">
           <h1 style="margin:0 0 4px;font-size:clamp(24px,4vw,30px);font-weight:800;letter-spacing:-.03em">
-            {user().role === 'agency' ? user().name : user().role === 'owner' ? t().cabOwner : t().cabTenant}
+            {{ agency: user().name, owner: t().cabOwner, hotel: t().cabHotel }[user().role] || t().cabTenant}
           </h1>
           <div style="font-size:15px;color:#6f6d68">
-            {user().role === 'agency' ? txt('cabAgencyS', { n: items().length }) : user().role === 'owner' ? t().cabOwnerS : t().cabTenantS}
+            {{ agency: txt('cabAgencyS', { n: items().length }), owner: t().cabOwnerS, hotel: t().cabHotelS }[user().role] || t().cabTenantS}
           </div>
         </div>
 
@@ -47,7 +48,7 @@ export default function Cabinet() {
           style="display:flex;align-items:center;gap:8px;padding:16px 20px;border-radius:14px;background:#fff;border:1px solid #e8e7e4;font-size:15px;font-weight:700"
         >
           <Icon name="plus" size={16} weight={2.2} />
-          <span>{t().post}</span>
+          <span>{user().role === 'hotel' ? t().addHotel : t().post}</span>
         </button>
       </div>
 
@@ -76,6 +77,9 @@ export default function Cabinet() {
         </div>
       </Show>
 
+      <Show when={user().role === 'hotel'}>
+        <HotelView />
+      </Show>
       <Show when={user().role === 'tenant'}>
         <TenantView />
       </Show>

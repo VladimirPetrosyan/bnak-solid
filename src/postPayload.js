@@ -1,5 +1,5 @@
 export function buildListingPayload(p) {
-  return {
+  const body = {
     deal: p.deal,
     city: p.city,
     d: p.dist,
@@ -14,5 +14,19 @@ export function buildListingPayload(p) {
     dep: p.dep,
     cadastreCode: (p.cadastreCode || '').trim(),
     repairCondition: p.repair
+  };
+  if (p.deal !== 'hotel') return body;
+  return {
+    ...body,
+    price: 0,
+    rooms: 0,
+    area: 0,
+    dep: '',
+    cadastreCode: '',
+    repairCondition: '',
+    title: (p.title || '').trim(),
+    stayKind: p.stayKind,
+    checkIn: p.checkInTime || '',
+    checkOut: p.checkOutTime || ''
   };
 }

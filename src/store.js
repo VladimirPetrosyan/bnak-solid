@@ -1,7 +1,7 @@
 import { createStore } from 'solid-js/store';
 import { createEffect, createRoot } from 'solid-js';
 import { CITY, DIST, FEAT, nf } from './data';
-import { dict, tr, LI } from './i18n';
+import { dict, tr, trN, LI } from './i18n';
 import { TEAL, TEAL_T, TEAL_TX, INK, MUTED, FAINT, SOFT, RED, RED_T, RED_TX } from './theme';
 import { api, setAuthToken, setApiLang, fileURL, ApiError } from './api';
 import { documentFile, clearDocumentFile, buildListingFormData } from './documentUpload';
@@ -36,7 +36,14 @@ function loadAuthFlow() {
   }
 }
 
+export function isoDay(offset = 0, from = new Date()) {
+  const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + offset);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 const DEFAULTS = {
+  stay: { checkIn: isoDay(1), checkOut: isoDay(2), guests: 2 },
+  bookings: [],
   lang: 'RU',
   screen: 'search',
   deal: 'rent',
@@ -140,7 +147,7 @@ function load() {
     if (!o || typeof o !== 'object') return {};
     if (!CITY[o.city]) delete o.city;
     if (!LI[o.lang]) delete o.lang;
-    if (!['rent', 'daily', 'sale', 'newb', 'comm'].includes(o.deal)) delete o.deal;
+    if (!['rent', 'daily', 'sale', 'newb', 'comm', 'hotel'].includes(o.deal)) delete o.deal;
     if (!['fresh', 'cheap', 'exp', 'score', 'area'].includes(o.sort)) delete o.sort;
     return o;
   } catch {
@@ -257,6 +264,7 @@ createRoot(() => {
 
 export const t = () => dict(state.lang);
 export const txt = (key, vars) => tr(state.lang, key, vars);
+export const txtN = (key, n, vars) => trN(state.lang, key, n, vars);
 export const li = () => LI[state.lang] ?? 1;
 export const langCode = () => ['hy', 'ru', 'en'][li()];
 setApiLang(langCode());
@@ -273,6 +281,18 @@ const API_ERR_KEYS = {
   'code expired': 'errCodeExpired',
   'wrong code': 'errWrongCode',
   'wrong password': 'errWrongPassword',
+  invalid_dates: 'errInvalidDates',
+  invalid_guests: 'errInvalidGuests',
+  not_available: 'errNotAvailable',
+  too_many_guests: 'tooManyGuests',
+  cannot_book_own: 'errOwnBooking',
+  booking_not_pending: 'errBookingState',
+  room_has_bookings: 'errRoomHasBookings',
+  invalid_room: 'errInvalidRoom',
+  'hotel title and address are required': 'errHotelRequired',
+  invalid_stay_kind: 'errStayKind',
+  invalid_stay_time: 'errStayTime',
+  deal_change_not_allowed: 'errDealChange',
   'invalid password': 'errInvalidPassword',
   'phone not verified': 'errPhoneNotVerified',
   'phone already registered': 'errPhoneTaken',
@@ -308,6 +328,9 @@ const API_ERR_KEYS = {
   'not a participant': 'errNotParticipant',
   'cannot message yourself': 'errMessageSelf',
   'empty message': 'errEmptyMessage',
+  'message not found': 'errNotFound',
+  'not a voice message': 'errNotVoiceMessage',
+  transcribe_failed: 'errTranscribeFailed',
   no_changes: 'errNoChanges',
   revision_pending: 'errRevisionPending',
   changes_require_review: 'errChangesRequireReview'
@@ -352,6 +375,7 @@ function normalizeRemote(item) {
     f: l.f || [],
     ph: (l.photos || []).length || 5,
     photos: (l.photos || []).map(fileURL),
+    videos: (l.videos || []).map(fileURL),
     desc: l.desc,
     dep: l.dep,
     cadastreCode: l.cadastreCode || '',
@@ -369,7 +393,12 @@ function normalizeRemote(item) {
     createdAt: l.createdAt || null,
     outcome: item.outcome || null,
     views: typeof item.views === 'number' ? item.views : undefined,
-    favorites: typeof item.favorites === 'number' ? item.favorites : undefined
+    favorites: typeof item.favorites === 'number' ? item.favorites : undefined,
+    title: l.title || '',
+    stayKind: l.stayKind || '',
+    checkIn: l.checkIn || '',
+    checkOut: l.checkOut || '',
+    stay: item.stay || null
   };
 }
 
@@ -393,7 +422,8 @@ function mergeRemoteItem(base, incoming) {
     views: typeof incoming.views === 'number' ? incoming.views : base.views,
     favorites: typeof incoming.favorites === 'number' ? incoming.favorites : base.favorites,
     pendingRevision: incoming.pendingRevision !== undefined ? incoming.pendingRevision : base.pendingRevision,
-    outcome: incoming.outcome !== undefined ? incoming.outcome : base.outcome
+    outcome: incoming.outcome !== undefined ? incoming.outcome : base.outcome,
+    stay: base.stay || incoming.stay
   };
 }
 
@@ -414,7 +444,9 @@ function remoteById() {
 export async function loadRemoteListings() {
   const snapshot = statsSnapshot();
   try {
-    const list = await api.get('/api/listings?deal=' + encodeURIComponent(state.deal) + '&city=' + encodeURIComponent(cityK()));
+    const stay = state.deal === 'hotel' ? '&' + stayParams() : '';
+    const deal = state.deal === 'all' ? '' : 'deal=' + encodeURIComponent(state.deal) + '&';
+    const list = await api.get('/api/listings?' + deal + 'city=' + encodeURIComponent(cityK()) + stay);
     setState('remoteListings', applyRemoteReconciliation(list, snapshot));
     syncListingWatch();
   } catch {}
@@ -502,7 +534,7 @@ export const byId = (id) => allListings().find((l) => l.id === id);
 export async function refreshListingDetail(id) {
   const snapshot = statsSnapshot();
   try {
-    const item = await api.get('/api/listings/' + id, { 'X-Browser-Id': getBrowserId() });
+    const item = await api.get('/api/listings/' + id + '?' + stayParams(), { 'X-Browser-Id': getBrowserId() });
     const [reconciled] = applyRemoteReconciliation([item], snapshot);
     setState('remoteListings', (list) => {
       const i = list.findIndex((x) => x.listing.id === id);
@@ -519,7 +551,7 @@ export function sellerOf(l) {
   const name = o.name || 'HayHome';
   return {
     n: [name, name, name],
-    t: o.role === 'agency' ? 'agency' : 'owner',
+    t: sellerKind(o.role),
     since: 2026,
     score: 100,
     comp: 0,
@@ -528,6 +560,10 @@ export function sellerOf(l) {
     ph: o.phone ? formatPhone(o.phone) : ''
   };
 }
+
+const sellerKind = (role) => (role === 'agency' || role === 'hotel' ? role : 'owner');
+
+export const sellerRoleLabel = (sel) => txt({ owner: 'ownerW', agency: 'agencyW', hotel: 'hotelW' }[sel.t]);
 
 export function statusOf(l) {
   if (state.rented[l.id]) return 'archived';
@@ -542,6 +578,25 @@ export function addrOf(l) {
   const i = li();
   if (l.city !== 'yerevan') return CITY[l.city].n[i] + ', ' + l.st[i];
   return (DIST[l.d] || DIST.center)[i] + ', ' + l.st[i];
+}
+
+function haversineMeters(a, b) {
+  const R = 6371000;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+export function distanceToCenterOf(l) {
+  const center = CITY[l.city] && CITY[l.city].ll;
+  if (!center || !Array.isArray(l.ll) || (l.ll[0] === 0 && l.ll[1] === 0)) return '';
+  const meters = haversineMeters(center, l.ll);
+  if (!Number.isFinite(meters)) return '';
+  const km = meters / 1000;
+  const value = km < 1 ? Math.round(meters) + ' ' + txt('mUnit') : (km < 10 ? km.toFixed(1) : Math.round(km)) + ' ' + txt('kmUnit');
+  return txt('distFromCenter', { x: value });
 }
 
 export function agoOf(l) {
@@ -577,12 +632,14 @@ export function exchangeRateIsStale() {
 }
 
 export function perOf(l) {
+  if (l.deal === 'hotel') return txt('perNight');
   if (l.deal === 'daily') return txt('perDay');
   if (l.deal === 'sale' || l.deal === 'newb') return '';
   return txt('perMonth');
 }
 
 export function roomsLabel(l) {
+  if (l.deal === 'hotel') return stayKindLabel(l.stayKind);
   if (l.deal === 'comm') return ['տարածք', 'помещение', 'space'][li()];
   if (l.rooms === 0) return txt('studio');
   return txt('roomsN', { n: l.rooms });
@@ -612,14 +669,16 @@ export function clock(seconds) {
 export function visible() {
   const q = (state.query || '').trim().toLowerCase();
   const out = allListings().filter((l) => {
-    if (l.deal !== state.deal) return false;
+    if (state.deal !== 'all' && l.deal !== state.deal) return false;
     if (l.city !== cityK()) return false;
     const st = statusOf(l);
     if (state.strict && (st === 'due' || st === 'flagged' || st === 'archived')) return false;
     if (st === 'archived') return false;
     if (state.fresh === 'f24' && hoursOf(l) >= 24) return false;
     if (state.fresh === 'f48' && hoursOf(l) >= 48) return false;
-    if (state.rooms !== 'all') {
+    const hotel = l.deal === 'hotel';
+    if (hotel && state.deal === 'hotel' && !(l.stay && l.stay.bookable)) return false;
+    if (!hotel && state.rooms !== 'all') {
       if (state.rooms === 'studio' && l.rooms !== 0) return false;
       if (state.rooms === '3' && l.rooms < 3) return false;
       if (state.rooms !== 'studio' && state.rooms !== '3' && l.rooms !== parseInt(state.rooms, 10)) return false;
@@ -630,8 +689,8 @@ export function visible() {
     if (!isNaN(pmax) && l.price > pmax) return false;
     const amin = parseInt(state.areaMin, 10);
     const amax = parseInt(state.areaMax, 10);
-    if (!isNaN(amin) && l.area < amin) return false;
-    if (!isNaN(amax) && l.area > amax) return false;
+    if (!hotel && !isNaN(amin) && l.area < amin) return false;
+    if (!hotel && !isNaN(amax) && l.area > amax) return false;
     if (state.bbox) {
       const b = state.bbox;
       if (l.ll[0] < b[0] || l.ll[0] > b[2] || l.ll[1] < b[1] || l.ll[1] > b[3]) return false;
@@ -644,7 +703,7 @@ export function visible() {
     const repairOn = Object.keys(state.repair).filter((k) => state.repair[k]);
     if (repairOn.length && !repairOn.includes(l.repairCondition)) return false;
     if (q) {
-      const hay = (addrOf(l) + ' ' + l.st.join(' ') + ' ' + (DIST[l.d] || []).join(' ') + ' ' + sel.n.join(' ')).toLowerCase();
+      const hay = (addrOf(l) + ' ' + l.title + ' ' + l.st.join(' ') + ' ' + (DIST[l.d] || []).join(' ') + ' ' + sel.n.join(' ')).toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -677,8 +736,13 @@ export function cardOf(l) {
     photosLabel: txt('photosN', { n: l.ph }),
     addr: addrOf(l),
     meta: metaOf(l),
-    title: roomsLabel(l) + ', ' + l.area + ' m²',
-    tags: [roomsLabel(l), l.area + ' m²', txt('floorN', { a: l.fl, b: l.fls }), (DIST[l.d] || DIST.center)[li()]],
+    title: l.deal === 'hotel' ? l.title : roomsLabel(l) + ', ' + l.area + ' m²',
+    tags:
+      l.deal === 'hotel'
+        ? [roomsLabel(l), (DIST[l.d] || DIST.center)[li()], distanceToCenterOf(l)].filter(Boolean)
+        : [roomsLabel(l), l.area + ' m²', txt('floorN', { a: l.fl, b: l.fls }), (DIST[l.d] || DIST.center)[li()], distanceToCenterOf(l)].filter(
+            Boolean
+          ),
     chipBg: warm ? RED_T : st === 'archived' ? '#eeedea' : 'rgba(255,255,255,.94)',
     chipFg: warm ? RED_TX : st === 'fresh' ? TEAL_TX : MUTED,
     chipDot: warm ? RED : st === 'fresh' ? TEAL : '#c9c7c2',
@@ -697,7 +761,7 @@ export function cardOf(l) {
     initials: sel.ini,
     avBg: sel.t === 'owner' ? TEAL_T : SOFT,
     avFg: sel.t === 'owner' ? TEAL_TX : MUTED,
-    sellerLine: sel.n[li()] + ' · ' + txt(sel.t === 'owner' ? 'ownerW' : 'agencyW'),
+    sellerLine: sel.n[li()] + ' · ' + sellerRoleLabel(sel),
     scoreFg: low ? RED_TX : MUTED,
     scoreText: txt('honesty') + ' ' + sel.score + '% · ' + sel.comp + ' ' + txt('complaintsW'),
     warn: st === 'flagged' || low,
@@ -970,6 +1034,7 @@ export function activeFilterCount() {
 
 export function resetFilters() {
   setState({
+    deal: 'all',
     rooms: 'all',
     amen: {},
     repair: {},
@@ -1044,6 +1109,7 @@ function afterLogin() {
   loadThreadsRemote();
   loadSupportMessages();
   refreshTokenWallet();
+  loadBookings();
   connectRealtime({ onMessage: handleRealtimeEvent, onStatus: (s) => setState('realtimeStatus', s) });
   syncListingWatch();
 }
@@ -1155,7 +1221,8 @@ export async function restoreSession() {
         }
       )
     : Promise.resolve();
-  await Promise.all([authRestore, loadRemoteListings(), loadExchangeRates()]);
+  const detail = state.screen === 'listing' && state.active ? refreshListingDetail(state.active) : null;
+  await Promise.all([authRestore, loadRemoteListings(), loadExchangeRates(), detail]);
 
   if (GUARDED_SCREENS.includes(state.screen) && !state.user) {
     requireAuth({ type: 'go', to: state.screen });
@@ -1366,6 +1433,7 @@ export function signOut() {
     post: null,
     myRemote: [],
     remoteFavorites: [],
+    bookings: [],
     tokenWallet: { data: null, loading: false, error: null },
     realtimeStatus: 'offline',
     auth: { ...DEFAULTS.auth }
@@ -1390,7 +1458,9 @@ function mapSupportMsg(m) {
     lng: m.lng,
     time: m.createdAt ? clockOf(m.createdAt) : '',
     date: m.createdAt ? dateOf(m.createdAt) : '',
-    readAt: m.readAt || null
+    readAt: m.readAt || null,
+    waveform: m.waveform,
+    transcript: m.transcript
   };
 }
 
@@ -1415,7 +1485,7 @@ export function chatSellerOf(thread) {
   const name = o.name || 'HayHome';
   return {
     n: [name, name, name],
-    t: o.role === 'agency' ? 'agency' : 'owner',
+    t: sellerKind(o.role),
     since: 2026,
     score: 100,
     comp: 0,
@@ -1447,9 +1517,12 @@ function mapRemoteMsg(m) {
     dur: m.dur,
     lat: m.lat,
     lng: m.lng,
+    booking: m.booking || null,
     time: m.createdAt ? clockOf(m.createdAt) : '',
     date: m.createdAt ? dateOf(m.createdAt) : '',
-    readAt: m.readAt || null
+    readAt: m.readAt || null,
+    waveform: m.waveform,
+    transcript: m.transcript
   };
 }
 
@@ -1471,10 +1544,14 @@ function sortableId(id) {
 
 function mergeMessages(existing, incoming) {
   const byId = new Map((existing || []).map((m) => [m.id, m]));
+  const bookings = {};
   incoming.forEach((m) => {
     if (m && Number.isInteger(m.id) && m.id > 0) byId.set(m.id, mapRemoteMsg(m));
+    if (m && m.booking) bookings[m.booking.id] = m.booking;
   });
-  return [...byId.values()].sort((a, b) => sortableId(a.id) - sortableId(b.id));
+  return [...byId.values()]
+    .map((m) => (m.booking && bookings[m.booking.id] ? { ...m, booking: bookings[m.booking.id] } : m))
+    .sort((a, b) => sortableId(a.id) - sortableId(b.id));
 }
 
 export async function loadThreadMessages(threadId, listingId, other) {
@@ -1580,6 +1657,7 @@ export function receiveRealtimeMessage(payload) {
     loadThreadsRemote();
     return;
   }
+  if (message.booking) applyBookings([message.booking]);
   if (!mergeIncomingMessages(threadId, [message])) return;
   const mine = !!(state.user && message.senderId === state.user.id);
   if (mine) return;
@@ -1666,13 +1744,33 @@ export function sendMsg() {
   if (isRemoteThread(key)) sendRemote(key, { kind: 'text', text });
 }
 
-export function sendAudioMsg(url, dur) {
+export function sendAudioMsg(url, dur, waveform) {
   const key = activeThreadKey();
+  const wf = waveform && waveform.length ? JSON.stringify(waveform.map((v) => Math.round(v * 100))) : '';
   if (key === SUPPORT_KEY) {
-    sendSupportMedia('audio', url, { dur });
+    sendSupportMedia('audio', url, { dur, waveform: wf });
     return;
   }
-  if (isRemoteThread(key)) sendRemoteMedia(key, 'audio', url, { dur });
+  if (isRemoteThread(key)) sendRemoteMedia(key, 'audio', url, { dur, waveform: wf });
+}
+
+export async function transcribeAudioMessage(id) {
+  const key = activeThreadKey();
+  try {
+    if (key === SUPPORT_KEY) {
+      const { transcript } = await api.post('/api/support/messages/' + id + '/transcript');
+      setState('support', 'messages', (msgs) => msgs.map((m) => (m.id === id ? { ...m, transcript } : m)));
+      return transcript;
+    }
+    if (isRemoteThread(key)) {
+      const { transcript } = await api.post('/api/threads/' + key + '/messages/' + id + '/transcript');
+      setState('threads', key, 'msgs', (msgs) => msgs.map((m) => (m.id === id ? { ...m, transcript } : m)));
+      return transcript;
+    }
+  } catch (e) {
+    say(apiErrText(e));
+    throw e;
+  }
 }
 
 export function sendVideoMsg(url) {
@@ -1724,7 +1822,11 @@ export function postState() {
     state.post || {
       step: 1,
       editId: null,
-      deal: 'rent',
+      deal: u.role === 'hotel' ? 'hotel' : 'rent',
+      title: '',
+      stayKind: 'hotel',
+      checkInTime: '14:00',
+      checkOutTime: '12:00',
       city: 'yerevan',
       dist: 'kentron',
       street: '',
@@ -1749,7 +1851,7 @@ export function postState() {
 
 export const setPost = (patch) => setState('post', { ...postState(), ...patch });
 
-export async function publishListing(files = []) {
+export async function publishListing(photoFiles = [], videoFiles = []) {
   const p = postState();
   const body = buildListingPayload(p);
   const c = CITY[p.city].ll;
@@ -1772,12 +1874,20 @@ export async function publishListing(files = []) {
       id = resp.listing.id;
       clearDocumentFile();
       say(txt('publishedToast'));
-      for (const file of files) {
+      for (const file of photoFiles) {
         if (!file) continue;
         const form = new FormData();
         form.append('photo', file);
         try {
           await api.upload('/api/listings/' + id + '/photos', form);
+        } catch {}
+      }
+      for (const file of videoFiles) {
+        if (!file) continue;
+        const form = new FormData();
+        form.append('video', file);
+        try {
+          await api.upload('/api/listings/' + id + '/videos', form);
         } catch {}
       }
     }
@@ -1808,6 +1918,10 @@ export function editListing(id) {
       step: 1,
       editId: id,
       deal: l.deal,
+      title: l.title,
+      stayKind: l.stayKind || 'hotel',
+      checkInTime: l.checkIn,
+      checkOutTime: l.checkOut,
       city: l.city,
       dist: l.d,
       street: l.st[li()],
@@ -1905,7 +2019,7 @@ export async function confirmRemote(id) {
     await api.post('/api/listings/' + id + path);
     await loadMyRemoteListings();
     const fresh = byId(id);
-    say(txt('smsDone', { x: fresh ? roomsLabel(fresh) + ', ' + fresh.area + ' m²' : '' }));
+    say(txt('smsDone', { x: fresh ? cardOf(fresh).title : '' }));
   } catch (e) {
     say(apiErrText(e));
   } finally {
@@ -1950,7 +2064,7 @@ export async function confirmAll() {
 }
 
 export function saveSearch() {
-  const titleKey = { rent: 'titleRent', daily: 'titleDaily', sale: 'titleSale', newb: 'titleNew', comm: 'titleComm' }[state.deal];
+  const titleKey = { rent: 'titleRent', daily: 'titleDaily', sale: 'titleSale', newb: 'titleNew', comm: 'titleComm', hotel: 'titleHotel', all: 'titleAll' }[state.deal];
   const label =
     t()[titleKey] +
     ' · ' +
@@ -1962,6 +2076,155 @@ export function saveSearch() {
     state.savedSearches.concat([{ label, deal: state.deal, city: cityK(), rooms: state.rooms, priceMax: state.priceMax }])
   );
   say(txt('savedToast'));
+}
+
+export const STAY_KINDS = ['hotel', 'hostel', 'guesthouse'];
+
+export const dateLocale = () => ['hy-AM', 'ru-RU', 'en-GB'][li()];
+
+export function stayDatesLabel(checkIn, checkOut) {
+  const fmt = new Intl.DateTimeFormat(dateLocale(), { day: 'numeric', month: 'short' });
+  return fmt.format(new Date(checkIn + 'T00:00')) + ' – ' + fmt.format(new Date(checkOut + 'T00:00'));
+}
+
+export const bookingStatusLabel = (status) =>
+  txt({ pending: 'bkPending', confirmed: 'bkConfirmed', declined: 'bkDeclined', cancelled: 'bkCancelled' }[status] || 'bkPending');
+
+export const stayKindLabel = (kind) => txt({ hotel: 'kindHotel', hostel: 'kindHostel', guesthouse: 'kindGuesthouse' }[kind] || 'kindHotel');
+
+export function stayNightsCount() {
+  const { checkIn, checkOut } = state.stay;
+  return Math.max(0, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000));
+}
+
+function stayParams() {
+  const { checkIn, checkOut, guests } = state.stay;
+  return 'checkIn=' + checkIn + '&checkOut=' + checkOut + '&guests=' + guests;
+}
+
+export function setStay(patch) {
+  const next = { ...state.stay, ...patch };
+  const today = isoDay();
+  if (next.checkIn < today) next.checkIn = today;
+  if (next.checkOut <= next.checkIn) next.checkOut = isoDay(1, new Date(next.checkIn + 'T00:00'));
+  if (next.checkOut > isoDay(30, new Date(next.checkIn + 'T00:00'))) next.checkOut = isoDay(30, new Date(next.checkIn + 'T00:00'));
+  next.guests = Math.min(50, Math.max(1, next.guests));
+  setState('stay', next);
+  reload();
+  if (state.screen === 'listing' && state.active) refreshListingDetail(state.active);
+}
+
+export function hotelPriceOf(l) {
+  const s = l.stay;
+  const nightly = (s && s.minNightly) || l.price;
+  if (s && s.minTotal) {
+    return { main: nf(s.minTotal) + ' ֏', per: txtN('forNights', s.nights), sub: txt('fromPerNight', { x: nf(nightly) }) };
+  }
+  return { main: txt('fromPerNight', { x: nf(nightly) }), per: '', sub: '' };
+}
+
+export function dailyPriceOf(l) {
+  const nights = Math.max(1, stayNightsCount());
+  return { main: nf(l.price * nights) + ' ֏', per: txtN('forNights', nights), sub: txt('perDayPrice', { x: nf(l.price) }) };
+}
+
+async function attemptApi(run, toast) {
+  try {
+    const out = await run();
+    if (toast) say(txt(toast));
+    return out ?? true;
+  } catch (e) {
+    say(apiErrText(e));
+    return null;
+  }
+}
+
+export const fetchRooms = (listingId) => api.get('/api/listings/' + listingId + '/rooms').catch(() => null);
+
+export function saveRoom(listingId, room) {
+  const body = {
+    name: room.name,
+    capacity: +room.capacity || 0,
+    quantity: +room.quantity || 0,
+    price: parseInt(String(room.price).replace(/\s/g, ''), 10) || 0,
+    bathroom: room.bathroom,
+    breakfast: !!room.breakfast
+  };
+  const path = '/api/listings/' + listingId + '/rooms' + (room.id ? '/' + room.id : '');
+  return attemptApi(async () => {
+    const saved = await (room.id ? api.put(path, body) : api.post(path, body));
+    loadMyRemoteListings();
+    return saved;
+  }, 'roomSavedToast');
+}
+
+export function removeRoom(listingId, roomId) {
+  return attemptApi(async () => {
+    await api.del('/api/listings/' + listingId + '/rooms/' + roomId);
+    loadMyRemoteListings();
+  }, 'roomDeletedToast');
+}
+
+export const fetchCalendar = (listingId, roomId, month) =>
+  api.get('/api/listings/' + listingId + '/rooms/' + roomId + '/calendar?month=' + month).catch((e) => {
+    say(apiErrText(e));
+    return null;
+  });
+
+export const setClosures = (listingId, roomId, days, closed) =>
+  attemptApi(
+    () => api.put('/api/listings/' + listingId + '/rooms/' + roomId + '/closures', { days, closed }),
+    closed ? 'datesClosedToast' : 'datesOpenedToast'
+  );
+
+function applyBookings(list) {
+  setState('bookings', (current) => {
+    const next = current.slice();
+    list.forEach((b) => {
+      const i = next.findIndex((x) => x.id === b.id);
+      if (i === -1) next.unshift(b);
+      else next[i] = b;
+    });
+    return next;
+  });
+}
+
+export async function loadBookings() {
+  if (!state.token) return;
+  try {
+    setState('bookings', await api.get('/api/bookings'));
+  } catch {}
+}
+
+export async function requestBooking(listingId, roomTypeId) {
+  if (!requireAuth({ type: 'go', to: 'listing' })) return;
+  const { checkIn, checkOut, guests } = state.stay;
+  const resp = await attemptApi(() => api.post('/api/listings/' + listingId + '/bookings', { roomTypeId, checkIn, checkOut, guests }), 'bookingSentToast');
+  if (!resp) return;
+  applyBookings([resp.booking]);
+  const l = byId(listingId);
+  const o = (l && l.ownerInfo) || {};
+  await loadThreadMessages(resp.threadId, listingId, { id: resp.booking.ownerId, name: o.name, role: o.role, ini: o.ini });
+  setState('thread', resp.threadId);
+  go('chat');
+}
+
+async function changeBooking(id, path, body, toast) {
+  const b = await attemptApi(() => api.post('/api/bookings/' + id + path, body), toast);
+  if (!b) return;
+  applyBookings([b]);
+  refreshListingDetail(b.listingId);
+}
+
+export const decideBooking = (id, status) =>
+  changeBooking(id, '/decision', { status }, status === 'confirmed' ? 'bookingConfirmedToast' : 'bookingDeclinedToast');
+
+export const cancelBooking = (id) => changeBooking(id, '/cancel', undefined, 'bookingCancelledToast');
+
+export async function openBookingChat(b) {
+  if (!threadsAll()[b.threadId]) await loadThreadsRemote();
+  openThread(b.threadId);
+  go('chat');
 }
 
 export { INK, MUTED, FAINT, SOFT, TEAL, TEAL_T, TEAL_TX, RED, RED_T, RED_TX };

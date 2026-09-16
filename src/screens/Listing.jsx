@@ -19,6 +19,7 @@ import {
   exchangeRateDateLabel,
   exchangeRateIsStale,
   metaOf,
+  distanceToCenterOf,
   toggleFav,
   openListing,
   openThreadFor,
@@ -27,6 +28,9 @@ import {
   say,
   visible,
   repairLabelOf,
+  sellerRoleLabel,
+  hotelPriceOf,
+  dailyPriceOf,
   go,
   TEAL,
   TEAL_T,
@@ -40,6 +44,9 @@ import { DIST, FEAT, nf } from '../data';
 import PhotoSlot from '../components/PhotoSlot';
 import Icon from '../components/Icon';
 import ListingLocation from '../components/ListingLocation';
+import StayRooms from '../components/StayRooms';
+import StayPicker from '../components/StayPicker';
+import VideoMessage from './chat/VideoMessage';
 import { formatListingDate, postedAtOf, viewsOf, favoritesOf } from '../listingStats';
 import { remainingPhotos, galleryIndex } from '../galleryNav';
 
@@ -50,14 +57,26 @@ export default function Listing() {
   const st = () => statusOf(l());
   const warm = () => st() === 'flagged' || st() === 'due';
   const low = () => sel().score < 80;
-  const dealValue = () => ({ rent: t().vLong, daily: t().vDaily, sale: t().vSale, newb: t().vNew, comm: t().vComm })[l().deal];
+  const dealValue = () => ({ rent: t().vLong, daily: t().vDaily, sale: t().vSale, newb: t().vNew, comm: t().vComm, hotel: t().vHotel })[l().deal];
+  const hotel = () => l().deal === 'hotel';
+  const daily = () => l().deal === 'daily';
+  const hp = () => hotelPriceOf(l());
+  const dp = () => dailyPriceOf(l());
 
   const postedLabel = () => {
     const formatted = formatListingDate(postedAtOf(l()), state.lang);
     return formatted ? txt('statPostedOn', { x: formatted }) : t().statPostedUnknown;
   };
 
-  const specs = () => [
+  const hotelSpecs = () => [
+    [t().kDeal, dealValue()],
+    [t().kStayKind, roomsLabel(l())],
+    [t().kCheckTimes, (l().checkIn || '—') + ' / ' + (l().checkOut || '—')],
+    [t().kRoomTypes, String((l().stay && l().stay.roomTypes.length) || l().rooms || 0)],
+    [t().kWho, sellerRoleLabel(sel())]
+  ];
+
+  const specs = () => hotel() ? hotelSpecs() : [
     [t().kDeal, dealValue()],
     [t().kRooms, l().rooms === 0 ? t().studio : String(l().rooms)],
     [t().kArea, l().area + ' m²'],
@@ -66,7 +85,7 @@ export default function Listing() {
     [t().kFurn, (l().f || []).includes('furn') ? t().vYes : t().vNo],
     [t().kDeposit, t().vOneMonth],
     [t().kUtil, t().vMeters],
-    [t().kWho, txt(sel().t === 'owner' ? 'ownerW' : 'agencyW')],
+    [t().kWho, sellerRoleLabel(sel())],
     [t().kPromo, t().vTokens]
   ];
 
@@ -133,12 +152,17 @@ export default function Listing() {
 
       <div class="bn-listing-cols" style="margin-top:26px">
         <div class="bn-listing-main">
+          <Show when={hotel()}>
+            <h1 style="margin:0 0 10px;font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.03em">{l().title}</h1>
+          </Show>
           <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
-            <span style="font-size:clamp(28px,5vw,38px);font-weight:800;letter-spacing:-.035em">{priceOf(l())}</span>
-            <span style="font-size:16px;font-weight:600;color:#6f6d68">{perOf(l())}</span>
-            <span style="font-size:14px;color:#9a9793">{[usdOf(l()), rubOf(l())].filter(Boolean).join(' · ')}</span>
+            <span style="font-size:clamp(28px,5vw,38px);font-weight:800;letter-spacing:-.035em">{hotel() ? hp().main : daily() ? dp().main : priceOf(l())}</span>
+            <span style="font-size:16px;font-weight:600;color:#6f6d68">{hotel() ? hp().per : daily() ? dp().per : perOf(l())}</span>
+            <span style="font-size:14px;color:#9a9793">
+              {hotel() ? hp().sub : daily() ? dp().sub : [usdOf(l()), rubOf(l())].filter(Boolean).join(' · ')}
+            </span>
           </div>
-          <Show when={exchangeRateDateLabel()}>
+          <Show when={!hotel() && !daily() && exchangeRateDateLabel()}>
             <div style="margin-top:6px;display:flex;align-items:center;gap:8px;font-size:13px;color:#9a9793">
               <span>{exchangeRateDateLabel()}</span>
               <Show when={exchangeRateIsStale()}>
@@ -148,9 +172,16 @@ export default function Listing() {
               </Show>
             </div>
           </Show>
-          <h1 style="margin:12px 0 0;font-size:clamp(21px,3.4vw,27px);font-weight:800;letter-spacing:-.03em">
-            {roomsLabel(l())}, {l().area} m², {txt('floorN', { a: l().fl, b: l().fls })}
-          </h1>
+          <Show when={!hotel()}>
+            <h1 style="margin:12px 0 0;font-size:clamp(21px,3.4vw,27px);font-weight:800;letter-spacing:-.03em">
+              {roomsLabel(l())}, {l().area} m², {txt('floorN', { a: l().fl, b: l().fls })}
+            </h1>
+          </Show>
+          <Show when={daily()}>
+            <div style="margin-top:16px;padding:16px;border-radius:16px;background:#f7f7f6">
+              <StayPicker guests={false} />
+            </div>
+          </Show>
           <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px">
             <For each={l().f || []}>
               {(f) => (
@@ -162,9 +193,7 @@ export default function Listing() {
           </div>
           <div style="margin-top:14px;display:flex;align-items:center;gap:8px;font-size:15px;color:#4a4844">
             <Icon name="pin" size={17} stroke="#9a9793" />
-            <span>
-              {addrOf(l())} · {metaOf(l())}
-            </span>
+            <span>{[addrOf(l()), metaOf(l()), distanceToCenterOf(l())].filter(Boolean).join(' · ')}</span>
           </div>
 
           <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;font-size:14px;color:#6f6d68">
@@ -228,13 +257,38 @@ export default function Listing() {
             </div>
           </div>
 
-          <div style="margin-top:26px">
-            <h2 style="margin:0 0 12px;font-size:20px;font-weight:800;letter-spacing:-.02em">{t().descTitle}</h2>
-            <p style="margin:0;font-size:16px;line-height:1.65;color:#2c2a27;max-width:64ch;text-wrap:pretty">
-              {txt('descBody', { d: (DIST[l().d] || DIST.center)[li()] })}
-            </p>
-            <p style="margin:12px 0 0;font-size:16px;line-height:1.65;color:#4a4844;max-width:64ch;text-wrap:pretty">{t().descBody2}</p>
-          </div>
+          <Show when={hotel()}>
+            <StayRooms listing={l()} />
+          </Show>
+
+          <Show
+            when={hotel()}
+            fallback={
+              <div style="margin-top:26px">
+                <h2 style="margin:0 0 12px;font-size:20px;font-weight:800;letter-spacing:-.02em">{t().descTitle}</h2>
+                <p style="margin:0;font-size:16px;line-height:1.65;color:#2c2a27;max-width:64ch;text-wrap:pretty">
+                  {txt('descBody', { d: (DIST[l().d] || DIST.center)[li()] })}
+                </p>
+                <p style="margin:12px 0 0;font-size:16px;line-height:1.65;color:#4a4844;max-width:64ch;text-wrap:pretty">{t().descBody2}</p>
+              </div>
+            }
+          >
+            <Show when={l().desc}>
+              <div style="margin-top:26px">
+                <h2 style="margin:0 0 12px;font-size:20px;font-weight:800;letter-spacing:-.02em">{t().descTitle}</h2>
+                <p style="margin:0;font-size:16px;line-height:1.65;color:#2c2a27;max-width:64ch;text-wrap:pretty;white-space:pre-line">{l().desc}</p>
+              </div>
+            </Show>
+          </Show>
+
+          <Show when={(l().videos || []).length > 0}>
+            <div style="margin-top:26px">
+              <h2 style="margin:0 0 12px;font-size:20px;font-weight:800;letter-spacing:-.02em">{t().videoTitle}</h2>
+              <div style="display:flex;gap:12px;flex-wrap:wrap">
+                <For each={l().videos}>{(url) => <VideoMessage url={url} />}</For>
+              </div>
+            </div>
+          </Show>
 
           <div style="margin-top:26px">
             <h2 style="margin:0 0 14px;font-size:20px;font-weight:800;letter-spacing:-.02em">{t().specsTitle}</h2>
@@ -262,7 +316,7 @@ export default function Listing() {
               <div style="min-width:0">
                 <div style="font-size:16px;font-weight:700">{sel().n[li()]}</div>
                 <div style="font-size:13px;color:#6f6d68;margin-top:1px">
-                  {txt(sel().t === 'owner' ? 'ownerW' : 'agencyW')} · {txt('onHayHomeSince', { y: sel().since })}
+                  {sellerRoleLabel(sel())} · {txt('onHayHomeSince', { y: sel().since })}
                 </div>
               </div>
             </div>
@@ -304,12 +358,10 @@ export default function Listing() {
                 class="bn-tap"
                 onClick={() => toggleFav(l().id)}
                 aria-pressed={c().fav}
-                style="display:flex;padding:14px;border-radius:14px;border:1px solid #e8e7e4;font-size:14px;font-weight:600;color:#4a4844"
+                style="display:flex;align-items:center;justify-content:center;gap:9px;padding:14px;border-radius:14px;border:1px solid #e8e7e4;font-size:14px;font-weight:600;color:#4a4844;white-space:nowrap"
               >
-                <div style="display:flex;align-items:center;gap:9px;width:max-content;max-width:100%;margin:auto;text-align:center">
-                  <Icon name="heart" size={16} fill={c().fav ? TEAL : 'none'} stroke={c().fav ? TEAL : '#4a4844'} style="flex:0 0 auto" />
-                  <span>{c().fav ? t().inFavW : t().saveWatch}</span>
-                </div>
+                <Icon name="heart" size={16} fill={c().fav ? TEAL : 'none'} stroke={c().fav ? TEAL : '#4a4844'} style="flex:0 0 auto" />
+                <span>{c().fav ? t().inFavW : t().saveWatch}</span>
               </button>
             </div>
           </div>
@@ -318,23 +370,13 @@ export default function Listing() {
             <div style="margin-top:16px;background:#fff;border-radius:18px;padding:20px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
               <div style="display:flex;align-items:center;gap:10px">
                 <span style="width:34px;height:34px;border-radius:11px;background:#e8f4f2;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
-                  <Icon name="doc" size={16} stroke="#0a5f59" weight={1.8} />
+                  <Icon name="shield" size={16} stroke="#0a5f59" weight={1.8} />
                 </span>
                 <div style="min-width:0">
                   <div style="font-size:13px;font-weight:800">{t().cadastreLbl}</div>
-                  <div style="font-size:14px;color:#2c2a27;margin-top:2px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all">
-                    {l().cadastreCode}
-                  </div>
+                  <div style="font-size:13px;color:#6f6d68;margin-top:2px">{t().cadastreVerifiedNote}</div>
                 </div>
               </div>
-              <a
-                href="https://www.cadastre.am"
-                target="_blank"
-                rel="noopener noreferrer"
-                style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:13px;background:#f2f1ee;color:#1c1b19;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none"
-              >
-                <span>{t().cadastreBadge}</span>
-              </a>
             </div>
           </Show>
 
@@ -372,10 +414,10 @@ export default function Listing() {
                     <PhotoSlot id={`ph-${x.id}`} label={addrOf(x)} src={x.photos && x.photos[0]} />
                   </div>
                   <div style="min-width:0;flex:1">
-                    <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">{priceOf(x)}</div>
-                    <div style="font-size:13px;font-weight:700;margin-top:4px">
-                      {roomsLabel(x)}, {x.area} m²
+                    <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">
+                      {x.deal === 'hotel' ? hotelPriceOf(x).main : x.deal === 'daily' ? dailyPriceOf(x).main : priceOf(x)}
                     </div>
+                    <div style="font-size:13px;font-weight:700;margin-top:4px">{cardOf(x).title}</div>
                     <div style="font-size:13px;color:#6f6d68;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                       {addrOf(x)}
                     </div>

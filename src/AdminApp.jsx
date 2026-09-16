@@ -49,8 +49,8 @@ function supportMsgText(m) {
   return SUPPORT_ATTACH_LABEL[m.kind] || '📄 ' + (m.name || 'Файл');
 }
 
-const ROLE_LABEL = { tenant: 'Ищет жильё', owner: 'Сдаёт своё жильё', agency: 'Агентство' };
-const DEAL_LABEL = { rent: 'Аренда', daily: 'Посуточно', sale: 'Продажа', newb: 'Новостройки', comm: 'Коммерческая' };
+const ROLE_LABEL = { tenant: 'Ищет жильё', owner: 'Сдаёт своё жильё', agency: 'Агентство', hotel: 'Отель / хостел' };
+const DEAL_LABEL = { rent: 'Аренда', daily: 'Посуточно', sale: 'Продажа', newb: 'Новостройки', comm: 'Коммерческая', hotel: 'Отель / хостел' };
 
 const LISTING_STATUS = {
   pending: { label: 'Первичная модерация', bg: WARN_SOFT, fg: WARN },
@@ -286,11 +286,73 @@ function PageHeader(props) {
   );
 }
 
+function ListingDetailPanel(props) {
+  const l = () => props.listing;
+  const rows = () => [
+    ['Адрес', [cityLabel(l().city), l().street].filter(Boolean).join(', ') || '—'],
+    ['Кадастровый номер', l().cadastreCode || 'не указан'],
+    ['Владелец', props.owner?.name || '—'],
+    ['Телефон владельца', props.owner?.phone || '—']
+  ];
+  return (
+    <div style={`padding:16px;background:${SURFACE_ALT};border-bottom:1px solid ${BORDER};display:flex;flex-direction:column;gap:14px`}>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+        <For each={rows()}>
+          {([label, value]) => (
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <span style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>{label}</span>
+              <span style="font-size:13px;word-break:break-word">{value}</span>
+            </div>
+          )}
+        </For>
+      </div>
+
+      <div>
+        <div style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT};margin-bottom:6px`}>
+          Описание
+        </div>
+        <div style="font-size:13px;line-height:1.55;white-space:pre-line;max-width:72ch">{l().desc || 'Описание не заполнено'}</div>
+      </div>
+
+      <Show when={(l().photos || []).length}>
+        <div>
+          <div style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT};margin-bottom:6px`}>
+            Фотографии ({l().photos.length})
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <For each={l().photos}>
+              {(url) => (
+                <a href={url} target="_blank" rel="noreferrer" style="display:block;width:96px;height:76px;border-radius:3px;overflow:hidden;border:1px solid #e3e3e0">
+                  <img src={url} alt="" style="width:100%;height:100%;object-fit:cover;display:block" />
+                </a>
+              )}
+            </For>
+          </div>
+        </div>
+      </Show>
+
+      <Show when={(l().videos || []).length}>
+        <div>
+          <div style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT};margin-bottom:6px`}>
+            Видео ({l().videos.length})
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <For each={l().videos}>
+              {(url) => <video src={url} controls style="width:180px;height:110px;border-radius:3px;background:#000" />}
+            </For>
+          </div>
+        </div>
+      </Show>
+    </div>
+  );
+}
+
 function ListingsTable(props) {
-  const cols = 'grid-template-columns:92px 108px 100px 122px 122px 74px minmax(0,1fr) 210px';
+  const [openId, setOpenId] = sig(null);
+  const cols = 'grid-template-columns:92px 108px 100px 122px 122px 74px minmax(0,1fr) 280px';
   return (
     <section style={`border:1px solid ${BORDER};border-radius:4px;background:#fff;margin-top:16px;overflow-x:auto`}>
-      <div style="min-width:920px">
+      <div style="min-width:1020px">
         <div
           style={`display:grid;${cols};gap:12px;padding:10px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}
         >
@@ -310,7 +372,8 @@ function ListingsTable(props) {
           {(item) => {
             const l = item.listing;
             const st = LISTING_STATUS[l.status] || LISTING_STATUS.archived;
-            const acts = [];
+            const open = () => openId() === l.id;
+            const acts = [{ label: open() ? 'Скрыть' : 'Подробнее', variant: 'neutral', onClick: () => setOpenId(open() ? null : l.id) }];
             if (l.status === 'pending') acts.push({ label: 'Документ', variant: 'neutral', onClick: () => openPrivateDocument(l.id) });
             if (l.status === 'pending' || l.status === 'flagged')
               acts.push({ label: 'Одобрить', variant: 'primary', onClick: () => props.onStatus(l.id, 'active') });
@@ -318,27 +381,31 @@ function ListingsTable(props) {
               acts.push({ label: 'В архив', variant: 'neutral', onClick: () => props.onStatus(l.id, 'archived') });
             if (l.status === 'archived' || l.status === 'rented')
               acts.push({ label: 'Вернуть в выдачу', variant: 'primary', onClick: () => props.onStatus(l.id, 'active') });
+            acts.push({ label: 'Написать автору', variant: 'neutral', onClick: () => props.onChat(l.ownerId) });
             acts.push({ label: 'Удалить', variant: 'danger', onClick: () => props.onDelete(l.id) });
             return (
-              <div
-                style={`display:grid;${cols};gap:12px;padding:11px 16px;border-bottom:1px solid ${BORDER_SOFT};align-items:center;font-size:12.5px`}
-              >
-                <div style={`font-family:${MONO};font-size:11px;color:${TEXT_MUTED}`} title={l.id}>
-                  {shortId(l.id)}
+              <div style={`border-bottom:1px solid ${BORDER_SOFT}`}>
+                <div style={`display:grid;${cols};gap:12px;padding:11px 16px;align-items:center;font-size:12.5px`}>
+                  <div style={`font-family:${MONO};font-size:11px;color:${TEXT_MUTED}`} title={l.id}>
+                    {shortId(l.id)}
+                  </div>
+                  <div>{DEAL_LABEL[l.deal] || l.deal}</div>
+                  <div>{cityLabel(l.city)}</div>
+                  <div style={`font-family:${MONO};font-size:12px`}>{priceOf(l)}</div>
+                  <div>
+                    <Badge bg={st.bg} fg={st.fg}>
+                      {st.label}
+                    </Badge>
+                  </div>
+                  <div style={`font-size:11.5px;color:${l.cadastreCode ? TEXT_MUTED : DANGER}`}>{l.cadastreCode ? 'есть' : 'нет'}</div>
+                  <div style={`overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${TEXT}`}>{item.owner?.name || '—'}</div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <For each={acts}>{(a) => <ActBtn variant={a.variant} onClick={a.onClick}>{a.label}</ActBtn>}</For>
+                  </div>
                 </div>
-                <div>{DEAL_LABEL[l.deal] || l.deal}</div>
-                <div>{cityLabel(l.city)}</div>
-                <div style={`font-family:${MONO};font-size:12px`}>{priceOf(l)}</div>
-                <div>
-                  <Badge bg={st.bg} fg={st.fg}>
-                    {st.label}
-                  </Badge>
-                </div>
-                <div style={`font-size:11.5px;color:${l.cadastreCode ? TEXT_MUTED : DANGER}`}>{l.cadastreCode ? 'есть' : 'нет'}</div>
-                <div style={`overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${TEXT}`}>{item.owner?.name || '—'}</div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap">
-                  <For each={acts}>{(a) => <ActBtn variant={a.variant} onClick={a.onClick}>{a.label}</ActBtn>}</For>
-                </div>
+                <Show when={open()}>
+                  <ListingDetailPanel listing={l} owner={item.owner} />
+                </Show>
               </div>
             );
           }}
@@ -568,6 +635,11 @@ function UserRow(props) {
         </span>
       </span>
       <span style="display:flex;align-items:center;gap:8px">
+        <Show when={u().unreadSupport > 0}>
+          <Badge bg={DANGER_SOFT} fg={DANGER}>
+            {u().unreadSupport} непрочит.
+          </Badge>
+        </Show>
         <Badge bg={blocked() ? DANGER_SOFT : ACCENT_SOFT} fg={blocked() ? DANGER : ACCENT}>
           {blocked() ? 'Заблокирован' : 'Активен'}
         </Badge>
@@ -768,6 +840,7 @@ function Panel(props) {
   const [toast, setToast] = sig(null);
 
   const [userQuery, setUserQuery] = sig('');
+  const [userFilter, setUserFilter] = sig('all');
   const [selectedUserId, setSelectedUserId] = sig(null);
   const [userDetail, setUserDetail] = sig(null);
   const [userDraft, setUserDraft] = sig(null);
@@ -1035,7 +1108,15 @@ function Panel(props) {
             <Donut title="Объявления · тип сделки" items={dealItems()} unit={UNIT.listing} selected={() => sel.deal} onToggle={(k) => setSel('deal', k)} />
             <Donut title="Объявления · город" items={cityItems()} unit={UNIT.listing} selected={() => sel.city} onToggle={(k) => setSel('city', k)} />
           </section>
-          <ListingsTable rows={data.listings} onStatus={setListingStatus} onDelete={deleteListing} />
+          <ListingsTable
+            rows={data.listings}
+            onStatus={setListingStatus}
+            onDelete={deleteListing}
+            onChat={(ownerId) => {
+              setSection('support');
+              setFocusSupportUserId(ownerId);
+            }}
+          />
         </Show>
 
         <Show when={section() === 'complaints'}>
@@ -1163,18 +1244,52 @@ function Panel(props) {
         <Show when={section() === 'users'}>
           {(() => {
             const q = () => userQuery().trim().toLowerCase();
-            const rows = () => data.users.filter((u) => !q() || (u.name + u.phone).toLowerCase().includes(q()));
+            const userFilters = () => [
+              ['all', 'Все', data.users.length],
+              ['unread', 'Непрочитанные', data.users.filter((u) => u.unreadSupport > 0).length],
+              ['online', 'Онлайн', data.users.filter((u) => u.online).length],
+              ['blocked', 'Заблокированные', data.users.filter((u) => u.status === 'blocked').length],
+              ...Object.keys(ROLE_LABEL).map((k) => [k, ROLE_LABEL[k], data.users.filter((u) => u.role === k).length])
+            ];
+            const matchesFilter = (u) => {
+              const f = userFilter();
+              if (f === 'all') return true;
+              if (f === 'unread') return u.unreadSupport > 0;
+              if (f === 'online') return u.online;
+              if (f === 'blocked') return u.status === 'blocked';
+              return u.role === f;
+            };
+            const rows = () => data.users.filter((u) => matchesFilter(u) && (!q() || (u.name + u.phone).toLowerCase().includes(q())));
             return (
               <section style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;align-items:flex-start">
                 <div style={`flex:1 1 400px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;overflow:hidden`}>
-                  <div style={`padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};display:flex;align-items:center;justify-content:space-between;gap:10px`}>
-                    <div style="font-size:13px;font-weight:600">Пользователи</div>
-                    <input
-                      value={userQuery()}
-                      onInput={(e) => setUserQuery(e.currentTarget.value)}
-                      placeholder="Поиск по имени, телефону"
-                      style={`border:1px solid ${BORDER};border-radius:3px;padding:5px 9px;font-size:12px;width:160px;background:#fff;color:${INK}`}
-                    />
+                  <div style={`padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};display:flex;flex-direction:column;gap:10px`}>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                      <div style="font-size:13px;font-weight:600">Пользователи</div>
+                      <input
+                        value={userQuery()}
+                        onInput={(e) => setUserQuery(e.currentTarget.value)}
+                        placeholder="Поиск по имени, телефону"
+                        style={`border:1px solid ${BORDER};border-radius:3px;padding:5px 9px;font-size:12px;width:160px;background:#fff;color:${INK}`}
+                      />
+                    </div>
+                    <div style="display:flex;gap:4px;flex-wrap:wrap">
+                      <For each={userFilters()}>
+                        {([k, label, count]) => {
+                          const on = () => userFilter() === k;
+                          return (
+                            <button
+                              type="button"
+                              class="bn-tap"
+                              onClick={() => setUserFilter(k)}
+                              style={`border:1px solid ${on() ? ACCENT : BORDER};background:${on() ? ACCENT : '#fff'};color:${on() ? '#fff' : TEXT};cursor:pointer;font-size:11.5px;padding:3px 9px;border-radius:3px;white-space:nowrap`}
+                            >
+                              {label} · {count}
+                            </button>
+                          );
+                        }}
+                      </For>
+                    </div>
                   </div>
                   <Show when={rows().length === 0}>
                     <div style={`padding:32px 20px;text-align:center;font-size:13px;color:${TEXT_GHOST}`}>Пользователей нет</div>

@@ -18,7 +18,37 @@ import (
 // живого realtime-соединения в хабе, см. realtime_hub.go).
 type adminUserOut struct {
 	User
-	Online bool `json:"online"`
+	Online        bool `json:"online"`
+	UnreadSupport int  `json:"unreadSupport"`
+}
+
+func unreadSupportByUser() map[string]int {
+	rows, err := db.Query(`SELECT st.user_id, COUNT(*) FROM support_messages sm
+		JOIN support_threads st ON st.id = sm.thread_id
+		WHERE sm.sender = 'user' AND sm.read_at IS NULL
+		GROUP BY st.user_id`)
+	if err != nil {
+		return map[string]int{}
+	}
+	defer rows.Close()
+	m := map[string]int{}
+	for rows.Next() {
+		var id string
+		var n int
+		if rows.Scan(&id, &n) == nil {
+			m[id] = n
+		}
+	}
+	return m
+}
+
+// loadOwnerSummaryAdmin — в отличие от публичного loadOwnerSummary, панели
+// администратора можно показать и телефон владельца — это внутренний инструмент.
+func loadOwnerSummaryAdmin(ownerID string) map[string]any {
+	var owner User
+	db.QueryRow(`SELECT id, phone, name, role, ini, created_at FROM users WHERE id = ?`, ownerID).
+		Scan(&owner.ID, &owner.Phone, &owner.Name, &owner.Role, &owner.Ini, &owner.CreatedAt)
+	return map[string]any{"id": owner.ID, "name": owner.Name, "phone": owner.Phone, "ini": owner.Ini}
 }
 
 func onlineSet() map[string]bool {
@@ -55,11 +85,12 @@ func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 	online := onlineSet()
+	unread := unreadSupportByUser()
 	out := []adminUserOut{}
 	for rows.Next() {
 		u, err := scanAdminUser(rows.Scan)
 		if err == nil {
-			out = append(out, adminUserOut{User: u, Online: online[u.ID]})
+			out = append(out, adminUserOut{User: u, Online: online[u.ID], UnreadSupport: unread[u.ID]})
 		}
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -125,7 +156,7 @@ func handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "invalid input")
 		return
 	}
-	if in.Role != "tenant" && in.Role != "owner" && in.Role != "agency" {
+	if !validRoles[in.Role] {
 		writeErr(w, http.StatusBadRequest, "invalid role")
 		return
 	}
@@ -290,12 +321,7 @@ func handleAdminReports(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			l.Photos = loadPhotos(l.ID)
 			listingOut = l
-			// в отличие от публичного loadOwnerSummary, панели администратора можно
-			// показать и телефон владельца — это внутренний инструмент для разбора жалоб
-			var owner User
-			db.QueryRow(`SELECT id, phone, name, role, ini, created_at FROM users WHERE id = ?`, l.OwnerID).
-				Scan(&owner.ID, &owner.Phone, &owner.Name, &owner.Role, &owner.Ini, &owner.CreatedAt)
-			ownerOut = map[string]any{"id": owner.ID, "name": owner.Name, "phone": owner.Phone, "ini": owner.Ini}
+			ownerOut = loadOwnerSummaryAdmin(l.OwnerID)
 		}
 		var reporter User
 		db.QueryRow(`SELECT id, phone, name, role, ini, created_at FROM users WHERE id = ?`, rp.ReporterID).
@@ -461,7 +487,8 @@ func handleAdminListings(w http.ResponseWriter, r *http.Request) {
 	out := []map[string]any{}
 	for _, l := range list {
 		l.Photos = loadPhotos(l.ID)
-		out = append(out, map[string]any{"listing": l, "owner": loadOwnerSummary(l.OwnerID)})
+		l.Videos = loadVideos(l.ID)
+		out = append(out, map[string]any{"listing": l, "owner": loadOwnerSummaryAdmin(l.OwnerID)})
 	}
 	writeJSON(w, http.StatusOK, out)
 }

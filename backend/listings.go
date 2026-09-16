@@ -24,7 +24,8 @@ func scanListing(row interface {
 	var promotedUntil sql.NullTime
 	err := row.Scan(&l.ID, &l.OwnerID, &l.Deal, &l.City, &l.District, &l.Street, &l.Lat, &l.Lng,
 		&l.Price, &l.Rooms, &l.Area, &l.Floor, &l.FloorsTotal, &featuresJSON, &l.Description, &l.Deposit,
-		&l.CadastreCode, &l.RepairCondition, &l.Status, &l.ConfirmedAt, &l.ExpiresAt, &l.CreatedAt, &l.UpdatedAt, &promotedUntil)
+		&l.CadastreCode, &l.RepairCondition, &l.Status, &l.ConfirmedAt, &l.ExpiresAt, &l.CreatedAt, &l.UpdatedAt, &promotedUntil,
+		&l.Title, &l.StayKind, &l.CheckIn, &l.CheckOut)
 	if err != nil {
 		return nil, err
 	}
@@ -41,12 +42,14 @@ func scanListing(row interface {
 }
 
 const listingCols = `id, owner_id, deal, city, district, street, lat, lng, price, rooms, area,
-	floor, floors_total, features, description, deposit, cadastre_code, repair_condition, status, confirmed_at, expires_at, created_at, updated_at, promoted_until`
+	floor, floors_total, features, description, deposit, cadastre_code, repair_condition, status, confirmed_at, expires_at, created_at, updated_at, promoted_until,
+	title, stay_kind, check_in, check_out`
 
 // listingColsQ — та же выборка, но с префиксом l. для запросов с JOIN, где иначе
 // created_at (он есть и в listings, и, например, в favorites/reports) неоднозначен.
 const listingColsQ = `l.id, l.owner_id, l.deal, l.city, l.district, l.street, l.lat, l.lng, l.price, l.rooms, l.area,
-	l.floor, l.floors_total, l.features, l.description, l.deposit, l.cadastre_code, l.repair_condition, l.status, l.confirmed_at, l.expires_at, l.created_at, l.updated_at, l.promoted_until`
+	l.floor, l.floors_total, l.features, l.description, l.deposit, l.cadastre_code, l.repair_condition, l.status, l.confirmed_at, l.expires_at, l.created_at, l.updated_at, l.promoted_until,
+	l.title, l.stay_kind, l.check_in, l.check_out`
 
 func loadPhotos(listingID string) []string {
 	rows, err := db.Query(`SELECT url FROM listing_photos WHERE listing_id = ? ORDER BY position, id`, listingID)
@@ -64,8 +67,25 @@ func loadPhotos(listingID string) []string {
 	return out
 }
 
+func loadVideos(listingID string) []string {
+	rows, err := db.Query(`SELECT url FROM listing_videos WHERE listing_id = ? ORDER BY position, id`, listingID)
+	if err != nil {
+		return []string{}
+	}
+	defer rows.Close()
+	out := []string{}
+	for rows.Next() {
+		var u string
+		if rows.Scan(&u) == nil {
+			out = append(out, u)
+		}
+	}
+	return out
+}
+
 func attachOwnerAndPhotos(l *Listing) map[string]any {
 	l.Photos = loadPhotos(l.ID)
+	l.Videos = loadVideos(l.ID)
 	var owner User
 	db.QueryRow(`SELECT id, phone, name, role, ini, created_at FROM users WHERE id = ?`, l.OwnerID).
 		Scan(&owner.ID, &owner.Phone, &owner.Name, &owner.Role, &owner.Ini, &owner.CreatedAt)
@@ -169,10 +189,29 @@ func handleListListings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	stay, err := parseStayQuery(q, time.Now())
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	out := []map[string]any{}
 	for _, l := range list {
+		entry := map[string]any{"listing": l, "owner": loadOwnerSummary(l.OwnerID)}
+		if l.Deal == "hotel" {
+			info, err := stayInfoFor(db, l.ID, stay)
+			if err != nil {
+				writeErr(w, http.StatusInternalServerError, "db error")
+				return
+			}
+			if !info.Bookable {
+				continue
+			}
+			entry["stay"] = info
+		}
 		l.Photos = loadPhotos(l.ID)
-		out = append(out, map[string]any{"listing": l, "owner": loadOwnerSummary(l.OwnerID)})
+		l.Videos = loadVideos(l.ID)
+		out = append(out, entry)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -233,6 +272,18 @@ func handleGetListing(w http.ResponseWriter, r *http.Request) {
 	}
 	out["views"] = views
 	out["favorites"] = favorites
+	if l.Deal == "hotel" {
+		stay, err := parseStayQuery(r.URL.Query(), time.Now())
+		if err != nil {
+			stay = stayQuery{}
+		}
+		info, err := stayInfoFor(db, l.ID, stay)
+		if err != nil {
+			writeErr(w, http.StatusInternalServerError, "db error")
+			return
+		}
+		out["stay"] = info
+	}
 	out, err = withPendingRevision(out, l.ID, requesterID, l.OwnerID)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
@@ -277,7 +328,16 @@ func handleMyListings(w http.ResponseWriter, r *http.Request) {
 	out := []map[string]any{}
 	for _, l := range list {
 		l.Photos = loadPhotos(l.ID)
+		l.Videos = loadVideos(l.ID)
 		entry := map[string]any{"listing": l, "owner": loadOwnerSummary(l.OwnerID), "views": views[l.ID], "favorites": favorites[l.ID]}
+		if l.Deal == "hotel" {
+			info, err := stayInfoFor(db, l.ID, stayQuery{})
+			if err != nil {
+				writeErr(w, http.StatusInternalServerError, "db error")
+				return
+			}
+			entry["stay"] = info
+		}
 		if l.Status == "rented" {
 			outcome, err := loadListingOutcome(l.ID)
 			if err != nil {
@@ -317,6 +377,10 @@ type listingInput struct {
 	Deposit         string   `json:"dep"`
 	CadastreCode    string   `json:"cadastreCode"`
 	RepairCondition string   `json:"repairCondition"`
+	Title           string   `json:"title"`
+	StayKind        string   `json:"stayKind"`
+	CheckIn         string   `json:"checkIn"`
+	CheckOut        string   `json:"checkOut"`
 }
 
 // ---------- POST /api/listings ----------
@@ -348,6 +412,12 @@ func handleCreateListing(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad json")
 		return
 	}
+	if in.Deal == "hotel" {
+		in.Title = normalizeSpaces(in.Title)
+		in.Price, in.Rooms, in.Area = 0, 0, 0
+	} else {
+		in.Title, in.StayKind, in.CheckIn, in.CheckOut = "", "", "", ""
+	}
 	if err := validateListingInput(in); err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())
 		return
@@ -368,9 +438,13 @@ func handleCreateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// автору выдаём роль владельца, если раньше был просто арендатором — как в демо
+	// автору выдаём роль владельца (или отеля), если раньше был просто арендатором — как в демо
 	if u.Role == "tenant" {
-		db.Exec(`UPDATE users SET role = 'owner' WHERE id = ?`, u.ID)
+		role := "owner"
+		if in.Deal == "hotel" {
+			role = "hotel"
+		}
+		db.Exec(`UPDATE users SET role = ? WHERE id = ?`, role, u.ID)
 	}
 	row := db.QueryRow(`SELECT `+listingCols+` FROM listings WHERE id = ?`, id)
 	l, _ := scanListing(row)
@@ -386,10 +460,12 @@ func createListingWithDocument(id, ownerID string, in listingInput, featuresJSON
 
 	if _, err := tx.Exec(`INSERT INTO listings
 		(id, owner_id, deal, city, district, street, lat, lng, price, rooms, area, floor, floors_total,
-		 features, description, deposit, cadastre_code, repair_condition, status, confirmed_at, expires_at, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`,
+		 features, description, deposit, cadastre_code, repair_condition, status, confirmed_at, expires_at, created_at, updated_at,
+		 title, stay_kind, check_in, check_out)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?)`,
 		id, ownerID, in.Deal, in.City, in.District, in.Street, in.Lat, in.Lng, in.Price, in.Rooms, in.Area,
-		in.Floor, in.FloorsTotal, string(featuresJSON), in.Description, in.Deposit, in.CadastreCode, in.RepairCondition, now, now.Add(confirmWindow), now, now); err != nil {
+		in.Floor, in.FloorsTotal, string(featuresJSON), in.Description, in.Deposit, in.CadastreCode, in.RepairCondition, now, now.Add(confirmWindow), now, now,
+		in.Title, in.StayKind, in.CheckIn, in.CheckOut); err != nil {
 		return err
 	}
 
@@ -414,7 +490,35 @@ var validRepairConditions = map[string]bool{
 	"none": true, "needs": true, "cosmetic": true, "good": true, "designer": true,
 }
 
+var (
+	errHotelInvalid = errors.New("hotel title and address are required")
+	errStayKind     = errors.New("invalid_stay_kind")
+	errStayTime     = errors.New("invalid_stay_time")
+)
+
+var validStayKinds = map[string]bool{"hotel": true, "hostel": true, "guesthouse": true}
+
+func validStayTime(s string) bool {
+	if s == "" {
+		return true
+	}
+	_, err := time.Parse("15:04", s)
+	return err == nil
+}
+
 func validateListingInput(in listingInput) error {
+	if in.Deal == "hotel" {
+		if strings.TrimSpace(in.Title) == "" || strings.TrimSpace(in.Street) == "" {
+			return errHotelInvalid
+		}
+		if !validStayKinds[in.StayKind] {
+			return errStayKind
+		}
+		if !validStayTime(in.CheckIn) || !validStayTime(in.CheckOut) {
+			return errStayTime
+		}
+		return nil
+	}
 	if strings.TrimSpace(in.Street) == "" || in.Price <= 0 || in.Area <= 0 {
 		return errListingInvalid
 	}
@@ -438,6 +542,10 @@ func normalizeListingInput(in listingInput) listingInput {
 	in.Description = normalizeSpaces(in.Description)
 	in.Deposit = normalizeSpaces(in.Deposit)
 	in.CadastreCode = normalizeSpaces(in.CadastreCode)
+	in.Title = normalizeSpaces(in.Title)
+	if in.Deal != "hotel" {
+		in.Title, in.StayKind, in.CheckIn, in.CheckOut = "", "", "", ""
+	}
 	if in.Features == nil {
 		in.Features = []string{}
 	}
@@ -449,15 +557,22 @@ func listingInputEqual(l *Listing, in listingInput) bool {
 		l.Lat == in.Lat && l.Lng == in.Lng && l.Price == in.Price && l.Rooms == in.Rooms && l.Area == in.Area &&
 		l.Floor == in.Floor && l.FloorsTotal == in.FloorsTotal && l.Description == in.Description &&
 		l.Deposit == in.Deposit && l.CadastreCode == in.CadastreCode && l.RepairCondition == in.RepairCondition &&
+		l.Title == in.Title && l.StayKind == in.StayKind && l.CheckIn == in.CheckIn && l.CheckOut == in.CheckOut &&
 		reflect.DeepEqual(l.Features, in.Features)
 }
 
 func applyListingUpdate(listingID string, in listingInput, now time.Time) error {
+	return updateListingRow(db, listingID, in, now)
+}
+
+func updateListingRow(q dbtx, listingID string, in listingInput, now time.Time) error {
 	featuresJSON, _ := json.Marshal(in.Features)
-	res, err := db.Exec(`UPDATE listings SET deal=?, city=?, district=?, street=?, lat=?, lng=?, price=?, rooms=?,
-		area=?, floor=?, floors_total=?, features=?, description=?, deposit=?, cadastre_code=?, repair_condition=?, updated_at=? WHERE id=?`,
+	res, err := q.Exec(`UPDATE listings SET deal=?, city=?, district=?, street=?, lat=?, lng=?, price=?, rooms=?,
+		area=?, floor=?, floors_total=?, features=?, description=?, deposit=?, cadastre_code=?, repair_condition=?,
+		title=?, stay_kind=?, check_in=?, check_out=?, updated_at=? WHERE id=?`,
 		in.Deal, in.City, in.District, in.Street, in.Lat, in.Lng, in.Price, in.Rooms, in.Area,
-		in.Floor, in.FloorsTotal, string(featuresJSON), in.Description, in.Deposit, in.CadastreCode, in.RepairCondition, now, listingID)
+		in.Floor, in.FloorsTotal, string(featuresJSON), in.Description, in.Deposit, in.CadastreCode, in.RepairCondition,
+		in.Title, in.StayKind, in.CheckIn, in.CheckOut, now, listingID)
 	if err != nil {
 		return err
 	}
@@ -467,6 +582,9 @@ func applyListingUpdate(listingID string, in listingInput, now time.Time) error 
 	}
 	if n != 1 {
 		return errListingNotFound
+	}
+	if in.Deal == "hotel" {
+		return syncHotelPrice(q, listingID)
 	}
 	return nil
 }
@@ -482,8 +600,15 @@ func handleUpdateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	in = normalizeListingInput(in)
+	if in.Deal == "hotel" {
+		in.Price, in.Rooms, in.Area = l.Price, l.Rooms, 0
+	}
 	if err := validateListingInput(in); err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if (l.Deal == "hotel") != (in.Deal == "hotel") {
+		writeErr(w, http.StatusBadRequest, "deal_change_not_allowed")
 		return
 	}
 	if listingInputEqual(l, in) {

@@ -1,4 +1,5 @@
 const T = {
+  all: ['Բոլորը', 'Все', 'All'],
   rent: ['Վարձակալություն', 'Аренда', 'Rent'],
   daily: ['Օրավարձով', 'Посуточно', 'Daily'],
   sale: ['Վաճառք', 'Продажа', 'Sale'],
@@ -61,6 +62,17 @@ const T = {
   studio: ['Ստուդիա', 'Студия', 'Studio'],
   roomsN: ['{n} սեն.', '{n} комн.', '{n} rooms'],
   floorN: ['{a}/{b} հարկ', '{a}/{b} эт.', 'floor {a}/{b}'],
+  distFromCenter: ['{x} կենտրոնից', '{x} от центра', '{x} from center'],
+  voicePlayBlocked: ['Բրաուզերը արգելափակեց ձայնագրության նվագարկումը', 'Браузер заблокировал воспроизведение — нажмите ещё раз', 'Browser blocked playback — tap again'],
+  voicePlayUnsupported: ['Ձայնագրության ձևաչափը չի աջակցվում այս սարքում', 'Формат записи не поддерживается на этом устройстве', 'This device can’t play this recording format'],
+  voicePlayFailed: ['Չհաջողվեց նվագարկել ձայնագրությունը', 'Не удалось воспроизвести голосовое сообщение', 'Couldn’t play the voice message'],
+  showTranscript: ['Ցույց տալ տեքստը', 'Показать текст', 'Show text'],
+  hideTranscript: ['Թաքցնել տեքստը', 'Скрыть текст', 'Hide text'],
+  transcribing: ['Ճանաչում…', 'Распознаём…', 'Transcribing…'],
+  errNotVoiceMessage: ['Սա ձայնագրություն չէ', 'Это не голосовое сообщение', 'This isn’t a voice message'],
+  errTranscribeFailed: ['Չհաջողվեց ճանաչել ձայնագրությունը', 'Не удалось распознать голосовое сообщение', 'Couldn’t transcribe the voice message'],
+  mUnit: ['մ', 'м', 'm'],
+  kmUnit: ['կմ', 'км', 'km'],
   perMonth: ['/ ամիս', '/ мес', '/ mo'],
   perDay: ['/ օր', '/ сутки', '/ night'],
   perObject: ['', '', ''],
@@ -379,12 +391,18 @@ Object.assign(T, {
     'At least 5 photos — without them the listing will not go live.'
   ],
   photosCount: ['Բեռնված է {n} 5-ից', 'Загружено {n} из 5', '{n} of 5 uploaded'],
+  addMediaBtn: ['Ավելացնել լուսանկար կամ տեսանյութ', 'Добавить фото и видео', 'Add photos & video'],
+  mediaShelfNote: [
+    'Բեռնված է {n} լուսանկար. նվազագույնը 5, կարող եք նշել մի քանիսը մեկ սեղմումով, նաև՝ մինչև 3 տեսանյութ։',
+    'Загружено {n} фото. Минимум 5, можно выбрать сразу несколько за один раз, а также до 3 видео.',
+    '{n} photos uploaded. At least 5 required, pick several at once — plus up to 3 videos.'
+  ],
   priceLbl: ['Գին, ֏', 'Цена, ֏', 'Price, ֏'],
   depositLbl: ['Կանխավճար', 'Депозит', 'Deposit'],
   ownTitle: ['Ինչպե՞ս եք հաստատելու արդիականությունը', 'Как вы будете подтверждать актуальность', 'How you will confirm availability'],
   ch1: ['SMS-կոդ {p} համարին', 'SMS-код на {p}', 'SMS code to {p}'],
   ch1n: ['72 ժամը մեկ, մեկ հպումով', 'Раз в 72 часа, одно нажатие', 'Every 72 hours, one tap'],
-  confPhoneEdit: ['Համարը փոխվում է 1-ին քայլում', 'Номер можно изменить на шаге 1', 'You can change the number in step 1'],
+  confPhoneEdit: ['Համարը փոխվում է պրոֆիլում', 'Номер можно изменить в профиле', 'You can change the number in your profile'],
   docTitle: ['Սեփականության փաստաթուղթ', 'Документ о владении', 'Ownership document'],
   docNote: [
     'Կադաստրի քաղվածք կամ պայմանագիր։ Ստուգում ենք ձեռքով մինչև 2 ժամ։',
@@ -393,12 +411,17 @@ Object.assign(T, {
   ],
   uploadDoc: ['Բեռնել փաստաթուղթը', 'Загрузить документ', 'Upload document'],
   docOk: ['Փաստաթուղթը բեռնված է', 'Документ загружен', 'Document uploaded'],
-  cadastreLbl: ['Սերտիֆիկատի պաշտպանիչ կոդը', 'Защитный код сертификата', 'Certificate protection code'],
+  cadastreLbl: ['Ստուգված է կադաստրով', 'Проверено по кадастру', 'Verified via cadastre'],
   cadastrePh: ['օր.՝ AB12345678', 'напр. AB12345678', 'e.g. AB12345678'],
   cadastreNote: [
-    'Կադաստրի սեփականության վկայականի պաշտպանիչ կոդը։ Դրանով հայտարարությունը կարելի է ստուգել կադաստրի կոմիտեի կայքում — կոդը կցուցադրվի հայտարարության էջում։',
-    'Защитный код сертификата о собственности из кадастра. По нему объявление можно проверить на сайте кадастрового комитета — код будет показан на странице объявления.',
-    'The protection code from your cadastre ownership certificate. It lets anyone verify the listing on the cadastre committee’s site — the code will be shown on the listing page.'
+    'Կադաստրի սեփականության վկայականի պաշտպանիչ կոդը՝ մեր թիմի կողմից սեփականությունը ստուգելու համար։ Կոդը երբեք չի հրապարակվում և երևում է միայն HayHome-ին։',
+    'Защитный код сертификата о собственности из кадастра — нужен только нашей команде, чтобы проверить право собственности. Код нигде не публикуется и виден только HayHome.',
+    'The protection code from your cadastre ownership certificate — used only by our team to verify ownership. It is never published and is visible only to HayHome.'
+  ],
+  cadastreVerifiedNote: [
+    'Սեփականատերը հաստատել է սեփականությունը կադաստրում, HayHome-ը ստուգել է այն։ Կոդն ինքնին երբեք չի հրապարակվում։',
+    'Владелец подтвердил право собственности через кадастр, HayHome это проверил. Сам код нигде не публикуется.',
+    'The owner confirmed ownership via the cadastre and HayHome checked it. The code itself is never published.'
   ],
   agreeW: [
     'Համաձայն եմ 72 ժամը մեկ հաստատել արդիականությունը և հանել հայտարարությունը գործարքից հետո։',
@@ -559,11 +582,12 @@ Object.assign(T, {
 Object.assign(T, {
   backAll: ['Բոլոր հայտարարությունները', 'Все объявления', 'All listings'],
   descTitle: ['Նկարագրություն', 'Описание', 'Description'],
+  videoTitle: ['Տեսանյութ', 'Видео', 'Video'],
   specsTitle: ['Բնութագրեր', 'Характеристики', 'Specs'],
   showPhone: ['Ցույց տալ հեռախոսը', 'Показать телефон', 'Show phone'],
   writeChat: ['Գրել չաթում', 'Написать в чат', 'Message the owner'],
-  saveWatch: ['Պահպանել և հետևել կարգավիճակին', 'Сохранить и следить за статусом', 'Save and track status'],
-  inFavW: ['Ընտրանիում է — հետևում ենք', 'В избранном — следим за статусом', 'Saved — we track it'],
+  saveWatch: ['Ավելացնել ընտրանի', 'В избранное', 'Save to favorites'],
+  inFavW: ['Ընտրանիում է', 'В избранном', 'Saved'],
   confHistory: ['Հաստատումների պատմություն · 14 օր', 'История подтверждений · 14 дней', 'Confirmation history · 14 days'],
   daysAgo14: ['14 օր առաջ', '14 дней назад', '14 days ago'],
   todayW: ['այսօր', 'сегодня', 'today'],
@@ -716,7 +740,6 @@ Object.assign(T, {
   videoTitle: ['Տեսանյութ', 'Видео', 'Video'],
   emojiTitle: ['Սմայլիկներ', 'Смайлики', 'Emoji'],
   micDenied: ['Մուտքը խոսափողին մերժված է', 'Нет доступа к микрофону', 'Microphone access denied'],
-  recRec: ['Ձայնագրում', 'Идёт запись', 'Recording'],
   recCancel: ['Չեղարկել ձայնագրումը', 'Отменить запись', 'Cancel recording'],
   recSend: ['Կանգնեցնել և ուղարկել', 'Остановить и отправить', 'Stop and send'],
   audioMsg: ['Ձայնային հաղորդագրություն', 'Голосовое сообщение', 'Voice message'],
@@ -815,7 +838,6 @@ Object.assign(T, {
 });
 
 Object.assign(T, {
-  cadastreBadge: ['Ստուգել կադաստրում', 'Проверить по кадастру', 'Check in the cadastre'],
   cadastreCodeW: ['Կոդ', 'Код', 'Code']
 });
 
@@ -936,6 +958,127 @@ Object.assign(T, {
   consentAnd: [' և ', ' и ', ' and ']
 });
 
+Object.assign(T, {
+  hotel: ['Հյուրանոցներ', 'Отели', 'Hotels'],
+  titleHotel: ['Հյուրանոցներ և հոսթելներ', 'Отели и хостелы', 'Hotels and hostels'],
+  titleAll: ['Բոլոր հայտարարությունները', 'Все объявления', 'All listings'],
+  vHotel: ['Հյուրանոց / հոսթել', 'Отель / хостел', 'Hotel / hostel'],
+  perNight: ['/ գիշեր', '/ ночь', '/ night'],
+  kindHotel: ['Հյուրանոց', 'Отель', 'Hotel'],
+  kindHostel: ['Հոսթել', 'Хостел', 'Hostel'],
+  kindGuesthouse: ['Հյուրատուն', 'Гостевой дом', 'Guesthouse'],
+  hotelW: ['Հյուրանոց', 'Отель', 'Hotel'],
+  roleHotel: ['Հյուրանոց / հոսթել', 'Отель / хостел', 'Hotel / hostel'],
+  roleHotelN: ['Համարներ, օրացույց, ամրագրման հարցումներ', 'Номера, календарь, запросы на бронирование', 'Rooms, calendar, booking requests'],
+  hotelNameLbl: ['Անվանումը', 'Название', 'Property name'],
+  hotelNamePh: ['Օրինակ՝ Ararat Hostel', 'Например, Ararat Hostel', 'e.g. Ararat Hostel'],
+  stayKindLbl: ['Օբյեկտի տեսակը', 'Тип объекта', 'Property type'],
+  checkInLbl: ['Մուտք', 'Заезд', 'Check-in'],
+  checkOutLbl: ['Ելք', 'Выезд', 'Check-out'],
+  guestsLbl: ['Հյուրեր', 'Гости', 'Guests'],
+  checkInTimeLbl: ['Մուտքի ժամը', 'Время заезда', 'Check-in time'],
+  checkOutTimeLbl: ['Ելքի ժամը', 'Время выезда', 'Check-out time'],
+  kStayKind: ['Տեսակը', 'Тип', 'Type'],
+  kCheckTimes: ['Մուտք / ելք', 'Заезд / выезд', 'Check-in / out'],
+  kRoomTypes: ['Համարների տեսակներ', 'Типов номеров', 'Room types'],
+  nightWord: ['գիշեր', 'ночь|ночи|ночей', 'night|nights'],
+  nightsN: ['{n} գիշեր', '{n} ночь|{n} ночи|{n} ночей', '{n} night|{n} nights'],
+  guestWord: ['հյուր', 'гость|гостя|гостей', 'guest|guests'],
+  upToGuests: ['մինչև {n} հյուր', 'до {n} гостя|до {n} гостей|до {n} гостей', 'up to {n} guest|up to {n} guests'],
+  forNights: ['{n} գիշերվա համար', 'за {n} ночь|за {n} ночи|за {n} ночей', 'for {n} night|for {n} nights'],
+  fromPerNight: ['{x} ֏-ից / գիշեր', 'от {x} ֏ / ночь', 'from {x} ֏ / night'],
+  perDayPrice: ['{x} ֏ / օր', '{x} ֏ / сутки', '{x} ֏ / night'],
+  freeForDates: ['Ազատ է ձեր ամսաթվերին', 'Свободно на ваши даты', 'Available for your dates'],
+  roomsTitle: ['Համարներ', 'Номера', 'Rooms'],
+  bathPrivate: ['Սեփական սանհանգույց', 'Свой санузел', 'Private bathroom'],
+  bathShared: ['Ընդհանուր սանհանգույց', 'Общий санузел', 'Shared bathroom'],
+  breakfastIncl: ['Նախաճաշը ներառված է', 'Завтрак включён', 'Breakfast included'],
+  roomsLeft: ['Մնացել է՝ {n}', 'Осталось: {n}', '{n} left'],
+  soldOut: ['Ձեր ամսաթվերին ազատ չէ', 'Нет мест на ваши даты', 'Not available for your dates'],
+  tooManyGuests: ['Համարը նախատեսված չէ այդքան հյուրի համար', 'Номер не рассчитан на столько гостей', 'This room doesn’t fit that many guests'],
+  requestBookingBtn: ['Հարցնել ամրագրում', 'Запросить бронирование', 'Request booking'],
+  bookingNoPay: ['Հիմա վճարել պետք չէ. հյուրանոցը կհաստատի հարցումը չաթում', 'Платить сейчас не нужно — отель подтвердит запрос в чате', 'No payment now — the hotel confirms your request in chat'],
+  bookingSentToast: ['Հարցումն ուղարկված է հյուրանոցին', 'Запрос отправлен отелю', 'Request sent to the hotel'],
+  noRoomsYet: ['Համարները դեռ ավելացված չեն', 'Номера пока не добавлены', 'No rooms added yet'],
+  hotelRoomsLater: [
+    'Համարները և գները կավելացնեք հրապարակումից անմիջապես հետո՝ աշխատասեղանում',
+    'Номера и цены добавите сразу после публикации — в кабинете',
+    'You’ll add rooms and prices right after publishing, in your dashboard'
+  ],
+  hotelDocNote: [
+    'Կցեք ԱՁ/ՍՊԸ գրանցման վկայականը կամ սեփականության փաստաթուղթը։ Այն տեսնում է միայն մոդերացիան։',
+    'Приложите свидетельство о регистрации ИП/ООО или документ о праве собственности. Его видит только модерация.',
+    'Attach your business registration or ownership document. Only moderators see it.'
+  ],
+  cabHotel: ['Իմ օբյեկտները', 'Мои объекты', 'My properties'],
+  cabHotelS: ['Համարներ, օրացույց և ամրագրման հարցումներ', 'Номера, календарь и запросы на бронирование', 'Rooms, calendar and booking requests'],
+  addHotel: ['Ավելացնել օբյեկտ', 'Добавить объект', 'Add property'],
+  allActual: ['Ամեն ինչ արդիական է', 'Всё актуально', 'All up to date'],
+  tabRooms: ['Համարներ', 'Номера', 'Rooms'],
+  tabCalendar: ['Օրացույց', 'Календарь', 'Calendar'],
+  tabRequests: ['Հարցումներ', 'Запросы', 'Requests'],
+  addRoom: ['Ավելացնել համար', 'Добавить номер', 'Add room'],
+  tplSingle: ['Մեկտեղանոց', 'Одноместный', 'Single'],
+  tplDouble: ['Երկտեղանոց', 'Двухместный', 'Double'],
+  tplFamily: ['Ընտանեկան', 'Семейный', 'Family'],
+  tplDorm: ['Տեղ ընդհանուր սենյակում', 'Место в общем номере', 'Dorm bed'],
+  roomNameLbl: ['Անվանումը', 'Название', 'Name'],
+  roomCapacityLbl: ['Տեղեր', 'Мест', 'Sleeps'],
+  roomQuantityLbl: ['Քանակ', 'Сколько таких', 'How many'],
+  roomPriceLbl: ['Գինը գիշերվա համար, ֏', 'Цена за ночь, ֏', 'Price per night, ֏'],
+  bathroomLbl: ['Սանհանգույց', 'Санузел', 'Bathroom'],
+  breakfastLbl: ['Նախաճաշ', 'Завтрак', 'Breakfast'],
+  duplicateW: ['Կրկնօրինակել', 'Дублировать', 'Duplicate'],
+  deleteW: ['Ջնջել', 'Удалить', 'Delete'],
+  roomSavedToast: ['Համարը պահպանված է', 'Номер сохранён', 'Room saved'],
+  roomDeletedToast: ['Համարը ջնջված է', 'Номер удалён', 'Room deleted'],
+  roomsNeeded: ['Ավելացրեք համարներ, որպեսզի օբյեկտը հայտնվի որոնման մեջ', 'Добавьте номера, чтобы объект появился в поиске', 'Add rooms so the property shows up in search'],
+  calHint: ['Սեղմեք օրերին, հետո փակեք կամ բացեք ընտրվածները', 'Выделите дни и закройте или откройте их', 'Select days, then close or open them'],
+  calClosed: ['Փակ', 'Закрыто', 'Closed'],
+  calFree: ['{a}/{b}', '{a} из {b}', '{a} of {b}'],
+  closeSelected: ['Փակել', 'Закрыть выбранные', 'Close selected'],
+  openSelected: ['Բացել', 'Открыть выбранные', 'Open selected'],
+  clearSelection: ['Չեղարկել', 'Сбросить', 'Clear'],
+  datesClosedToast: ['Ամսաթվերը փակված են', 'Даты закрыты', 'Dates closed'],
+  datesOpenedToast: ['Ամսաթվերը բացված են', 'Даты открыты', 'Dates opened'],
+  noRequests: ['Հարցումներ դեռ չկան', 'Запросов пока нет', 'No requests yet'],
+  declineW: ['Մերժել', 'Отклонить', 'Decline'],
+  cancelBookingW: ['Չեղարկել', 'Отменить', 'Cancel'],
+  openChatW: ['Չաթ', 'Чат', 'Chat'],
+  bkPending: ['Սպասում է պատասխանի', 'Ожидает ответа', 'Awaiting reply'],
+  bkConfirmed: ['Հաստատված է', 'Подтверждено', 'Confirmed'],
+  bkDeclined: ['Մերժված է', 'Отклонено', 'Declined'],
+  bkCancelled: ['Չեղարկված է', 'Отменено', 'Cancelled'],
+  bookingRequestT: ['Ամրագրման հարցում', 'Запрос на бронирование', 'Booking request'],
+  bkEvConfirmed: ['Հյուրանոցը հաստատեց ամրագրումը', 'Отель подтвердил бронирование', 'The hotel confirmed the booking'],
+  bkEvDeclined: ['Հյուրանոցը մերժեց հարցումը', 'Отель отклонил запрос', 'The hotel declined the request'],
+  bkEvCancelled: ['Հյուրը չեղարկեց հարցումը', 'Гость отменил запрос', 'The guest cancelled the request'],
+  myBookings: ['Իմ ամրագրումները', 'Мои бронирования', 'My bookings'],
+  onModeration: ['Մոդերացիայում է', 'На модерации', 'Under review'],
+  kpiProperties: ['Օբյեկտներ', 'Объекты', 'Properties'],
+  qtyN: ['{n} հատ', '{n} шт.', '{n} rooms'],
+  kpiRequests: ['Նոր հարցումներ', 'Новые запросы', 'New requests'],
+  kpiUpcoming: ['Հաստատված ամրագրումներ', 'Подтверждённые брони', 'Confirmed bookings'],
+  noHotelsT: ['Օբյեկտներ դեռ չկան', 'Объектов пока нет', 'No properties yet'],
+  noHotelsS: ['Ավելացրեք հյուրանոց, հոսթել կամ հյուրատուն՝ մոտ 3 րոպե', 'Добавьте отель, хостел или гостевой дом — около 3 минут', 'Add a hotel, hostel or guesthouse — about 3 minutes'],
+  prevMonth: ['Նախորդ ամիսը', 'Предыдущий месяц', 'Previous month'],
+  nextMonth: ['Հաջորդ ամիսը', 'Следующий месяц', 'Next month'],
+  bookingConfirmedToast: ['Ամրագրումը հաստատված է', 'Бронирование подтверждено', 'Booking confirmed'],
+  bookingDeclinedToast: ['Հարցումը մերժված է', 'Запрос отклонён', 'Request declined'],
+  bookingCancelledToast: ['Հարցումը չեղարկված է', 'Запрос отменён', 'Request cancelled'],
+  errInvalidDates: ['Ստուգեք ամսաթվերը', 'Проверьте даты', 'Check the dates'],
+  errInvalidGuests: ['Ստուգեք հյուրերի քանակը', 'Проверьте число гостей', 'Check the number of guests'],
+  errNotAvailable: ['Այս ամսաթվերին ազատ համար չկա', 'На эти даты нет свободных номеров', 'No rooms available for these dates'],
+  errOwnBooking: ['Չի կարելի ամրագրել սեփական օբյեկտը', 'Нельзя бронировать собственный объект', 'You can’t book your own property'],
+  errBookingState: ['Հարցումն արդեն մշակված է', 'Запрос уже обработан', 'This request was already handled'],
+  errRoomHasBookings: ['Այս համարն ունի ակտիվ ամրագրումներ', 'У номера есть активные бронирования', 'This room has active bookings'],
+  errInvalidRoom: ['Լրացրեք համարի բոլոր դաշտերը', 'Заполните все поля номера', 'Fill in all room fields'],
+  errHotelRequired: ['Նշեք անվանումը և հասցեն', 'Укажите название и адрес', 'Enter the name and address'],
+  errStayKind: ['Ընտրեք օբյեկտի տեսակը', 'Выберите тип объекта', 'Choose the property type'],
+  errStayTime: ['Ստուգեք մուտքի և ելքի ժամը', 'Проверьте время заезда и выезда', 'Check the check-in and check-out times'],
+  errDealChange: ['Հայտարարության տեսակը հնարավոր չէ փոխել', 'Тип объявления нельзя изменить', 'The listing type can’t be changed']
+});
+
 export const LANGS = ['ՀՅ', 'RU', 'EN'];
 export const LI = { ՀՅ: 0, RU: 1, EN: 2 };
 export { T };
@@ -945,6 +1088,16 @@ export function tr(lang, key, vars) {
   let out = row ? row[LI[lang] ?? 1] : key;
   if (vars) for (const k in vars) out = out.split('{' + k + '}').join(vars[k]);
   return out;
+}
+
+export function trN(lang, key, n, vars) {
+  const forms = tr(lang, key, { n, ...vars }).split('|');
+  if (forms.length === 3) {
+    const a = n % 10,
+      b = n % 100;
+    return forms[a === 1 && b !== 11 ? 0 : a >= 2 && a <= 4 && (b < 12 || b > 14) ? 1 : 2];
+  }
+  return forms[forms.length === 2 && n !== 1 ? 1 : 0];
 }
 
 export function dict(lang) {

@@ -50,6 +50,17 @@ describe('postStepErrorKey other steps', () => {
     expect(postStepErrorKey(3, baseDraft({ price: '' }))).toBe('errPrice');
   });
 
+  it('hotel needs a name but no area, repair condition, price or cadastre code', () => {
+    const hotel = baseDraft({ deal: 'hotel', title: 'Ararat Hostel', area: '', fl: '', repair: '', price: '', cadastreCode: '' });
+    expect(postStepErrorKey(1, hotel)).toBeNull();
+    expect(postStepErrorKey(1, { ...hotel, title: ' ' })).toBe('errHotelRequired');
+    expect(postStepErrorKey(2, hotel)).toBeNull();
+    expect(postStepErrorKey(2, { ...hotel, photos: 1 })).toBe('errPhotos');
+    expect(postStepErrorKey(3, hotel)).toBeNull();
+    expect(postStepErrorKey(4, hotel)).toBeNull();
+    expect(postStepErrorKey(4, { ...hotel, doc: false })).toBe('errDoc');
+  });
+
   it('step 4 requires document, cadastre code and agreement', () => {
     expect(postStepErrorKey(4, baseDraft())).toBeNull();
     expect(postStepErrorKey(4, baseDraft({ doc: false }))).toBe('errDoc');

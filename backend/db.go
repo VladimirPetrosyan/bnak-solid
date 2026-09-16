@@ -75,7 +75,11 @@ CREATE TABLE IF NOT EXISTS listings (
 	expires_at     DATETIME NOT NULL,
 	created_at     DATETIME NOT NULL DEFAULT (datetime('now')),
 	updated_at     DATETIME NOT NULL DEFAULT (datetime('now')),
-	promoted_until DATETIME
+	promoted_until DATETIME,
+	title          TEXT NOT NULL DEFAULT '',
+	stay_kind      TEXT NOT NULL DEFAULT '',
+	check_in       TEXT NOT NULL DEFAULT '',
+	check_out      TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_listings_owner ON listings(owner_id);
 CREATE INDEX IF NOT EXISTS idx_listings_deal_city ON listings(deal, city);
@@ -88,6 +92,14 @@ CREATE TABLE IF NOT EXISTS listing_photos (
 	position   INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_photos_listing ON listing_photos(listing_id);
+
+CREATE TABLE IF NOT EXISTS listing_videos (
+	id         INTEGER PRIMARY KEY AUTOINCREMENT,
+	listing_id TEXT NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+	url        TEXT NOT NULL,
+	position   INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_videos_listing ON listing_videos(listing_id);
 
 CREATE TABLE IF NOT EXISTS listing_documents (
 	id            TEXT PRIMARY KEY,
@@ -168,9 +180,56 @@ CREATE TABLE IF NOT EXISTS messages (
 	lat        REAL NOT NULL DEFAULT 0,
 	lng        REAL NOT NULL DEFAULT 0,
 	created_at DATETIME NOT NULL DEFAULT (datetime('now')),
-	read_at    DATETIME
+	read_at    DATETIME,
+	booking_id TEXT NOT NULL DEFAULT '',
+	waveform   TEXT NOT NULL DEFAULT '',
+	transcript TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_messages_thread ON messages(thread_id);
+
+-- Отели и хостелы — это объявления с deal='hotel'. Номера заводятся типами: «Двухместный
+-- стандарт, 5 шт.», а не каждой комнатой отдельно. Свободно на дату = quantity минус
+-- подтверждённые брони, закрытый владельцем день (room_closures) — ноль. См. stays.go.
+CREATE TABLE IF NOT EXISTS room_types (
+	id         TEXT PRIMARY KEY,
+	listing_id TEXT NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+	name       TEXT NOT NULL,
+	capacity   INTEGER NOT NULL DEFAULT 1,
+	quantity   INTEGER NOT NULL DEFAULT 1,
+	price      INTEGER NOT NULL DEFAULT 0,
+	bathroom   TEXT NOT NULL DEFAULT 'private',
+	breakfast  INTEGER NOT NULL DEFAULT 0,
+	position   INTEGER NOT NULL DEFAULT 0,
+	created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_room_types_listing ON room_types(listing_id);
+
+CREATE TABLE IF NOT EXISTS room_closures (
+	room_type_id TEXT NOT NULL REFERENCES room_types(id) ON DELETE CASCADE,
+	day          TEXT NOT NULL,
+	PRIMARY KEY (room_type_id, day)
+);
+
+CREATE TABLE IF NOT EXISTS booking_requests (
+	id           TEXT PRIMARY KEY,
+	listing_id   TEXT NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+	room_type_id TEXT NOT NULL REFERENCES room_types(id) ON DELETE CASCADE,
+	room_name    TEXT NOT NULL DEFAULT '',
+	guest_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	owner_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	thread_id    TEXT NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+	check_in     TEXT NOT NULL,
+	check_out    TEXT NOT NULL,
+	guests       INTEGER NOT NULL,
+	nights       INTEGER NOT NULL,
+	total        INTEGER NOT NULL,
+	status       TEXT NOT NULL DEFAULT 'pending',
+	created_at   DATETIME NOT NULL DEFAULT (datetime('now')),
+	decided_at   DATETIME
+);
+CREATE INDEX IF NOT EXISTS idx_bookings_room ON booking_requests(room_type_id, status);
+CREATE INDEX IF NOT EXISTS idx_bookings_guest ON booking_requests(guest_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_owner ON booking_requests(owner_id);
 
 CREATE TABLE IF NOT EXISTS support_threads (
 	id         TEXT PRIMARY KEY,
@@ -191,7 +250,9 @@ CREATE TABLE IF NOT EXISTS support_messages (
 	lat        REAL NOT NULL DEFAULT 0,
 	lng        REAL NOT NULL DEFAULT 0,
 	created_at DATETIME NOT NULL DEFAULT (datetime('now')),
-	read_at    DATETIME
+	read_at    DATETIME,
+	waveform   TEXT NOT NULL DEFAULT '',
+	transcript TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_support_messages_thread ON support_messages(thread_id);
 
@@ -316,6 +377,18 @@ func migrate(conn *sql.DB) error {
 		`ALTER TABLE support_messages ADD COLUMN dur INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE support_messages ADD COLUMN lat REAL NOT NULL DEFAULT 0`,
 		`ALTER TABLE support_messages ADD COLUMN lng REAL NOT NULL DEFAULT 0`,
+		// отели и хостелы (deal='hotel') — см. stays.go
+		`ALTER TABLE listings ADD COLUMN title TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE listings ADD COLUMN stay_kind TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE listings ADD COLUMN check_in TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE listings ADD COLUMN check_out TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE messages ADD COLUMN booking_id TEXT NOT NULL DEFAULT ''`,
+		// волна амплитуды голосового (см. VoiceMessage.jsx) и расшифровка по кнопке (см.
+		// speechkit.go) — раньше волна временно пряталась в text, теперь у неё своя колонка.
+		`ALTER TABLE messages ADD COLUMN waveform TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE messages ADD COLUMN transcript TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE support_messages ADD COLUMN waveform TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE support_messages ADD COLUMN transcript TEXT NOT NULL DEFAULT ''`,
 	}
 	for _, a := range alters {
 		if _, err := conn.Exec(a); err != nil && !isIgnorableMigrationErr(err) {

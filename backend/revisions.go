@@ -289,20 +289,5 @@ func resolveRevision(id, action, reason, adminID string, now time.Time) (*Listin
 }
 
 func applyListingUpdateTx(tx *sql.Tx, listingID string, in listingInput, now time.Time) error {
-	featuresJSON, _ := json.Marshal(in.Features)
-	res, err := tx.Exec(`UPDATE listings SET deal=?, city=?, district=?, street=?, lat=?, lng=?, price=?, rooms=?,
-		area=?, floor=?, floors_total=?, features=?, description=?, deposit=?, cadastre_code=?, repair_condition=?, updated_at=? WHERE id=?`,
-		in.Deal, in.City, in.District, in.Street, in.Lat, in.Lng, in.Price, in.Rooms, in.Area,
-		in.Floor, in.FloorsTotal, string(featuresJSON), in.Description, in.Deposit, in.CadastreCode, in.RepairCondition, now, listingID)
-	if err != nil {
-		return err
-	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if n != 1 {
-		return errListingNotFound
-	}
-	return nil
+	return updateListingRow(tx, listingID, in, now)
 }
