@@ -524,6 +524,53 @@ func handleAdminSetListingStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ---------- POST /api/admin/listings/regeocode ----------
+// Разовый пересчёт координат для объявлений, опубликованных до появления геокодирования
+// адреса (см. geocode.go) — у них метка на карте могла быть случайной точкой у центра
+// города, не совпадающей с реальным адресом. Безопасно вызывать повторно: адрес не
+// поменялся — геокодер вернёт то же самое.
+type adminRegeocodeResult struct {
+	Total   int `json:"total"`
+	Updated int `json:"updated"`
+	Failed  int `json:"failed"`
+}
+
+func handleAdminRegeocodeListings(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query(`SELECT id, city, district, street FROM listings`)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	type row struct{ id, city, district, street string }
+	var list []row
+	for rows.Next() {
+		var it row
+		if err := rows.Scan(&it.id, &it.city, &it.district, &it.street); err != nil {
+			rows.Close()
+			writeErr(w, http.StatusInternalServerError, "db error")
+			return
+		}
+		list = append(list, it)
+	}
+	rows.Close()
+
+	out := adminRegeocodeResult{Total: len(list)}
+	now := time.Now()
+	for _, it := range list {
+		lat, lng, ok := geocodeAddress(it.city, it.district, it.street)
+		if !ok {
+			out.Failed++
+			continue
+		}
+		if _, err := db.Exec(`UPDATE listings SET lat = ?, lng = ?, updated_at = ? WHERE id = ?`, lat, lng, now, it.id); err != nil {
+			out.Failed++
+			continue
+		}
+		out.Updated++
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
 func setListingStatus(id, status string, now time.Time) error {
 	tx, err := db.Begin()
 	if err != nil {

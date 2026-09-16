@@ -51,6 +51,7 @@ var (
 	yandexTranslateKey  string
 	yandexFolderID      string
 	yandexSpeechKey     string
+	yandexGeocoderKey   string
 )
 
 func main() {
@@ -87,6 +88,11 @@ func main() {
 	// кнопка «показать текст» в чате вернёт ошибку — сама расшифровка не обязательна для
 	// работы чата.
 	yandexSpeechKey = os.Getenv("YANDEX_SPEECHKIT_API_KEY")
+	// Yandex Geocoder HTTP API — переводит адрес объявления (город/район/улица) в
+	// координаты метки на карте, см. geocode.go. Тот же ключ, что и VITE_YANDEX_MAPS_API_KEY
+	// на фронтенде (продукт "JavaScript API и HTTP Геокодер"). Без ключа или если геокодер
+	// не нашёл адрес — координаты остаются старым фолбэком (случайная точка у центра города).
+	yandexGeocoderKey = os.Getenv("YANDEX_MAPS_API_KEY")
 
 	db = openDB(dbPath)
 	defer db.Close()
@@ -220,6 +226,7 @@ func main() {
 	mux.HandleFunc("POST /api/admin/reports/{id}/resolve", requireAdminSession(handleAdminResolveReport))
 	mux.HandleFunc("GET /api/admin/listings", requireAdminSession(handleAdminListings))
 	mux.HandleFunc("POST /api/admin/listings/{id}/status", requireAdminSession(handleAdminSetListingStatus))
+	mux.HandleFunc("POST /api/admin/listings/regeocode", requireAdminSession(handleAdminRegeocodeListings))
 	mux.HandleFunc("DELETE /api/admin/listings/{id}", requireAdminSession(handleAdminDeleteListing))
 	mux.HandleFunc("GET /api/admin/listings/{id}/document", requireAdminSession(handleAdminGetListingDocument))
 	mux.HandleFunc("GET /api/admin/revisions", requireAdminSession(handleAdminListRevisions))

@@ -422,6 +422,9 @@ func handleCreateListing(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if lat, lng, ok := geocodeAddress(in.City, in.District, in.Street); ok {
+		in.Lat, in.Lng = lat, lng
+	}
 
 	doc, err := saveDocument(r, "document")
 	if err != nil {
@@ -606,6 +609,9 @@ func handleUpdateListing(w http.ResponseWriter, r *http.Request) {
 	if err := validateListingInput(in); err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())
 		return
+	}
+	if lat, lng, ok := geocodeAddress(in.City, in.District, in.Street); ok {
+		in.Lat, in.Lng = lat, lng
 	}
 	if (l.Deal == "hotel") != (in.Deal == "hotel") {
 		writeErr(w, http.StatusBadRequest, "deal_change_not_allowed")
