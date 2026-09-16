@@ -45,7 +45,7 @@ export default function ThreadList(props) {
                   class="bn-tap"
                   aria-current={key === props.currentKey() ? 'true' : undefined}
                   onClick={() => props.onSelect(key)}
-                  style={`width:100%;min-width:0;text-align:left;display:block;padding:16px;border-radius:14px;background:${key === props.currentKey() ? '#f2f1ee' : 'transparent'}`}
+                  style={`width:100%;min-width:0;text-align:left;display:block;padding:16px;border-radius:14px;background:${key === props.currentKey() ? '#f2f1ee' : unread() ? '#eef7f6' : 'transparent'}`}
                 >
                   <div style="display:flex;align-items:center;gap:12px;min-width:0">
                     <span
@@ -53,10 +53,14 @@ export default function ThreadList(props) {
                     >
                       {sl().ini}
                     </span>
-                    <span style="font-size:14px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                    <span
+                      style={`font-size:14px;font-weight:${unread() ? '800' : '700'};color:${unread() ? '#1c1b19' : 'inherit'};flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis`}
+                    >
                       {sl().n[li()]}
                     </span>
-                    <span style="font-size:12px;color:#9a9793;flex:0 0 auto">{last().time || ''}</span>
+                    <span style={`font-size:12px;color:${unread() ? TEAL_TX : '#9a9793'};font-weight:${unread() ? '700' : '400'};flex:0 0 auto`}>
+                      {last().time || ''}
+                    </span>
                     <Show when={unread()}>
                       <span
                         style={`min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:${TEAL};color:#fff;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto`}
@@ -70,7 +74,9 @@ export default function ThreadList(props) {
                       {roomsLabel(item())} · {addrOf(item())}
                     </div>
                   </Show>
-                  <div style="font-size:13px;color:#4a4844;margin-top:4px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                  <div
+                    style={`font-size:13px;color:${unread() ? '#1c1b19' : '#4a4844'};font-weight:${unread() ? '700' : '400'};margin-top:4px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis`}
+                  >
                     {lastPreview(last())}
                   </div>
                 </button>

@@ -96,6 +96,7 @@ export default function Chat() {
   const showQuick = () => !thread().support && noRealMsgsYet() && !(state.draft || '').trim();
 
   const [mView, setMView] = createSignal(state.thread ? 'chat' : 'list');
+  const [showScrollDown, setShowScrollDown] = createSignal(false);
   const showList = () => !state.isMob || mView() === 'list';
   const showThread = () => hasThread() && (!state.isMob || mView() === 'chat');
 
@@ -141,6 +142,7 @@ export default function Chat() {
       queueMicrotask(() => {
         msgsRef.scrollTop = msgsRef.scrollHeight;
       });
+    setShowScrollDown(false);
     return trigger;
   });
 
@@ -265,27 +267,47 @@ export default function Chat() {
 
             <VoiceMiniPlayer title={seller().n[li()]} />
 
-            <div
-              ref={msgsRef}
-              style="flex:1;min-height:0;padding:24px 20px;display:flex;flex-direction:column;gap:16px;background:#fbfbfa;overflow-y:auto;overflow-x:hidden"
-            >
-              <Index each={thread().msgs}>
-                {(m, i) => {
-                  const prevDate = () => thread().msgs[i - 1]?.date;
-                  return (
-                    <>
-                      <Show when={m().date && m().date !== prevDate()}>
-                        <div style="display:flex;align-items:center;justify-content:center;margin:4px 0 8px">
-                          <span style="font-size:12px;font-weight:700;color:#8f8b85;background:#f0efec;padding:5px 12px;border-radius:999px">
-                            {m().date}
-                          </span>
-                        </div>
-                      </Show>
-                      <MessageBubble m={m} />
-                    </>
-                  );
+            <div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column">
+              <div
+                ref={msgsRef}
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  setShowScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 120);
                 }}
-              </Index>
+                style="flex:1;min-height:0;padding:24px 20px;display:flex;flex-direction:column;gap:16px;background:#fbfbfa;overflow-y:auto;overflow-x:hidden"
+              >
+                <Index each={thread().msgs}>
+                  {(m, i) => {
+                    const prevDate = () => thread().msgs[i - 1]?.date;
+                    return (
+                      <>
+                        <Show when={m().date && m().date !== prevDate()}>
+                          <div style="display:flex;align-items:center;justify-content:center;margin:4px 0 8px">
+                            <span style="font-size:12px;font-weight:700;color:#8f8b85;background:#f0efec;padding:5px 12px;border-radius:999px">
+                              {m().date}
+                            </span>
+                          </div>
+                        </Show>
+                        <MessageBubble m={m} />
+                      </>
+                    );
+                  }}
+                </Index>
+              </div>
+              <Show when={showScrollDown()}>
+                <button
+                  type="button"
+                  class="bn-tap"
+                  aria-label={t().scrollToBottomW}
+                  onClick={() => {
+                    msgsRef.scrollTo({ top: msgsRef.scrollHeight, behavior: 'smooth' });
+                    setShowScrollDown(false);
+                  }}
+                  style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);width:38px;height:38px;border-radius:999px;background:#fff;box-shadow:0 10px 24px -8px rgba(28,27,25,.35);display:flex;align-items:center;justify-content:center;color:#4a4844;animation:bnUp .15s ease both"
+                >
+                  <Icon name="down" size={18} weight={2.2} />
+                </button>
+              </Show>
             </div>
 
             <div style="flex:0 0 auto">

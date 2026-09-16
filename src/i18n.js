@@ -365,6 +365,7 @@ Object.assign(T, {
   st4: ['Սեփականության հաստատում', 'Подтверждение владения', 'Ownership check'],
   nextW: ['Հաջորդ քայլը', 'Дальше', 'Next'],
   backW: ['Հետ', 'Назад', 'Back'],
+  scrollToBottomW: ['Ներքև', 'К последним сообщениям', 'Scroll to latest'],
   dealLbl: ['Գործարքի տեսակ', 'Тип сделки', 'Deal type'],
   cityLbl: ['Քաղաք', 'Город', 'City'],
   distLbl: ['Թաղամաս', 'Район', 'District'],
