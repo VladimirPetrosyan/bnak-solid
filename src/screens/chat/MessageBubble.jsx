@@ -93,7 +93,7 @@ function BookingCard(props) {
 }
 
 export default function MessageBubble(props) {
-  const m = () => props.m;
+  const m = () => props.m();
   const isMedia = () => m().kind === 'video' || m().kind === 'image';
 
   if (m().kind === 'booking' && m().booking) return <BookingCard m={m()} />;

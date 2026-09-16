@@ -1,4 +1,4 @@
-import { For, Show, createSignal, createEffect, onCleanup, onMount } from 'solid-js';
+import { For, Index, Show, createSignal, createEffect, onCleanup, onMount } from 'solid-js';
 import {
   state,
   setState,
@@ -269,15 +269,15 @@ export default function Chat() {
               ref={msgsRef}
               style="flex:1;min-height:0;padding:24px 20px;display:flex;flex-direction:column;gap:16px;background:#fbfbfa;overflow-y:auto;overflow-x:hidden"
             >
-              <For each={thread().msgs}>
+              <Index each={thread().msgs}>
                 {(m, i) => {
-                  const prevDate = () => thread().msgs[i() - 1]?.date;
+                  const prevDate = () => thread().msgs[i - 1]?.date;
                   return (
                     <>
-                      <Show when={m.date && m.date !== prevDate()}>
+                      <Show when={m().date && m().date !== prevDate()}>
                         <div style="display:flex;align-items:center;justify-content:center;margin:4px 0 8px">
                           <span style="font-size:12px;font-weight:700;color:#8f8b85;background:#f0efec;padding:5px 12px;border-radius:999px">
-                            {m.date}
+                            {m().date}
                           </span>
                         </div>
                       </Show>
@@ -285,7 +285,7 @@ export default function Chat() {
                     </>
                   );
                 }}
-              </For>
+              </Index>
             </div>
 
             <div style="flex:0 0 auto">
