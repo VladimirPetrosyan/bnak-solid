@@ -90,6 +90,9 @@ func geocodeAddress(city, district, street string) (lat, lng float64, ok bool) {
 	if err != nil {
 		return 0, 0, false
 	}
+	// Ключ ограничен по HTTP Referer в консоли Yandex (localhost/hayhome.am) — серверный
+	// запрос сам по себе Referer не шлёт, поэтому подставляем домен из allowlist явно.
+	req.Header.Set("Referer", "https://hayhome.am/")
 	resp, err := geocodeHTTPClient.Do(req)
 	if err != nil {
 		return 0, 0, false
