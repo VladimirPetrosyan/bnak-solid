@@ -12,7 +12,7 @@ export default function MessageNotice() {
         role="button"
         tabIndex={0}
         onClick={() => openMsgNotice(n().key)}
-        style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:310;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:#fff;box-shadow:0 18px 40px -14px rgba(28,27,25,.35);max-width:min(380px,calc(100vw - 32px));cursor:pointer;animation:bnDown .2s ease both"
+        style={`position:fixed;bottom:${state.isMob ? '84px' : '20px'};right:20px;z-index:310;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:#fff;box-shadow:0 18px 40px -14px rgba(28,27,25,.35);max-width:min(380px,calc(100vw - 40px));cursor:pointer;animation:bnUp .2s ease both`}
       >
         <span
           style={`width:38px;height:38px;border-radius:999px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:${TEAL_T};color:${TEAL_TX};font-weight:700;font-size:15px`}

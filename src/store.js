@@ -1636,7 +1636,7 @@ export function unreadCountOf(v) {
 }
 
 export function unreadTotal() {
-  return Object.values(state.unread).reduce((sum, v) => sum + unreadCountOf(v), 0);
+  return Object.values(state.unread).filter((v) => unreadCountOf(v) > 0).length;
 }
 
 export async function openThreadFor(listingId) {
@@ -1691,7 +1691,7 @@ export function receiveRealtimeMessage(payload) {
   if (!mergeIncomingMessages(threadId, [message])) return;
   const mine = !!(state.user && message.senderId === state.user.id);
   if (mine) return;
-  if (state.thread === threadId) {
+  if (state.screen === 'chat' && state.thread === threadId) {
     api.post('/api/threads/' + threadId + '/read').catch(() => {});
   } else {
     setState('unread', threadId, (n) => unreadCountOf(n) + 1);
