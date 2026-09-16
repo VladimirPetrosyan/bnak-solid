@@ -15,6 +15,8 @@ import { resolveLegalId, LEGAL_CONSENT_VERSION } from './legalDocs';
 import { buildListingPayload } from './postPayload';
 import { isValidRepairCondition, repairConditionLabel } from './repairCondition';
 import { COUNTRIES, findCountry, findCountryByDigits, groupDigits } from './countries';
+import { lastPreviewBody } from './screens/chat/format';
+import { playNotifySound } from './screens/chat/notifySound';
 
 const KEY = 'hayhome.state.v2';
 const LEGACY_KEY = 'bnak.state.v2';
@@ -119,7 +121,8 @@ const DEFAULTS = {
   support: { messages: [], loading: false },
   exchangeRates: null,
   legalId: null,
-  legalFrom: 'search'
+  legalFrom: 'search',
+  msgNotice: null
 };
 
 const PERSIST = [
@@ -776,6 +779,32 @@ export function say(msg) {
   toastTimer = setTimeout(() => setState('toast', null), 3600);
 }
 
+let msgNoticeTimer;
+let msgNoticeSeq = 0;
+function notifyIncomingMessage(key, message, other) {
+  playNotifySound();
+  clearTimeout(msgNoticeTimer);
+  setState('msgNotice', {
+    id: ++msgNoticeSeq,
+    key,
+    name: (other && other.name) || 'HayHome',
+    ini: (other && other.ini) || '💬',
+    text: lastPreviewBody(message, t())
+  });
+  msgNoticeTimer = setTimeout(() => setState('msgNotice', null), 5000);
+}
+
+export function dismissMsgNotice() {
+  clearTimeout(msgNoticeTimer);
+  setState('msgNotice', null);
+}
+
+export function openMsgNotice(key) {
+  dismissMsgNotice();
+  openThread(key);
+  go('chat');
+}
+
 function syncListingWatch() {
   const l = state.screen === 'listing' ? byId(state.active) : null;
   if (l && l.remote) watchListing(l.id);
@@ -1136,6 +1165,7 @@ export function receiveSupportMessage(data) {
     return;
   }
   setState('unread', SUPPORT_KEY, true);
+  if (message.sender !== 'user') notifyIncomingMessage(SUPPORT_KEY, message, { name: t().supportW, ini: '🎧' });
 }
 
 export async function loadSupportMessages() {
@@ -1665,6 +1695,7 @@ export function receiveRealtimeMessage(payload) {
     api.post('/api/threads/' + threadId + '/read').catch(() => {});
   } else {
     setState('unread', threadId, (n) => unreadCountOf(n) + 1);
+    notifyIncomingMessage(threadId, message, cur.other);
   }
 }
 

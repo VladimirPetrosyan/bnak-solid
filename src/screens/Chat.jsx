@@ -95,7 +95,7 @@ export default function Chat() {
   const noRealMsgsYet = () => thread().msgs.length === 0;
   const showQuick = () => !thread().support && noRealMsgsYet() && !(state.draft || '').trim();
 
-  const [mView, setMView] = createSignal('list');
+  const [mView, setMView] = createSignal(state.thread ? 'chat' : 'list');
   const showList = () => !state.isMob || mView() === 'list';
   const showThread = () => hasThread() && (!state.isMob || mView() === 'chat');
 

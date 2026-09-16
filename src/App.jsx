@@ -2,10 +2,12 @@ import { For, Show, Switch, Match, createEffect, onCleanup, onMount } from 'soli
 import { state, setState, t, go, requireAuth, restoreSession, byId, openLegal } from './store';
 import { photoCount, stepIndex } from './galleryNav';
 import { LEGAL_IDS, LEGAL_KEY_BY_ID } from './legalDocs';
+import { unlockNotifySound } from './screens/chat/notifySound';
 
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
 import Toast from './components/Toast';
+import MessageNotice from './components/MessageNotice';
 import FiltersModal from './components/modals/Filters';
 import ReportModal from './components/modals/Report';
 import HowModal from './components/modals/How';
@@ -31,6 +33,17 @@ export default function App() {
 
   onMount(() => {
     restoreSession();
+    const onFirstInteract = () => {
+      unlockNotifySound();
+      window.removeEventListener('pointerdown', onFirstInteract);
+      window.removeEventListener('keydown', onFirstInteract);
+    };
+    window.addEventListener('pointerdown', onFirstInteract);
+    window.addEventListener('keydown', onFirstInteract);
+    onCleanup(() => {
+      window.removeEventListener('pointerdown', onFirstInteract);
+      window.removeEventListener('keydown', onFirstInteract);
+    });
     const onResize = () => {
       const mobile = window.innerWidth < 820;
       if (mobile !== state.isMob) setState('isMob', mobile);
@@ -200,6 +213,7 @@ export default function App() {
       <CloseDealModal />
       <ConfirmSignOutModal />
       <Toast />
+      <MessageNotice />
     </div>
   );
 }

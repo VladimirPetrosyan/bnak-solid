@@ -3,23 +3,9 @@ import { state, t, li, go, chatSellerOf, byId, roomsLabel, addrOf, unreadCountOf
 import { TEAL, TEAL_T, TEAL_TX, RED_T, RED_TX } from '../../theme';
 import Icon from '../../components/Icon';
 import ChatEmptyState from './ChatEmptyState';
+import { lastPreviewBody } from './format';
 
-const lastPreviewBody = (last) =>
-  last.kind === 'audio'
-    ? '🎤 ' + t().audioMsg
-    : last.kind === 'video'
-      ? '📹 ' + t().attachVideo
-      : last.kind === 'image'
-        ? '📷 ' + t().imgMsg
-        : last.kind === 'file'
-          ? '📄 ' + (last.name || t().fileMsg)
-          : last.kind === 'location'
-            ? '📍 ' + t().locMsg
-            : last.kind === 'booking'
-              ? '🗓 ' + (last.text === 'request' ? t().bookingRequestT : t()[{ confirmed: 'bkEvConfirmed', declined: 'bkEvDeclined', cancelled: 'bkEvCancelled' }[last.text]])
-              : last.text || '';
-
-const lastPreview = (last) => (last.id == null ? '' : (last.me ? t().youPrefix + ' ' : '') + lastPreviewBody(last));
+const lastPreview = (last) => (last.id == null ? '' : (last.me ? t().youPrefix + ' ' : '') + lastPreviewBody(last, t()));
 
 export default function ThreadList(props) {
   const empty = () => props.keys().length === 0;
