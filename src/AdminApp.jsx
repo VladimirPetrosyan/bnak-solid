@@ -415,12 +415,31 @@ function ListingsTable(props) {
   );
 }
 
+const SUPPORT_BOTTOM_THRESHOLD = 80;
+
 function SupportPanel(props) {
   const [threads, setThreads] = sig([]);
   const [activeId, setActiveId] = sig(null);
   const [messages, setMessages] = sig([]);
   const [draft, setDraft] = sig('');
+  const [showScrollDown, setShowScrollDown] = sig(false);
   let listRef;
+  // Не сигнал: читается эффектом ниже, но не должен запускать его сам по себе —
+  // иначе checkBottom() (вызывается из onScroll) зациклит createEffect.
+  let atBottom = true;
+
+  const checkBottom = () => {
+    if (!listRef) return atBottom;
+    const dist = listRef.scrollHeight - listRef.scrollTop - listRef.clientHeight;
+    setShowScrollDown(dist > 120);
+    atBottom = dist <= SUPPORT_BOTTOM_THRESHOLD;
+    return atBottom;
+  };
+
+  const scrollToBottom = () => {
+    if (!listRef) return;
+    listRef.scrollTo({ top: listRef.scrollHeight, behavior: 'smooth' });
+  };
 
   const loadThreads = async () => {
     try {
@@ -431,6 +450,8 @@ function SupportPanel(props) {
   };
 
   const openThread = async (id) => {
+    atBottom = true;
+    setShowScrollDown(false);
     setActiveId(id);
     try {
       setMessages(await api.get('/api/admin/support/threads/' + id + '/messages'));
@@ -446,9 +467,15 @@ function SupportPanel(props) {
     props.onCountChange(threads().reduce((n, t) => n + (t.unread || 0), 0));
   });
 
+  // Автоскролл вниз только если админ уже был внизу (или тред только что открыт) —
+  // если он читает историю выше, новое сообщение не должно дёргать список вниз.
   createEffect(() => {
     messages().length;
-    if (listRef) listRef.scrollTop = listRef.scrollHeight;
+    if (listRef && atBottom)
+      queueMicrotask(() => {
+        listRef.scrollTop = listRef.scrollHeight;
+        checkBottom();
+      });
   });
 
   createEffect(() => {
@@ -541,8 +568,8 @@ function SupportPanel(props) {
           when={activeId()}
           fallback={<div style={`margin:auto;padding:26px 18px;font-size:12.5px;color:${TEXT_FAINT}`}>Выберите диалог слева.</div>}
         >
-          <div style="display:flex;flex-direction:column;min-height:520px">
-            <div style={`padding:13px 16px;border-bottom:1px solid ${BORDER};display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap`}>
+          <div style="display:flex;flex-direction:column;height:640px">
+            <div style={`padding:13px 16px;border-bottom:1px solid ${BORDER};display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;flex:0 0 auto`}>
               <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
                 <div style="font-size:14px;font-weight:600">{active() ? active().user.name || active().user.phone : ''}</div>
                 <div style={`font-family:${MONO};font-size:11px;color:${TEXT_FAINT}`}>{active() ? active().user.phone : ''}</div>
@@ -556,36 +583,53 @@ function SupportPanel(props) {
                 Профиль
               </button>
             </div>
-            <div ref={listRef} style={`flex:1;padding:16px;display:flex;flex-direction:column;gap:10px;background:${FEED_BG}`}>
-              <For each={messages()}>
-                {(m) => {
-                  const mine = m.sender === 'admin';
-                  return (
-                    <div style={`max-width:76%;align-self:${mine ? 'flex-end' : 'flex-start'};background:${mine ? ACCENT : '#fff'};color:${mine ? '#fff' : INK};border:1px solid ${mine ? ACCENT : BORDER};border-radius:6px;padding:9px 12px;display:flex;flex-direction:column;gap:4px`}>
-                      <Show
-                        when={m.kind && m.kind !== 'text' && m.url}
-                        fallback={
-                          <span style="font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word">{supportMsgText(m)}</span>
-                        }
-                      >
-                        <a
-                          href={fileURL(m.url)}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={`font-size:13px;line-height:1.45;word-break:break-word;color:inherit;text-decoration:underline`}
+            <div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column">
+              <div
+                ref={listRef}
+                onScroll={checkBottom}
+                style={`flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:${FEED_BG}`}
+              >
+                <For each={messages()}>
+                  {(m) => {
+                    const mine = m.sender === 'admin';
+                    return (
+                      <div style={`max-width:76%;align-self:${mine ? 'flex-end' : 'flex-start'};background:${mine ? ACCENT : '#fff'};color:${mine ? '#fff' : INK};border:1px solid ${mine ? ACCENT : BORDER};border-radius:6px;padding:9px 12px;display:flex;flex-direction:column;gap:4px`}>
+                        <Show
+                          when={m.kind && m.kind !== 'text' && m.url}
+                          fallback={
+                            <span style="font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word">{supportMsgText(m)}</span>
+                          }
                         >
-                          {supportMsgText(m)}
-                        </a>
-                      </Show>
-                      <span style={`font-family:${MONO};font-size:10px;color:${mine ? 'rgba(255,255,255,.7)' : TEXT_GHOST};align-self:flex-end`}>
-                        {timeOf(m.createdAt)}
-                      </span>
-                    </div>
-                  );
-                }}
-              </For>
+                          <a
+                            href={fileURL(m.url)}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={`font-size:13px;line-height:1.45;word-break:break-word;color:inherit;text-decoration:underline`}
+                          >
+                            {supportMsgText(m)}
+                          </a>
+                        </Show>
+                        <span style={`font-family:${MONO};font-size:10px;color:${mine ? 'rgba(255,255,255,.7)' : TEXT_GHOST};align-self:flex-end`}>
+                          {timeOf(m.createdAt)}
+                        </span>
+                      </div>
+                    );
+                  }}
+                </For>
+              </div>
+              <Show when={showScrollDown()}>
+                <button
+                  type="button"
+                  class="bn-tap"
+                  aria-label="Вниз, к последним сообщениям"
+                  onClick={scrollToBottom}
+                  style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);width:34px;height:34px;border-radius:999px;background:#fff;box-shadow:0 10px 24px -8px rgba(28,27,25,.35);display:flex;align-items:center;justify-content:center;color:#4a4844;border:0;cursor:pointer"
+                >
+                  <Icon name="down" size={16} weight={2.2} />
+                </button>
+              </Show>
             </div>
-            <form onSubmit={send} style={`border-top:1px solid ${BORDER};padding:12px 16px;display:flex;gap:10px;align-items:flex-end`}>
+            <form onSubmit={send} style={`border-top:1px solid ${BORDER};padding:12px 16px;display:flex;gap:10px;align-items:flex-end;flex:0 0 auto`}>
               <textarea
                 value={draft()}
                 onInput={(e) => setDraft(e.currentTarget.value)}
