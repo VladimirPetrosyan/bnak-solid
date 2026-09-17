@@ -1,10 +1,26 @@
-import { createSignal, For, Show } from 'solid-js';
-import { state, setState, t, txt, li, postState, setPost, say, publishListing, byId, STAY_KINDS, stayKindLabel } from '../store';
+import { createSignal, For, Show, onCleanup, onMount } from 'solid-js';
+import {
+  state,
+  setState,
+  t,
+  txt,
+  li,
+  postState,
+  setPost,
+  say,
+  publishListing,
+  byId,
+  STAY_KINDS,
+  stayKindLabel,
+  addressSuggestions
+} from '../store';
 import { CITY, DIST, FEAT, nf } from '../data';
 import { pillStyle, label as labelStyle, input as inputStyle, TEAL, TEAL_T, TEAL_TX, INK, RED } from '../theme';
 import MediaShelf from '../components/MediaShelf';
 import Icon from '../components/Icon';
 import InfoTooltip from '../components/InfoTooltip';
+import TimeField from '../components/TimeField';
+import StarRating from '../components/StarRating';
 import { documentFile, setDocumentFile, validateDocumentFile, formatFileSize } from '../documentUpload';
 import { postStepErrorKeys, MAX_STREET_LEN, MAX_DESC_LEN, MAX_AREA, MAX_FLOORS_TOTAL } from '../postValidation';
 import { REPAIR_CONDITIONS, REPAIR_LABELS, REPAIR_HINTS } from '../repairCondition';
@@ -41,6 +57,36 @@ export default function Post() {
       ? DEALS.filter((key) => (key === 'hotel') === hotel())
       : DEALS.filter((key) => key !== 'hotel' || (state.user && state.user.role === 'hotel'));
   const [cityOpen, setCityOpen] = createSignal(false);
+  const [addrSuggestions, setAddrSuggestions] = createSignal([]);
+  const [addrOpen, setAddrOpen] = createSignal(false);
+  let addrWrapRef;
+  let addrTimer;
+  const onStreetInput = (value) => {
+    clearErr('street');
+    setPost({ street: value });
+    clearTimeout(addrTimer);
+    addrTimer = setTimeout(async () => {
+      const list = await addressSuggestions(p().city, p().dist, value);
+      setAddrSuggestions(list);
+      setAddrOpen(list.length > 0);
+    }, 400);
+  };
+  const pickAddrSuggestion = (s) => {
+    clearTimeout(addrTimer);
+    clearErr('street');
+    setPost({ street: s.street });
+    setAddrOpen(false);
+  };
+  onMount(() => {
+    const onDocClick = (e) => {
+      if (addrWrapRef && !addrWrapRef.contains(e.target)) setAddrOpen(false);
+    };
+    document.addEventListener('click', onDocClick);
+    onCleanup(() => {
+      document.removeEventListener('click', onDocClick);
+      clearTimeout(addrTimer);
+    });
+  });
   const [media, setMedia] = createSignal([]);
   const setMediaFiles = (next) => {
     setMedia(next);
@@ -199,6 +245,8 @@ export default function Post() {
                     aria-invalid={hasErr('title')}
                     style={`${errStyle('title')};font-weight:700`}
                   />
+                  <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().starsLbl}</div>
+                  <StarRating value={p().stars} onChange={(n) => setPost({ stars: n })} />
                 </div>
               </Show>
 
@@ -266,20 +314,40 @@ export default function Post() {
               </div>
 
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:16px;margin-top:24px">
-                <div>
+                <div ref={addrWrapRef} style="position:relative">
                   <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().streetLbl}</div>
                   <input
                     ref={(el) => (streetRef = el)}
                     value={p().street}
-                    onInput={(e) => {
-                      clearErr('street');
-                      setPost({ street: e.currentTarget.value });
-                    }}
+                    onInput={(e) => onStreetInput(e.currentTarget.value)}
+                    onFocus={() => setAddrOpen(addrSuggestions().length > 0)}
                     placeholder={t().streetPh}
                     maxLength={MAX_STREET_LEN}
                     aria-invalid={hasErr('street')}
+                    autocomplete="off"
                     style={errStyle('street')}
                   />
+                  <Show when={addrOpen()}>
+                    <div
+                      role="listbox"
+                      style="position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7;animation:bnUp .16s ease both;max-height:260px;overflow-y:auto"
+                    >
+                      <For each={addrSuggestions()}>
+                        {(s) => (
+                          <button
+                            type="button"
+                            class="bn-tap"
+                            role="option"
+                            onClick={() => pickAddrSuggestion(s)}
+                            style="width:100%;text-align:left;display:flex;align-items:center;gap:9px;padding:11px 14px;font-size:14px;font-weight:600"
+                          >
+                            <Icon name="pin" size={14} stroke="#9a9793" style="flex:0 0 auto" />
+                            <span>{s.full}</span>
+                          </button>
+                        )}
+                      </For>
+                    </div>
+                  </Show>
                 </div>
                 <div>
                   <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().postPhoneLbl}</div>
@@ -296,24 +364,8 @@ export default function Post() {
             <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05);animation:bnIn .18s ease">
               <Show when={hotel()}>
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:16px;margin-bottom:24px">
-                  <div>
-                    <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().checkInTimeLbl}</div>
-                    <input
-                      type="time"
-                      value={p().checkInTime}
-                      onInput={(e) => setPost({ checkInTime: e.currentTarget.value })}
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().checkOutTimeLbl}</div>
-                    <input
-                      type="time"
-                      value={p().checkOutTime}
-                      onInput={(e) => setPost({ checkOutTime: e.currentTarget.value })}
-                      style={inputStyle}
-                    />
-                  </div>
+                  <TimeField value={p().checkInTime} onChange={(v) => setPost({ checkInTime: v })} label={t().checkInTimeLbl} />
+                  <TimeField value={p().checkOutTime} onChange={(v) => setPost({ checkOutTime: v })} label={t().checkOutTimeLbl} />
                 </div>
               </Show>
               <Show when={!hotel()}>
@@ -667,6 +719,11 @@ export default function Post() {
               <div style="margin-top:16px;font-size:20px;font-weight:800;letter-spacing:-.02em;overflow-wrap:anywhere">
                 {p().title || '—'}
               </div>
+              <Show when={p().stars > 0}>
+                <div style="margin-top:6px">
+                  <StarRating value={p().stars} size={14} />
+                </div>
+              </Show>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                 <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">
                   {stayKindLabel(p().stayKind)}

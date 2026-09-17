@@ -333,6 +333,7 @@ const API_ERR_KEYS = {
   invalid_floor: 'errFloor',
   invalid_floors_total: 'errFloorsTotal',
   floor_exceeds_floors_total: 'errFloorExceeds',
+  invalid_stars: 'errStars',
   hotel_role_required: 'errHotelRoleRequired',
   'invalid role': 'errRoleInvalid',
   'already has this role': 'errRoleAlreadyHeld',
@@ -429,6 +430,7 @@ function normalizeRemote(item) {
     stayKind: l.stayKind || '',
     checkIn: l.checkIn || '',
     checkOut: l.checkOut || '',
+    stars: l.stars || 0,
     stay: item.stay || null,
     responsibleAgent: item.responsibleAgent || null
   };
@@ -573,6 +575,17 @@ export async function requestRoleChange(role) {
     say(apiErrText(e));
   } finally {
     setState('roleRequestBusy', false);
+  }
+}
+
+export async function addressSuggestions(city, district, query) {
+  const q = (query || '').trim();
+  if (q.length < 3) return [];
+  try {
+    const params = new URLSearchParams({ city, d: district, q });
+    return await api.get('/api/geocode/suggest?' + params.toString());
+  } catch {
+    return [];
   }
 }
 
@@ -2037,6 +2050,7 @@ export function postState() {
       deal: u.role === 'hotel' ? 'hotel' : 'rent',
       title: '',
       stayKind: 'hotel',
+      stars: 0,
       checkInTime: '14:00',
       checkOutTime: '12:00',
       city: 'yerevan',
@@ -2132,6 +2146,7 @@ export function editListing(id) {
       deal: l.deal,
       title: l.title,
       stayKind: l.stayKind || 'hotel',
+      stars: l.stars || 0,
       checkInTime: l.checkIn,
       checkOutTime: l.checkOut,
       city: l.city,

@@ -1,9 +1,24 @@
 import { For, Show, createEffect, createSignal, on } from 'solid-js';
-import { state, t, go, editListing, openListing, addrOf, fetchRooms, loadBookings, TEAL, TEAL_T, TEAL_TX, RED_T, RED_TX } from '../../store';
+import {
+  state,
+  t,
+  go,
+  editListing,
+  openListing,
+  addrOf,
+  fetchRooms,
+  loadBookings,
+  TEAL,
+  TEAL_T,
+  TEAL_TX,
+  RED_T,
+  RED_TX
+} from '../../store';
 import { INK } from '../../theme';
 import Icon from '../../components/Icon';
 import PhotoSlot from '../../components/PhotoSlot';
 import Kpi from './Kpi';
+import StarRating from '../../components/StarRating';
 import RoomTypesEditor from './RoomTypesEditor';
 import RoomCalendar from './RoomCalendar';
 import BookingList from './BookingList';
@@ -47,7 +62,13 @@ export default function HotelView() {
           note={t().bkPending}
           bg={allHosted().some((b) => b.status === 'pending') ? '#fdf3dc' : '#fff'}
         />
-        <Kpi label={t().kpiUpcoming} value={String(allHosted().filter((b) => b.status === 'confirmed').length)} note={t().bkConfirmed} bg={TEAL_T} fg={TEAL_TX} />
+        <Kpi
+          label={t().kpiUpcoming}
+          value={String(allHosted().filter((b) => b.status === 'confirmed').length)}
+          note={t().bkConfirmed}
+          bg={TEAL_T}
+          fg={TEAL_TX}
+        />
       </div>
 
       <Show
@@ -92,14 +113,20 @@ export default function HotelView() {
             <div style="margin-top:16px;background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(28,27,25,.05);overflow:hidden;animation:bnIn .2s ease">
               <div style="padding:20px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #f0efec">
                 <div style="flex:0 0 96px;height:76px;border-radius:12px;overflow:hidden;background:#f2f1ee;position:relative">
-                  <PhotoSlot id={`ph-${row().listing.id}`} label={addrOf(row().listing)} src={row().listing.photos && row().listing.photos[0]} />
+                  <PhotoSlot
+                    id={`ph-${row().listing.id}`}
+                    label={addrOf(row().listing)}
+                    src={row().listing.photos && row().listing.photos[0]}
+                  />
                 </div>
                 <div style="flex:1 1 220px;min-width:0">
                   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
                     <Show
                       when={row().listing.backendStatus === 'pending'}
                       fallback={
-                        <span style={`display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;background:${row().chipBg()};color:${row().chipFg()}`}>
+                        <span
+                          style={`display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;background:${row().chipBg()};color:${row().chipFg()}`}
+                        >
                           {row().chipText()}
                         </span>
                       }
@@ -109,9 +136,18 @@ export default function HotelView() {
                       </span>
                     </Show>
                   </div>
-                  <button type="button" onClick={() => openListing(row().listing.id)} style="display:block;text-align:left;font-size:18px;font-weight:800;letter-spacing:-.02em;margin-top:6px">
-                    {row().listing.title}
-                  </button>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                    <button
+                      type="button"
+                      onClick={() => openListing(row().listing.id)}
+                      style="display:block;text-align:left;font-size:18px;font-weight:800;letter-spacing:-.02em"
+                    >
+                      {row().listing.title}
+                    </button>
+                    <Show when={row().listing.stars > 0}>
+                      <StarRating value={row().listing.stars} size={13} />
+                    </Show>
+                  </div>
                   <div style="font-size:13px;color:#6f6d68;margin-top:2px">{addrOf(row().listing)}</div>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -140,7 +176,9 @@ export default function HotelView() {
               </div>
 
               <Show when={!rooms().length}>
-                <div style={`margin:16px 20px 0;padding:12px 14px;border-radius:12px;background:${RED_T};color:${RED_TX};font-size:13px;font-weight:600`}>
+                <div
+                  style={`margin:16px 20px 0;padding:12px 14px;border-radius:12px;background:${RED_T};color:${RED_TX};font-size:13px;font-weight:600`}
+                >
                   {t().roomsNeeded}
                 </div>
               </Show>
@@ -161,7 +199,9 @@ export default function HotelView() {
                         >
                           {t()[label]}
                           <Show when={key === 'requests' && pendingCount(row().listing.id)}>
-                            <span style={`min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:${TEAL};color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center`}>
+                            <span
+                              style={`min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:${TEAL};color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center`}
+                            >
                               {pendingCount(row().listing.id)}
                             </span>
                           </Show>

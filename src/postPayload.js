@@ -27,6 +27,7 @@ export function buildListingPayload(p) {
     title: (p.title || '').trim(),
     stayKind: p.stayKind,
     checkIn: p.checkInTime || '',
-    checkOut: p.checkOutTime || ''
+    checkOut: p.checkOutTime || '',
+    stars: parseInt(p.stars, 10) || 0
   };
 }

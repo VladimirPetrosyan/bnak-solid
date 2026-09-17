@@ -56,4 +56,11 @@ describe('buildListingPayload', () => {
   it('does not send hotel fields for regular listings', () => {
     expect(buildListingPayload(baseDraft())).not.toHaveProperty('title');
   });
+
+  it('sends the chosen star rating for a hotel and defaults to 0 when unset', () => {
+    const rated = buildListingPayload(baseDraft({ deal: 'hotel', title: 'Ararat Hostel', stayKind: 'hostel', stars: 4 }));
+    expect(rated.stars).toBe(4);
+    const unrated = buildListingPayload(baseDraft({ deal: 'hotel', title: 'Ararat Hostel', stayKind: 'hostel' }));
+    expect(unrated.stars).toBe(0);
+  });
 });

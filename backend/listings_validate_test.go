@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 )
 
@@ -91,6 +92,78 @@ func TestValidateListingInputHotelSkipsAreaAndFloorChecks(t *testing.T) {
 	}
 	if err := validateListingInput(in); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateListingInputAcceptsHotelStars(t *testing.T) {
+	in := listingInput{
+		Deal: "hotel", City: "yerevan", Street: "Test str", Title: "Hotel",
+		StayKind: "hostel", CheckIn: "14:00", CheckOut: "12:00", Stars: 4,
+	}
+	if err := validateListingInput(in); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateListingInputAcceptsUnspecifiedStars(t *testing.T) {
+	in := listingInput{
+		Deal: "hotel", City: "yerevan", Street: "Test str", Title: "Hotel",
+		StayKind: "hostel", CheckIn: "14:00", CheckOut: "12:00", Stars: 0,
+	}
+	if err := validateListingInput(in); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateListingInputRejectsStarsOutOfRange(t *testing.T) {
+	in := listingInput{
+		Deal: "hotel", City: "yerevan", Street: "Test str", Title: "Hotel",
+		StayKind: "hostel", CheckIn: "14:00", CheckOut: "12:00", Stars: 6,
+	}
+	if err := validateListingInput(in); err != errStarsInvalid {
+		t.Fatalf("err = %v, want errStarsInvalid", err)
+	}
+	in.Stars = -1
+	if err := validateListingInput(in); err != errStarsInvalid {
+		t.Fatalf("err = %v, want errStarsInvalid", err)
+	}
+}
+
+func TestNormalizeListingInputClearsStarsForNonHotel(t *testing.T) {
+	in := validRentInput()
+	in.Stars = 5
+	out := normalizeListingInput(in)
+	if out.Stars != 0 {
+		t.Fatalf("stars = %d, want 0 for non-hotel deal", out.Stars)
+	}
+}
+
+func TestCreateHotelListingPersistsStars(t *testing.T) {
+	setupTestDB(t)
+	setupTestPrivateDocs(t)
+	owner := mustCreateUser(t, "hotel")
+
+	in := listingInput{Deal: "hotel", City: "yerevan", Street: "Test str", Title: "My Hotel", StayKind: "hotel", CheckIn: "14:00", CheckOut: "12:00", Stars: 4}
+	b, _ := json.Marshal(in)
+	req := newCreateListingRequest(t, string(b), "cert.pdf", pdfBytes)
+	rec := createListingAsRole(t, owner, "hotel", req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var out struct {
+		Listing Listing `json:"listing"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if out.Listing.Stars != 4 {
+		t.Fatalf("stars = %d, want 4", out.Listing.Stars)
+	}
+
+	var stars int
+	db.QueryRow(`SELECT stars FROM listings WHERE id = ?`, out.Listing.ID).Scan(&stars)
+	if stars != 4 {
+		t.Fatalf("db stars = %d, want 4", stars)
 	}
 }
 

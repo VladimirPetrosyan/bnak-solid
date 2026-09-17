@@ -3,6 +3,7 @@ import { cardOf, openListing, toggleFav, openReport, hotelPriceOf, dailyPriceOf,
 import PhotoSlot from './PhotoSlot';
 import Icon from './Icon';
 import Link from './Link';
+import StarRating from './StarRating';
 
 export default function ListingCard(props) {
   const c = () => cardOf(props.listing);
@@ -11,7 +12,10 @@ export default function ListingCard(props) {
   const hp = () => (hotel() ? hotelPriceOf(props.listing) : dailyPriceOf(props.listing));
 
   return (
-    <article class="bn-card" style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(28,27,25,.05);animation:bnUp .26s ease both;transition:box-shadow .18s,transform .18s;display:flex;flex-direction:column">
+    <article
+      class="bn-card"
+      style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(28,27,25,.05);animation:bnUp .26s ease both;transition:box-shadow .18s,transform .18s;display:flex;flex-direction:column"
+    >
       <div style="position:relative;height:212px;background:#f2f1ee">
         <PhotoSlot id={c().slot} label={c().addr} src={c().photo} />
         <Link
@@ -57,7 +61,16 @@ export default function ListingCard(props) {
           }
         >
           <Show when={hotel()}>
-            <div style="font-size:17px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{c().title}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="font-size:17px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                {c().title}
+              </div>
+              <Show when={props.listing.stars > 0}>
+                <span style="flex:0 0 auto">
+                  <StarRating value={props.listing.stars} size={12} />
+                </span>
+              </Show>
+            </div>
           </Show>
           <div style={`display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;${hotel() ? 'margin-top:6px' : ''}`}>
             <span style="font-size:22px;font-weight:800;letter-spacing:-.03em">{hp().main}</span>

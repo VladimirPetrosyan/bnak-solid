@@ -9,6 +9,17 @@ import (
 	"time"
 )
 
+// AddressSuggestion — один вариант адреса для автодополнения поля "Улица и дом" в форме
+// размещения (см. handleGeocodeSuggest ниже) — чтобы пользователь выбирал из реальных
+// адресов вместо свободного текста. Street — то, что подставляется в поле (без города и
+// страны), Full — весь адрес для показа в выпадающем списке, чтобы было видно совпадение.
+type AddressSuggestion struct {
+	Street string  `json:"street"`
+	Full   string  `json:"full"`
+	Lat    float64 `json:"lat"`
+	Lng    float64 `json:"lng"`
+}
+
 // Геокодирование адреса объявления через Yandex Geocoder HTTP API — тот же ключ, что и
 // для JS API карты на фронтенде (продукт "JavaScript API и HTTP Геокодер" в консоли
 // Yandex, см. YANDEX_MAPS_API_KEY в README). Раньше координаты объявления были просто
@@ -51,6 +62,17 @@ type yandexGeocodeResp struct {
 					Point struct {
 						Pos string `json:"pos"`
 					} `json:"Point"`
+					MetaDataProperty struct {
+						GeocoderMetaData struct {
+							Text    string `json:"text"`
+							Address struct {
+								Components []struct {
+									Kind string `json:"kind"`
+									Name string `json:"name"`
+								} `json:"Components"`
+							} `json:"Address"`
+						} `json:"GeocoderMetaData"`
+					} `json:"metaDataProperty"`
 				} `json:"GeoObject"`
 			} `json:"featureMember"`
 		} `json:"GeoObjectCollection"`
@@ -73,51 +95,121 @@ func geocodeQueryAddress(city, district, street string) string {
 	return strings.Join(parts, ", ")
 }
 
-// geocodeAddress возвращает координаты объявления по городу/району/улице. ok=false,
-// если ключ не настроен, запрос не удался или геокодер ничего не нашёл.
-func geocodeAddress(city, district, street string) (lat, lng float64, ok bool) {
-	if yandexGeocoderKey == "" || strings.TrimSpace(street) == "" {
-		return 0, 0, false
+// runGeocode — общий HTTP-запрос к Yandex Geocoder, используется и для получения координат
+// одного адреса (geocodeAddress), и для списка вариантов на подбор (addressSuggestions).
+func runGeocode(query string, results int) (yandexGeocodeResp, bool) {
+	var out yandexGeocodeResp
+	if yandexGeocoderKey == "" || strings.TrimSpace(query) == "" {
+		return out, false
 	}
 	q := url.Values{
 		"apikey":  {yandexGeocoderKey},
 		"format":  {"json"},
-		"geocode": {geocodeQueryAddress(city, district, street)},
-		"results": {"1"},
+		"geocode": {query},
+		"results": {strconv.Itoa(results)},
 		"lang":    {"ru_RU"},
 	}
 	req, err := http.NewRequest(http.MethodGet, yandexGeocoderURL+"?"+q.Encode(), nil)
 	if err != nil {
-		return 0, 0, false
+		return out, false
 	}
 	// Ключ ограничен по HTTP Referer в консоли Yandex (localhost/hayhome.am) — серверный
 	// запрос сам по себе Referer не шлёт, поэтому подставляем домен из allowlist явно.
 	req.Header.Set("Referer", "https://hayhome.am/")
 	resp, err := geocodeHTTPClient.Do(req)
 	if err != nil {
-		return 0, 0, false
+		return out, false
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return 0, 0, false
+		return out, false
 	}
-	var out yandexGeocodeResp
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return out, false
+	}
+	return out, true
+}
+
+// geocodeAddress возвращает координаты объявления по городу/району/улице. ok=false,
+// если ключ не настроен, запрос не удался или геокодер ничего не нашёл.
+func geocodeAddress(city, district, street string) (lat, lng float64, ok bool) {
+	out, ok := runGeocode(geocodeQueryAddress(city, district, street), 1)
+	if !ok {
 		return 0, 0, false
 	}
 	members := out.Response.GeoObjectCollection.FeatureMember
 	if len(members) == 0 {
 		return 0, 0, false
 	}
-	// Yandex отдаёт "pos" как "долгота широта" (lng lat), а не наоборот
-	pos := strings.Fields(members[0].GeoObject.Point.Pos)
-	if len(pos) != 2 {
+	return parsePos(members[0].GeoObject.Point.Pos)
+}
+
+// parsePos — Yandex отдаёт "pos" как "долгота широта" (lng lat), а не наоборот.
+func parsePos(pos string) (lat, lng float64, ok bool) {
+	fields := strings.Fields(pos)
+	if len(fields) != 2 {
 		return 0, 0, false
 	}
-	lonVal, err1 := strconv.ParseFloat(pos[0], 64)
-	latVal, err2 := strconv.ParseFloat(pos[1], 64)
+	lonVal, err1 := strconv.ParseFloat(fields[0], 64)
+	latVal, err2 := strconv.ParseFloat(fields[1], 64)
 	if err1 != nil || err2 != nil {
 		return 0, 0, false
 	}
 	return latVal, lonVal, true
+}
+
+// addressSuggestions — варианты реального адреса под то, что пользователь уже ввёл в поле
+// "Улица и дом" (см. handleGeocodeSuggest). HTTP Geocoder — не специализированный сервис
+// автодополнения по мере ввода символов, поэтому короткие фрагменты могут давать шумные
+// совпадения (город/район вместо улицы) — отбрасываем кандидатов без компонента "street",
+// чтобы в списке были только настоящие улицы.
+func addressSuggestions(city, district, query string, limit int) []AddressSuggestion {
+	street := strings.TrimSpace(query)
+	if street == "" {
+		return nil
+	}
+	out, ok := runGeocode(geocodeQueryAddress(city, district, street), limit)
+	if !ok {
+		return nil
+	}
+	return parseAddressSuggestions(out)
+}
+
+// parseAddressSuggestions — чистая часть addressSuggestions без сетевого вызова, отдельно
+// от runGeocode ради теста на фиксированном JSON-ответе Yandex.
+func parseAddressSuggestions(out yandexGeocodeResp) []AddressSuggestion {
+	suggestions := []AddressSuggestion{}
+	for _, m := range out.Response.GeoObjectCollection.FeatureMember {
+		meta := m.GeoObject.MetaDataProperty.GeocoderMetaData
+		var streetName, houseName string
+		for _, c := range meta.Address.Components {
+			switch c.Kind {
+			case "street":
+				streetName = c.Name
+			case "house":
+				houseName = c.Name
+			}
+		}
+		if streetName == "" {
+			continue
+		}
+		text := streetName
+		if houseName != "" {
+			text += ", " + houseName
+		}
+		lat, lng, ok := parsePos(m.GeoObject.Point.Pos)
+		if !ok {
+			continue
+		}
+		suggestions = append(suggestions, AddressSuggestion{Street: text, Full: meta.Text, Lat: lat, Lng: lng})
+	}
+	return suggestions
+}
+
+// ---------- GET /api/geocode/suggest ----------
+
+func handleGeocodeSuggest(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	suggestions := addressSuggestions(q.Get("city"), q.Get("d"), q.Get("q"), 5)
+	writeJSON(w, http.StatusOK, suggestions)
 }

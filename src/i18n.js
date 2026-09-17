@@ -482,6 +482,7 @@ Object.assign(T, {
     'Этаж не может быть больше этажности дома',
     'The floor can’t be higher than the building’s floor count'
   ],
+  errStars: ['Աստղականությունը՝ 1-ից 5', 'Звёздность — от 1 до 5', 'Star rating must be 1 to 5'],
   errStreetTooLong: [
     'Հասցեն չափազանց երկար է (մինչև 120 նիշ)',
     'Адрес слишком длинный (максимум 120 символов)',
@@ -1061,6 +1062,7 @@ Object.assign(T, {
   ],
   hotelNameLbl: ['Անվանումը', 'Название', 'Property name'],
   hotelNamePh: ['Օրինակ՝ Ararat Hostel', 'Например, Ararat Hostel', 'e.g. Ararat Hostel'],
+  starsLbl: ['Աստղականություն (ըստ ցանկության)', 'Звёздность (по желанию)', 'Star rating (optional)'],
   stayKindLbl: ['Օբյեկտի տեսակը', 'Тип объекта', 'Property type'],
   checkInLbl: ['Մուտք', 'Заезд', 'Check-in'],
   checkOutLbl: ['Ելք', 'Выезд', 'Check-out'],

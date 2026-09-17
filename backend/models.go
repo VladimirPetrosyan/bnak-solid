@@ -61,6 +61,7 @@ type Listing struct {
 	StayKind        string     `json:"stayKind"` // hotel | hostel | guesthouse — только для deal=hotel
 	CheckIn         string     `json:"checkIn"`
 	CheckOut        string     `json:"checkOut"`
+	Stars           int        `json:"stars"` // 0 — не указана, иначе 1..5, только для deal=hotel
 }
 
 // RoomType — тип номера в отеле: «Двухместный стандарт, 5 шт.». Available и Total

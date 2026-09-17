@@ -26,7 +26,7 @@ func scanListing(row interface {
 	err := row.Scan(&l.ID, &l.OwnerID, &l.Deal, &l.City, &l.District, &l.Street, &l.Lat, &l.Lng,
 		&l.Price, &l.Rooms, &l.Area, &l.Floor, &l.FloorsTotal, &featuresJSON, &l.Description, &l.Deposit,
 		&l.CadastreCode, &l.RepairCondition, &l.Status, &l.ConfirmedAt, &l.ExpiresAt, &l.CreatedAt, &l.UpdatedAt, &promotedUntil,
-		&l.Title, &l.StayKind, &l.CheckIn, &l.CheckOut)
+		&l.Title, &l.StayKind, &l.CheckIn, &l.CheckOut, &l.Stars)
 	if err != nil {
 		return nil, err
 	}
@@ -44,13 +44,13 @@ func scanListing(row interface {
 
 const listingCols = `id, owner_id, deal, city, district, street, lat, lng, price, rooms, area,
 	floor, floors_total, features, description, deposit, cadastre_code, repair_condition, status, confirmed_at, expires_at, created_at, updated_at, promoted_until,
-	title, stay_kind, check_in, check_out`
+	title, stay_kind, check_in, check_out, stars`
 
 // listingColsQ — та же выборка, но с префиксом l. для запросов с JOIN, где иначе
 // created_at (он есть и в listings, и, например, в favorites/reports) неоднозначен.
 const listingColsQ = `l.id, l.owner_id, l.deal, l.city, l.district, l.street, l.lat, l.lng, l.price, l.rooms, l.area,
 	l.floor, l.floors_total, l.features, l.description, l.deposit, l.cadastre_code, l.repair_condition, l.status, l.confirmed_at, l.expires_at, l.created_at, l.updated_at, l.promoted_until,
-	l.title, l.stay_kind, l.check_in, l.check_out`
+	l.title, l.stay_kind, l.check_in, l.check_out, l.stars`
 
 func loadPhotos(listingID string) []string {
 	rows, err := db.Query(`SELECT url FROM listing_photos WHERE listing_id = ? ORDER BY position, id`, listingID)
@@ -398,6 +398,7 @@ type listingInput struct {
 	StayKind        string   `json:"stayKind"`
 	CheckIn         string   `json:"checkIn"`
 	CheckOut        string   `json:"checkOut"`
+	Stars           int      `json:"stars"`
 }
 
 // ---------- POST /api/listings ----------
@@ -481,11 +482,11 @@ func createListingWithDocument(id, ownerID string, in listingInput, featuresJSON
 	if _, err := tx.Exec(`INSERT INTO listings
 		(id, owner_id, deal, city, district, street, lat, lng, price, rooms, area, floor, floors_total,
 		 features, description, deposit, cadastre_code, repair_condition, status, confirmed_at, expires_at, created_at, updated_at,
-		 title, stay_kind, check_in, check_out)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?)`,
+		 title, stay_kind, check_in, check_out, stars)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		id, ownerID, in.Deal, in.City, in.District, in.Street, in.Lat, in.Lng, in.Price, in.Rooms, in.Area,
 		in.Floor, in.FloorsTotal, string(featuresJSON), in.Description, in.Deposit, in.CadastreCode, in.RepairCondition, now, now.Add(confirmWindow), now, now,
-		in.Title, in.StayKind, in.CheckIn, in.CheckOut); err != nil {
+		in.Title, in.StayKind, in.CheckIn, in.CheckOut, in.Stars); err != nil {
 		return err
 	}
 
@@ -517,6 +518,7 @@ var (
 	errFloorRange             = errors.New("invalid_floor")
 	errFloorsTotalRange       = errors.New("invalid_floors_total")
 	errFloorExceedsTotal      = errors.New("floor_exceeds_floors_total")
+	errStarsInvalid           = errors.New("invalid_stars")
 )
 
 var validRepairConditions = map[string]bool{
@@ -557,6 +559,9 @@ func validateListingInput(in listingInput) error {
 		if !validStayTime(in.CheckIn) || !validStayTime(in.CheckOut) {
 			return errStayTime
 		}
+		if in.Stars < 0 || in.Stars > 5 {
+			return errStarsInvalid
+		}
 		return nil
 	}
 	if strings.TrimSpace(in.Street) == "" || in.Price <= 0 || in.Area <= 0 {
@@ -596,7 +601,7 @@ func normalizeListingInput(in listingInput) listingInput {
 	in.CadastreCode = normalizeSpaces(in.CadastreCode)
 	in.Title = normalizeSpaces(in.Title)
 	if in.Deal != "hotel" {
-		in.Title, in.StayKind, in.CheckIn, in.CheckOut = "", "", "", ""
+		in.Title, in.StayKind, in.CheckIn, in.CheckOut, in.Stars = "", "", "", "", 0
 	}
 	if in.Features == nil {
 		in.Features = []string{}
@@ -610,7 +615,7 @@ func listingInputEqual(l *Listing, in listingInput) bool {
 		l.Floor == in.Floor && l.FloorsTotal == in.FloorsTotal && l.Description == in.Description &&
 		l.Deposit == in.Deposit && l.CadastreCode == in.CadastreCode && l.RepairCondition == in.RepairCondition &&
 		l.Title == in.Title && l.StayKind == in.StayKind && l.CheckIn == in.CheckIn && l.CheckOut == in.CheckOut &&
-		reflect.DeepEqual(l.Features, in.Features)
+		l.Stars == in.Stars && reflect.DeepEqual(l.Features, in.Features)
 }
 
 func applyListingUpdate(listingID string, in listingInput, now time.Time) error {
@@ -621,10 +626,10 @@ func updateListingRow(q dbtx, listingID string, in listingInput, now time.Time) 
 	featuresJSON, _ := json.Marshal(in.Features)
 	res, err := q.Exec(`UPDATE listings SET deal=?, city=?, district=?, street=?, lat=?, lng=?, price=?, rooms=?,
 		area=?, floor=?, floors_total=?, features=?, description=?, deposit=?, cadastre_code=?, repair_condition=?,
-		title=?, stay_kind=?, check_in=?, check_out=?, updated_at=? WHERE id=?`,
+		title=?, stay_kind=?, check_in=?, check_out=?, stars=?, updated_at=? WHERE id=?`,
 		in.Deal, in.City, in.District, in.Street, in.Lat, in.Lng, in.Price, in.Rooms, in.Area,
 		in.Floor, in.FloorsTotal, string(featuresJSON), in.Description, in.Deposit, in.CadastreCode, in.RepairCondition,
-		in.Title, in.StayKind, in.CheckIn, in.CheckOut, now, listingID)
+		in.Title, in.StayKind, in.CheckIn, in.CheckOut, in.Stars, now, listingID)
 	if err != nil {
 		return err
 	}

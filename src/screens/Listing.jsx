@@ -47,6 +47,7 @@ import Icon from '../components/Icon';
 import ListingLocation from '../components/ListingLocation';
 import StayRooms from '../components/StayRooms';
 import StayPicker from '../components/StayPicker';
+import StarRating from '../components/StarRating';
 import VideoMessage from './chat/VideoMessage';
 import { formatListingDate, postedAtOf, viewsOf, favoritesOf } from '../listingStats';
 import { remainingPhotos, galleryIndex } from '../galleryNav';
@@ -58,7 +59,8 @@ export default function Listing() {
   const st = () => statusOf(l());
   const warm = () => st() === 'flagged' || st() === 'due';
   const low = () => sel().score < 80;
-  const dealValue = () => ({ rent: t().vLong, daily: t().vDaily, sale: t().vSale, newb: t().vNew, comm: t().vComm, hotel: t().vHotel })[l().deal];
+  const dealValue = () =>
+    ({ rent: t().vLong, daily: t().vDaily, sale: t().vSale, newb: t().vNew, comm: t().vComm, hotel: t().vHotel })[l().deal];
   const hotel = () => l().deal === 'hotel';
   const daily = () => l().deal === 'daily';
   const hp = () => hotelPriceOf(l());
@@ -77,18 +79,21 @@ export default function Listing() {
     [t().kWho, sellerRoleLabel(sel())]
   ];
 
-  const specs = () => hotel() ? hotelSpecs() : [
-    [t().kDeal, dealValue()],
-    [t().kRooms, l().rooms === 0 ? t().studio : String(l().rooms)],
-    [t().kArea, l().area + ' m²'],
-    [t().kFloor, txt('floorN', { a: l().fl, b: l().fls })],
-    [t().kReno, repairLabelOf(l())],
-    [t().kFurn, (l().f || []).includes('furn') ? t().vYes : t().vNo],
-    [t().kDeposit, t().vOneMonth],
-    [t().kUtil, t().vMeters],
-    [t().kWho, sellerRoleLabel(sel())],
-    [t().kPromo, t().vTokens]
-  ];
+  const specs = () =>
+    hotel()
+      ? hotelSpecs()
+      : [
+          [t().kDeal, dealValue()],
+          [t().kRooms, l().rooms === 0 ? t().studio : String(l().rooms)],
+          [t().kArea, l().area + ' m²'],
+          [t().kFloor, txt('floorN', { a: l().fl, b: l().fls })],
+          [t().kReno, repairLabelOf(l())],
+          [t().kFurn, (l().f || []).includes('furn') ? t().vYes : t().vNo],
+          [t().kDeposit, t().vOneMonth],
+          [t().kUtil, t().vMeters],
+          [t().kWho, sellerRoleLabel(sel())],
+          [t().kPromo, t().vTokens]
+        ];
 
   const history = () =>
     Array.from({ length: 14 }, (_, i) => {
@@ -154,10 +159,17 @@ export default function Listing() {
       <div class="bn-listing-cols" style="margin-top:26px">
         <div class="bn-listing-main">
           <Show when={hotel()}>
-            <h1 style="margin:0 0 10px;font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.03em">{l().title}</h1>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+              <h1 style="margin:0;font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.03em">{l().title}</h1>
+              <Show when={l().stars > 0}>
+                <StarRating value={l().stars} size={18} />
+              </Show>
+            </div>
           </Show>
           <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
-            <span style="font-size:clamp(28px,5vw,38px);font-weight:800;letter-spacing:-.035em">{hotel() ? hp().main : daily() ? dp().main : priceOf(l())}</span>
+            <span style="font-size:clamp(28px,5vw,38px);font-weight:800;letter-spacing:-.035em">
+              {hotel() ? hp().main : daily() ? dp().main : priceOf(l())}
+            </span>
             <span style="font-size:16px;font-weight:600;color:#6f6d68">{hotel() ? hp().per : daily() ? dp().per : perOf(l())}</span>
             <span style="font-size:14px;color:#9a9793">
               {hotel() ? hp().sub : daily() ? dp().sub : [usdOf(l()), rubOf(l())].filter(Boolean).join(' · ')}
@@ -277,7 +289,9 @@ export default function Listing() {
             <Show when={l().desc}>
               <div style="margin-top:26px">
                 <h2 style="margin:0 0 12px;font-size:20px;font-weight:800;letter-spacing:-.02em">{t().descTitle}</h2>
-                <p style="margin:0;font-size:16px;line-height:1.65;color:#2c2a27;max-width:64ch;text-wrap:pretty;white-space:pre-line">{l().desc}</p>
+                <p style="margin:0;font-size:16px;line-height:1.65;color:#2c2a27;max-width:64ch;text-wrap:pretty;white-space:pre-line">
+                  {l().desc}
+                </p>
               </div>
             </Show>
           </Show>

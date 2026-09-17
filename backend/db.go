@@ -79,7 +79,8 @@ CREATE TABLE IF NOT EXISTS listings (
 	title          TEXT NOT NULL DEFAULT '',
 	stay_kind      TEXT NOT NULL DEFAULT '',
 	check_in       TEXT NOT NULL DEFAULT '',
-	check_out      TEXT NOT NULL DEFAULT ''
+	check_out      TEXT NOT NULL DEFAULT '',
+	stars          INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_listings_owner ON listings(owner_id);
 CREATE INDEX IF NOT EXISTS idx_listings_deal_city ON listings(deal, city);
@@ -418,6 +419,8 @@ func migrate(conn *sql.DB) error {
 		`ALTER TABLE messages ADD COLUMN transcript TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE support_messages ADD COLUMN waveform TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE support_messages ADD COLUMN transcript TEXT NOT NULL DEFAULT ''`,
+		// звёздность отеля/хостела (0 — не указана, иначе 1..5), см. listings.go validateListingInput
+		`ALTER TABLE listings ADD COLUMN stars INTEGER NOT NULL DEFAULT 0`,
 	}
 	for _, a := range alters {
 		if _, err := conn.Exec(a); err != nil && !isIgnorableMigrationErr(err) {

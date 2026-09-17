@@ -41,6 +41,8 @@ import rawVolume from '@tabler/icons/outline/volume.svg?raw';
 import rawVolumeOff from '@tabler/icons/outline/volume-off.svg?raw';
 import rawMaximize from '@tabler/icons/outline/maximize.svg?raw';
 import rawMessageLanguage from '@tabler/icons/outline/message-language.svg?raw';
+import rawStar from '@tabler/icons/outline/star.svg?raw';
+import rawStarFilled from '@tabler/icons/filled/star.svg?raw';
 
 function shapesOf(svg) {
   const shapes = [...svg.matchAll(/<(path|circle)\b([^>]*)\/?>/g)]
@@ -96,10 +98,12 @@ const ICONS = {
   volume: shapesOf(rawVolume),
   volumeOff: shapesOf(rawVolumeOff),
   maximize: shapesOf(rawMaximize),
-  messageLanguage: shapesOf(rawMessageLanguage)
+  messageLanguage: shapesOf(rawMessageLanguage),
+  star: shapesOf(rawStar),
+  starFilled: shapesOf(rawStarFilled)
 };
 
-const FILLED = new Set(['stop', 'play', 'pause']);
+const FILLED = new Set(['stop', 'play', 'pause', 'starFilled']);
 
 export default function Icon(props) {
   return (
