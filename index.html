@@ -22,6 +22,17 @@
       * {
         box-sizing: border-box;
       }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
       html {
         scrollbar-gutter: stable;
       }
@@ -257,11 +268,13 @@
         button.ymaps3--control-button {
         display: none;
       }
-      .bn-vip-track {
+      .bn-vip-track,
+      .bn-scroll-x {
         scrollbar-width: none;
         -ms-overflow-style: none;
       }
-      .bn-vip-track::-webkit-scrollbar {
+      .bn-vip-track::-webkit-scrollbar,
+      .bn-scroll-x::-webkit-scrollbar {
         display: none;
       }
       .bn-listing-cols {

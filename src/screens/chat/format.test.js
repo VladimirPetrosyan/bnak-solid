@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { fmtSec, fmtSize } from './format';
+import { fmtSec, fmtSize, voiceA11yLabel } from './format';
+import { tr, trN } from '../../i18n';
+
+const ru = (key, vars) => tr('RU', key, vars);
+const ruN = (key, n, vars) => trN('RU', key, n, vars);
 
 describe('fmtSec', () => {
   it('formats seconds under a minute', () => {
@@ -27,5 +31,23 @@ describe('fmtSize', () => {
   it('formats megabytes', () => {
     expect(fmtSize(1024 * 1024)).toBe('1.0 MB');
     expect(fmtSize(1.5 * 1024 * 1024)).toBe('1.5 MB');
+  });
+});
+
+describe('voiceA11yLabel', () => {
+  it('describes a playable message with its duration and timestamp', () => {
+    expect(voiceA11yLabel({ playing: false, seconds: 13, date: '16.09.2026', time: '17:58' }, ru, ruN)).toBe(
+      'Воспроизвести голосовое сообщение, 13 секунд, 16.09.2026 в 17:58'
+    );
+  });
+
+  it('drops the timestamp when it is unknown', () => {
+    expect(voiceA11yLabel({ playing: false, seconds: 1 }, ru, ruN)).toBe('Воспроизвести голосовое сообщение, 1 секунда');
+  });
+
+  it('describes a playing message without a timestamp', () => {
+    expect(voiceA11yLabel({ playing: true, seconds: 2, date: '16.09.2026', time: '17:58' }, ru, ruN)).toBe(
+      'Приостановить голосовое сообщение, 2 секунды'
+    );
   });
 });

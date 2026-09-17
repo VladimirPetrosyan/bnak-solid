@@ -1,7 +1,7 @@
 import { createSignal, createEffect, onMount, onCleanup, For, Show } from 'solid-js';
-import { fmtSec } from './format';
+import { fmtSec, voiceA11yLabel } from './format';
 import Icon from '../../components/Icon';
-import { say, txt } from '../../store';
+import { say, txt, txtN } from '../../store';
 import { globalRate, playVoice, playNextVoice, registerVoice, unregisterVoice } from './voicePlayback';
 
 const PLAY_ERROR_KEY = { NotAllowedError: 'voicePlayBlocked', NotSupportedError: 'voicePlayUnsupported' };
@@ -93,7 +93,7 @@ export default function VoiceMessage(props) {
           type="button"
           class="bn-tap"
           onClick={toggle}
-          aria-label={playing() ? 'pause' : 'play'}
+          aria-label={voiceA11yLabel({ playing: playing(), seconds: dur(), date: props.date, time: props.time }, txt, txtN)}
           style={`width:34px;height:34px;border-radius:999px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:${me() ? 'rgba(255,255,255,.22)' : '#e8f4f2'}`}
         >
           <Icon name={playing() ? 'pause' : 'play'} size={15} stroke={fg} />

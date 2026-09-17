@@ -25,6 +25,7 @@ import {
 import { radio } from '../theme';
 import Icon from '../components/Icon';
 import { groupDigits } from '../countries';
+import { singleFieldInvalid, entryInvalidFields, passwordStepInvalidFields } from './authValidation';
 
 function capDigits(raw, maxDigits) {
   let out = '',
@@ -73,7 +74,25 @@ export default function Auth() {
   const [ccOpen, setCcOpen] = createSignal(false);
   const [ccQuery, setCcQuery] = createSignal('');
   const [confirmPw, setConfirmPw] = createSignal('');
-  const [errField, setErrField] = createSignal('');
+  const [errFields, setErrFields] = createSignal([]);
+  const hasErr = (name) => errFields().includes(name);
+  const clearErr = (name) => {
+    if (hasErr(name)) setErrFields((f) => f.filter((x) => x !== name));
+  };
+  let phoneRef, pwRef, confirmRef, codeRef;
+  const fieldRef = { phone: () => phoneRef, password: () => pwRef, confirm: () => confirmRef, code: () => codeRef };
+  const focusFirstErr = (fields) => {
+    const el = fieldRef[fields[0]] && fieldRef[fields[0]]();
+    el && el.focus();
+  };
+  const fieldMessage = (name) =>
+    ({
+      phone: txt('phoneErr', { n: digitsLabel() }),
+      password: txt('pwErr'),
+      confirm: txt('pwMismatch'),
+      code: txt('codeErr'),
+      legal: txt('errLegalRequired')
+    })[name] || '';
   const [nowMs, setNowMs] = createSignal(Date.now());
   onMount(() => {
     const id = setInterval(() => setNowMs(Date.now()), 1000);
@@ -107,89 +126,56 @@ export default function Auth() {
     return value;
   };
 
-  const toCode = () => {
-    if (!phoneOk()) {
-      setErrField('phone');
-      return say(txt('phoneErr', { n: digitsLabel() }));
+  const validate = (bad) => {
+    if (!bad.length) {
+      setErrFields([]);
+      return true;
     }
-    setErrField('');
+    setErrFields(bad);
+    say(fieldMessage(bad[0]));
+    focusFirstErr(bad);
+    return false;
+  };
+
+  const toCode = () => {
+    if (!validate(singleFieldInvalid('phone', phoneOk()))) return;
     startAuth();
   };
   const toVerify = () => {
-    if ((a().code || '').length !== 4) {
-      setErrField('code');
-      return say(txt('codeErr'));
-    }
-    setErrField('');
+    if (!validate(singleFieldInvalid('code', (a().code || '').length === 4))) return;
     verifyCode();
   };
   const toPassword = () => {
-    if (!pwOk()) {
-      setErrField('password');
-      return say(txt('pwErr'));
-    }
-    if (a().password !== confirmPw()) {
-      setErrField('confirm');
-      return say(txt('pwMismatch'));
-    }
-    setErrField('');
+    if (!validate(passwordStepInvalidFields({ pwOk: pwOk(), matches: a().password === confirmPw() }))) return;
     choosePassword();
   };
   const toReset = () => {
-    if (!pwOk()) {
-      setErrField('password');
-      return say(txt('pwErr'));
-    }
-    if (a().password !== confirmPw()) {
-      setErrField('confirm');
-      return say(txt('pwMismatch'));
-    }
-    setErrField('');
+    if (!validate(passwordStepInvalidFields({ pwOk: pwOk(), matches: a().password === confirmPw() }))) return;
     resetPassword();
   };
   const toLogin = () => {
-    if ((a().password || '').length === 0) {
-      setErrField('password');
-      return say(txt('pwErr'));
-    }
-    setErrField('');
+    if (!validate(singleFieldInvalid('password', (a().password || '').length > 0))) return;
     loginWithPassword();
   };
   const toSignIn = () => {
-    if (!phoneOk()) {
-      setErrField('phone');
-      return say(txt('phoneErr', { n: digitsLabel() }));
-    }
-    if ((a().password || '').length === 0) {
-      setErrField('password');
-      return say(txt('pwErr'));
-    }
-    setErrField('');
+    if (!validate(entryInvalidFields({ phoneOk: phoneOk(), hasPassword: (a().password || '').length > 0 }))) return;
     loginWithPassword();
   };
   const toRegister = () => {
-    setErrField('');
+    setErrFields([]);
     startRegistration();
   };
   const toForgotPhone = () => {
-    setErrField('');
+    setErrFields([]);
     patch({ step: 'forgotPhone', code: '', password: '' });
   };
   const toForgotCode = () => {
-    if (!phoneOk()) {
-      setErrField('phone');
-      return say(txt('phoneErr', { n: digitsLabel() }));
-    }
-    setErrField('');
+    if (!validate(singleFieldInvalid('phone', phoneOk()))) return;
     forgotPassword();
   };
 
   const toFinish = () => {
-    if (!a().legalAccepted) {
-      setErrField('legal');
-      return say(txt('errLegalRequired'));
-    }
-    setErrField('');
+    if (!validate(singleFieldInvalid('legal', a().legalAccepted))) return;
     finishAuth();
   };
 
@@ -199,17 +185,20 @@ export default function Auth() {
     openLegal(id);
   };
 
-  const errStyle = (name) => (errField() === name ? `border-color:${RED}` : '');
+  const errStyle = (name) => (hasErr(name) ? `border-color:${RED}` : '');
   const legalLinkStyle = 'font:inherit;color:#0e7c73;text-decoration:underline';
 
   const pwField = (onEnter) => (
     <div class="bn-field" style={errStyle('password')}>
       <input
+        ref={(el) => (pwRef = el)}
         type={showPw() ? 'text' : 'password'}
         value={a().password}
         maxLength={64}
+        aria-invalid={hasErr('password')}
+        aria-describedby={hasErr('password') ? 'err-password' : undefined}
         onInput={(e) => {
-          if (errField() === 'password') setErrField('');
+          clearErr('password');
           patch({ password: capInput(e, e.currentTarget.value.slice(0, 64)) });
         }}
         onKeyDown={(e) => e.key === 'Enter' && onEnter()}
@@ -218,6 +207,11 @@ export default function Auth() {
       <button type="button" class="bn-tap" onClick={() => setShowPw(!showPw())} aria-pressed={showPw()} style="flex:0 0 auto;font-size:13px;font-weight:600;color:#6f6d68">
         {showPw() ? t().pwHide : t().pwShow}
       </button>
+      <Show when={hasErr('password')}>
+        <span id="err-password" class="sr-only">
+          {fieldMessage('password')}
+        </span>
+      </Show>
     </div>
   );
 
@@ -240,16 +234,24 @@ export default function Auth() {
   const pwConfirmField = (onEnter) => (
     <div class="bn-field" style={errStyle('confirm')}>
       <input
+        ref={(el) => (confirmRef = el)}
         type={showPw() ? 'text' : 'password'}
         value={confirmPw()}
         maxLength={64}
+        aria-invalid={hasErr('confirm')}
+        aria-describedby={hasErr('confirm') ? 'err-confirm' : undefined}
         onInput={(e) => {
-          if (errField() === 'confirm') setErrField('');
+          clearErr('confirm');
           setConfirmPw(e.currentTarget.value);
         }}
         onKeyDown={(e) => e.key === 'Enter' && onEnter()}
         placeholder={t().pwConfirmPh}
       />
+      <Show when={hasErr('confirm')}>
+        <span id="err-confirm" class="sr-only">
+          {fieldMessage('confirm')}
+        </span>
+      </Show>
     </div>
   );
 
@@ -270,15 +272,23 @@ export default function Auth() {
       <span style="flex:0 0 auto;width:1px;align-self:stretch;background:#e8e7e4;margin:10px 0" />
       <span style="flex:0 0 auto;font-size:16px;font-weight:700;color:#4a4844;padding:16px 0 16px 12px">+{country().cc}</span>
       <input
+        ref={(el) => (phoneRef = el)}
         value={a().phone}
+        aria-invalid={hasErr('phone')}
+        aria-describedby={hasErr('phone') ? 'err-phone' : undefined}
         onInput={(e) => {
-          if (errField() === 'phone') setErrField('');
+          clearErr('phone');
           patch({ phone: capInput(e, capDigits(e.currentTarget.value, country().max)) });
         }}
         onKeyDown={(e) => e.key === 'Enter' && onEnter()}
         onFocus={() => setCcOpen(false)}
         placeholder={groupDigits('0'.repeat(country().max))}
       />
+      <Show when={hasErr('phone')}>
+        <span id="err-phone" class="sr-only">
+          {fieldMessage('phone')}
+        </span>
+      </Show>
       <Show when={ccOpen()}>
         <div
           onClick={(e) => e.stopPropagation()}
@@ -386,7 +396,7 @@ export default function Auth() {
                   type="button"
                   class="bn-tap"
                   onClick={() => {
-                    setErrField('');
+                    setErrFields([]);
                     patch({ step: 'entry', code: '', password: '' });
                   }}
                   style="color:#0e7c73;font-weight:700"
@@ -419,7 +429,7 @@ export default function Auth() {
                   type="button"
                   class="bn-tap"
                   onClick={() => {
-                    setErrField('');
+                    setErrFields([]);
                     patch({ step: 'entry', password: '' });
                   }}
                 >
@@ -447,7 +457,7 @@ export default function Auth() {
                 type="button"
                 class="bn-tap"
                 onClick={() => {
-                  setErrField('');
+                  setErrFields([]);
                   patch({ step: 'entry' });
                 }}
                 style="width:100%;margin-top:16px;text-align:center;font-size:13px;font-weight:600;color:#6f6d68"
@@ -464,15 +474,23 @@ export default function Auth() {
               <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().codeLbl}</div>
               <div class="bn-field bn-field-code" style={errStyle('code')}>
                 <input
+                  ref={(el) => (codeRef = el)}
                   value={a().code}
+                  aria-invalid={hasErr('code')}
+                  aria-describedby={hasErr('code') ? 'err-code' : undefined}
                   onInput={(e) => {
-                    if (errField() === 'code') setErrField('');
+                    clearErr('code');
                     patch({ code: capInput(e, e.currentTarget.value.replace(/\D/g, '').slice(0, 4)) });
                   }}
                   onKeyDown={(e) => e.key === 'Enter' && toVerify()}
                   placeholder="0000"
                 />
               </div>
+              <Show when={hasErr('code')}>
+                <span id="err-code" class="sr-only">
+                  {fieldMessage('code')}
+                </span>
+              </Show>
               <button
                 type="button"
                 class="bn-tap"
@@ -489,7 +507,7 @@ export default function Auth() {
                   type="button"
                   class="bn-tap"
                   onClick={() => {
-                    setErrField('');
+                    setErrFields([]);
                     patch({ step: a().forgot ? 'forgotPhone' : 'phone', code: '' });
                   }}
                 >
@@ -582,14 +600,16 @@ export default function Auth() {
               </div>
               <label
                 for="bn-legal-consent"
-                style={`margin-top:14px;display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;cursor:pointer;background:${errField() === 'legal' ? RED_T : '#f7f6f4'}`}
+                style={`margin-top:14px;display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;cursor:pointer;background:${hasErr('legal') ? RED_T : '#f7f6f4'}`}
               >
                 <input
                   id="bn-legal-consent"
                   type="checkbox"
                   checked={a().legalAccepted}
+                  aria-invalid={hasErr('legal')}
+                  aria-describedby={hasErr('legal') ? 'err-legal' : undefined}
                   onChange={(e) => {
-                    if (errField() === 'legal') setErrField('');
+                    clearErr('legal');
                     patch({ legalAccepted: e.currentTarget.checked });
                   }}
                   style="margin-top:2px;width:18px;height:18px;flex:0 0 auto;accent-color:#0e7c73;cursor:pointer"
@@ -610,6 +630,11 @@ export default function Auth() {
                   .
                 </span>
               </label>
+              <Show when={hasErr('legal')}>
+                <span id="err-legal" class="sr-only">
+                  {fieldMessage('legal')}
+                </span>
+              </Show>
               <button
                 type="button"
                 class="bn-tap"

@@ -1,4 +1,4 @@
-import { For, Show, createSignal } from 'solid-js';
+import { For, Show, createSignal, createEffect } from 'solid-js';
 import {
   state,
   setState,
@@ -19,6 +19,7 @@ import {
   MUTED
 } from '../store';
 import { CITY } from '../data';
+import { dealTitleKey } from '../dealTitle';
 import { promotedOf } from '../vip';
 import { pillStyle } from '../theme';
 import ListingCard from '../components/ListingCard';
@@ -50,8 +51,7 @@ export default function Search() {
     setVipOnly(false);
     setState('shown', 12);
   };
-  const titleKey = () =>
-    ({ rent: 'titleRent', daily: 'titleDaily', sale: 'titleSale', newb: 'titleNew', comm: 'titleComm', hotel: 'titleHotel', all: 'titleAll' })[state.deal];
+  const titleKey = () => dealTitleKey(state.deal);
   const hotel = () => state.deal === 'hotel';
   const daily = () => state.deal === 'daily';
   const activeFilters = activeFilterCount;
@@ -65,7 +65,11 @@ export default function Search() {
             style="flex:1 1 280px;display:flex;align-items:center;gap:11px;height:48px;padding:0 16px;border-radius:14px;background:#f7f7f6;border:1px solid transparent"
           >
             <Icon name="search" size={19} stroke="#6f6d68" />
+            <label for="search-query" class="sr-only">
+              {t().searchW}
+            </label>
             <input
+              id="search-query"
               value={state.query}
               onInput={(e) => setState({ query: e.currentTarget.value, shown: 12 })}
               placeholder={t().searchPh}
@@ -85,12 +89,17 @@ export default function Search() {
           </div>
 
           <Show when={state.isMob}>
-            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:48px;padding:4px;background:#f2f1ee;border-radius:12px;flex:1 1 auto">
+            <div class="bn-scroll-x" style="display:flex;align-items:center;gap:4px;min-height:44px;padding:4px;background:#f2f1ee;border-radius:12px;flex:1 1 100%;min-width:0;overflow-x:auto">
               <For each={DEALS}>
                 {(key) => {
                   const on = () => (key === 'rent' ? state.deal === 'rent' || state.deal === 'daily' : state.deal === key);
+                  let ref;
+                  createEffect(() => {
+                    if (on() && ref) ref.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                  });
                   return (
                     <button
+                      ref={ref}
                       type="button"
                       class="bn-tap"
                       onClick={() => {
@@ -98,7 +107,7 @@ export default function Search() {
                         reload();
                       }}
                       aria-pressed={on()}
-                      style={`flex:1 1 auto;text-align:center;padding:8px 12px;border-radius:8px;font-size:14px;font-weight:700;white-space:nowrap;background:${on() ? '#fff' : 'transparent'};color:${on() ? INK : MUTED};box-shadow:${on() ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
+                      style={`flex:1 1 auto;text-align:center;padding:13px 10px;border-radius:8px;font-size:14px;font-weight:700;white-space:nowrap;background:${on() ? '#fff' : 'transparent'};color:${on() ? INK : MUTED};box-shadow:${on() ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
                     >
                       {t()[key]}
                     </button>

@@ -1,5 +1,5 @@
 import { For, Show, onCleanup, createEffect, createMemo, createSignal } from 'solid-js';
-import { state, setState, t, txt, li, visible, cardOf, cityObj, cityK, openListing, go, shortPrice, statusOf, INK, TEAL } from '../store';
+import { state, setState, t, txt, txtN, li, visible, cardOf, cityObj, cityK, openListing, go, shortPrice, statusOf, INK, TEAL } from '../store';
 import { YANDEX_MAPS_KEY, yandexLocale, canUseYandex, markerState, yandexHostVisible, mapErrorDetailKey } from '../mapProvider';
 import { loadYandexMaps } from '../yandexMapsLoader';
 import { createYandexEngine, markerStyle, filterListingsByBounds } from '../mapEngine';
@@ -104,15 +104,30 @@ export default function MapScreen() {
     if (showMap() && engine) setTimeout(() => engine.invalidate(), 60);
   });
 
+  const mapViewTabKey = (e, otherKey, activateOther) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+    e.preventDefault();
+    activateOther();
+    document.getElementById('map-view-tab-' + otherKey)?.focus();
+  };
+
   return (
     <div style="width:100%;max-width:1400px;margin:0 auto;padding:20px clamp(14px,3vw,28px) 40px;animation:bnIn .2s ease">
       <Show when={state.isMob}>
-        <div style="display:flex;gap:3px;padding:4px;background:#f2f1ee;border-radius:14px;margin-bottom:14px">
+        <div role="tablist" aria-label={t().mapViewSwitchLbl} style="display:flex;gap:3px;padding:4px;background:#f2f1ee;border-radius:14px;margin-bottom:14px">
           <button
             type="button"
+            role="tab"
+            id="map-view-tab-map"
+            aria-selected={mView() === 'map'}
+            aria-controls="map-view-panel-map"
+            tabindex={mView() === 'map' ? 0 : -1}
             class="bn-tap"
             onClick={() => setMView('map')}
-            aria-pressed={mView() === 'map'}
+            onKeyDown={(e) => mapViewTabKey(e, 'list', () => {
+              if (engine) setBounds(engine.getBounds());
+              setMView('list');
+            })}
             style={`flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:11px;font-size:14px;font-weight:700;background:${mView() === 'map' ? '#fff' : 'transparent'};color:${mView() === 'map' ? '#1c1b19' : '#6f6d68'};box-shadow:${mView() === 'map' ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
           >
             <Icon name="map" size={15} weight={1.9} />
@@ -120,27 +135,37 @@ export default function MapScreen() {
           </button>
           <button
             type="button"
+            role="tab"
+            id="map-view-tab-list"
+            aria-selected={mView() === 'list'}
+            aria-controls="map-view-panel-list"
+            tabindex={mView() === 'list' ? 0 : -1}
             class="bn-tap"
             onClick={() => {
               if (engine) setBounds(engine.getBounds());
               setMView('list');
             }}
-            aria-pressed={mView() === 'list'}
+            onKeyDown={(e) => mapViewTabKey(e, 'map', () => setMView('map'))}
             style={`flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:11px;font-size:14px;font-weight:700;background:${mView() === 'list' ? '#fff' : 'transparent'};color:${mView() === 'list' ? '#1c1b19' : '#6f6d68'};box-shadow:${mView() === 'list' ? '0 1px 3px rgba(28,27,25,.14)' : 'none'}`}
           >
             <Icon name="list" size={15} weight={1.9} />
-            <span>{txt('mapLive', { n: mapVisible().length })}</span>
+            <span>{txtN('mapLive', mapVisible().length)}</span>
           </button>
         </div>
       </Show>
 
       <div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">
         <Show when={showList()}>
-          <div style="flex:1 1 360px;max-width:440px;min-width:280px;background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(28,27,25,.05);display:flex;flex-direction:column;max-height:76vh;overflow:hidden">
+          <div
+            id={state.isMob ? 'map-view-panel-list' : undefined}
+            role={state.isMob ? 'tabpanel' : undefined}
+            aria-labelledby={state.isMob ? 'map-view-tab-list' : undefined}
+            style="flex:1 1 360px;max-width:440px;min-width:280px;background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(28,27,25,.05);display:flex;flex-direction:column;max-height:76vh;overflow:hidden"
+          >
             <Show when={!state.isMob}>
               <div style="padding:18px 20px;border-bottom:1px solid #f0efec;display:flex;align-items:center;gap:12px">
                 <div style="flex:1">
-                  <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">{txt('mapLive', { n: mapVisible().length })}</div>
+                  <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">{txtN('mapLive', mapVisible().length)}</div>
                   <div style="font-size:13px;color:#6f6d68;margin-top:2px">
                     {cityObj().n[li()]} · {t().mapSub}
                   </div>
@@ -214,6 +239,9 @@ export default function MapScreen() {
         </Show>
 
         <div
+          id={state.isMob ? 'map-view-panel-map' : undefined}
+          role={state.isMob ? 'tabpanel' : undefined}
+          aria-labelledby={state.isMob ? 'map-view-tab-map' : undefined}
           style={`flex:999 1 520px;min-width:280px;position:relative;isolation:isolate;border-radius:18px;overflow:hidden;background:#eceae5;min-height:${state.isMob ? '58vh' : '520px'};max-height:76vh;box-shadow:0 1px 2px rgba(28,27,25,.05);display:${showMap() ? 'block' : 'none'}`}
         >
           <div ref={host} class="bn-yamap" style={`position:absolute;inset:0;display:${yandexHostVisible(status()) ? 'block' : 'none'}`} />

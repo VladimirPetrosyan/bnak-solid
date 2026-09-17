@@ -45,14 +45,14 @@ export default function ThreadList(props) {
                   class="bn-tap"
                   aria-current={key === props.currentKey() ? 'true' : undefined}
                   onClick={() => props.onSelect(key)}
-                  style={`width:100%;min-width:0;text-align:left;display:block;padding:16px;border-radius:14px;background:${key === props.currentKey() ? '#f2f1ee' : unread() ? '#eef7f6' : 'transparent'}`}
+                  style={`width:100%;display:grid;grid-template-columns:34px minmax(0,1fr);column-gap:12px;text-align:left;padding:16px;border-radius:14px;background:${key === props.currentKey() ? '#f2f1ee' : unread() ? '#eef7f6' : 'transparent'}`}
                 >
-                  <div style="display:flex;align-items:center;gap:12px;min-width:0">
-                    <span
-                      style={`position:relative;width:34px;height:34px;border-radius:999px;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:${sl().score < 80 ? RED_T : TEAL_T};color:${sl().score < 80 ? RED_TX : TEAL_TX}`}
-                    >
-                      {sl().ini}
-                    </span>
+                  <span
+                    style={`grid-row:1/-1;align-self:start;width:34px;height:34px;border-radius:999px;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;background:${sl().score < 80 ? RED_T : TEAL_T};color:${sl().score < 80 ? RED_TX : TEAL_TX}`}
+                  >
+                    {sl().ini}
+                  </span>
+                  <div style="min-width:0;display:flex;align-items:center;gap:8px">
                     <span
                       style={`font-size:14px;font-weight:${unread() ? '800' : '700'};color:${unread() ? '#1c1b19' : 'inherit'};flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis`}
                     >

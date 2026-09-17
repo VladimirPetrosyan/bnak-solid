@@ -18,6 +18,7 @@ import {
   RED
 } from '../store';
 import Icon from './Icon';
+import Link from './Link';
 
 const DEALS = ['rent', 'hotel', 'sale'];
 const LANGS = ['ՀՅ', 'RU', 'EN'];
@@ -53,10 +54,6 @@ export default function Header() {
   });
 
   const openAvatar = () => {
-    if (!state.user) {
-      guard('cabinet')();
-      return;
-    }
     setLangOpen(false);
     setMenuOpen(!menuOpen());
   };
@@ -71,6 +68,21 @@ export default function Header() {
     askSignOutConfirm();
   };
 
+  const AvatarBadge = () => (
+    <>
+      <span
+        style={`width:40px;height:40px;border-radius:999px;background:${state.user ? TEAL_T : SOFT};color:${state.user ? TEAL_TX : MUTED};font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto`}
+      >
+        {state.user ? state.user.ini : '?'}
+      </span>
+      <Show when={!state.isMob}>
+        <span class="bn-hide-narrow" style="font-size:14px;font-weight:600;white-space:nowrap">
+          {cabinetLabel()}
+        </span>
+      </Show>
+    </>
+  );
+
   const toggleLangMenu = () => {
     setMenuOpen(false);
     setLangOpen(!langOpen());
@@ -79,14 +91,14 @@ export default function Header() {
   return (
     <header style="position:sticky;top:0;z-index:60;background:#fff;box-shadow:0 1px 0 #ebeae7">
       <div style="width:100%;max-width:1400px;margin:0 auto;padding:12px clamp(16px,3vw,28px);display:flex;align-items:center;gap:16px;flex-wrap:nowrap">
-        <button
-          type="button"
+        <Link
+          screen="search"
+          navigate={() => (state.screen === 'auth' ? exitAuth() : go('search'))}
           class="bn-tap"
-          onClick={() => (state.screen === 'auth' ? exitAuth() : go('search'))}
           style="display:flex;align-items:center;flex:0 0 auto"
         >
           <img src="/brand/hayhome-logo.png" alt="HayHome" style="height:38px;width:auto;display:block" />
-        </button>
+        </Link>
 
         <Show when={!state.isMob}>
           <nav style="display:flex;align-items:center;gap:4px;flex:1 1 340px;min-width:0;overflow-x:auto">
@@ -188,10 +200,10 @@ export default function Header() {
 
           <Show when={!onAuth()}>
             <Show when={!state.isMob}>
-              <button
-                type="button"
+              <Link
+                screen="fav"
+                navigate={guard('fav')}
                 class="bn-tap"
-                onClick={guard('fav')}
                 aria-label={t().favs}
                 style="position:relative;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center"
               >
@@ -201,11 +213,11 @@ export default function Header() {
                     {favCount()}
                   </span>
                 </Show>
-              </button>
-              <button
-                type="button"
+              </Link>
+              <Link
+                screen="chat"
+                navigate={guard('chat')}
                 class="bn-tap"
-                onClick={guard('chat')}
                 aria-label={t().messages}
                 style="position:relative;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center"
               >
@@ -215,40 +227,40 @@ export default function Header() {
                     {unread()}
                   </span>
                 </Show>
-              </button>
+              </Link>
             </Show>
 
             <div style="position:relative;flex:0 0 auto" ref={menuRef}>
-              <button
-                type="button"
-                class="bn-tap"
-                onClick={openAvatar}
-                aria-label={cabinetLabel()}
-                aria-haspopup={state.user ? 'menu' : undefined}
-                aria-expanded={state.user ? menuOpen() : undefined}
-                style="display:flex;align-items:center;gap:8px"
+              <Show
+                when={state.user}
+                fallback={
+                  <Link screen="cabinet" navigate={guard('cabinet')} class="bn-tap" aria-label={cabinetLabel()} style="display:flex;align-items:center;gap:8px">
+                    <AvatarBadge />
+                  </Link>
+                }
               >
-                <span
-                  style={`width:40px;height:40px;border-radius:999px;background:${state.user ? TEAL_T : SOFT};color:${state.user ? TEAL_TX : MUTED};font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto`}
+                <button
+                  type="button"
+                  class="bn-tap"
+                  onClick={openAvatar}
+                  aria-label={cabinetLabel()}
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen()}
+                  style="display:flex;align-items:center;gap:8px"
                 >
-                  {state.user ? state.user.ini : '?'}
-                </span>
-                <Show when={!state.isMob}>
-                  <span class="bn-hide-narrow" style="font-size:14px;font-weight:600;white-space:nowrap">
-                    {cabinetLabel()}
-                  </span>
-                </Show>
-              </button>
+                  <AvatarBadge />
+                </button>
+              </Show>
               <Show when={state.user && menuOpen()}>
                 <div
                   role="menu"
                   onClick={(e) => e.stopPropagation()}
                   style="position:absolute;top:calc(100% + 8px);right:0;z-index:70;width:210px;background:#fff;border-radius:16px;padding:6px;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7"
                 >
-                  <button type="button" class="bn-tap" role="menuitem" onClick={() => gotoFromMenu('cabinet')} style={menuItemStyle}>
+                  <Link screen="cabinet" navigate={() => gotoFromMenu('cabinet')} class="bn-tap" role="menuitem" style={menuItemStyle}>
                     <Icon name="home" size={16} weight={1.9} />
                     {t().cabinet}
-                  </button>
+                  </Link>
                   <div style="height:1px;background:#ebeae7;margin:6px 4px" />
                   <button type="button" class="bn-tap" role="menuitem" onClick={signOutFromMenu} style={`${menuItemStyle};color:${RED}`}>
                     <Icon name="close" size={16} weight={2.2} stroke={RED} />
@@ -258,10 +270,10 @@ export default function Header() {
               </Show>
             </div>
 
-            <button
-              type="button"
+            <Link
+              screen="post"
+              navigate={guard('post')}
               class="bn-tap"
-              onClick={guard('post')}
               aria-label={t().post}
               style="display:flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:12px;background:#0e7c73;color:#fff;font-size:14px;font-weight:700;box-shadow:0 6px 16px -8px rgba(14,124,115,.6)"
             >
@@ -269,7 +281,7 @@ export default function Header() {
               <Show when={!state.isMob}>
                 <span class="bn-hide-narrow">{t().post}</span>
               </Show>
-            </button>
+            </Link>
           </Show>
         </div>
       </div>

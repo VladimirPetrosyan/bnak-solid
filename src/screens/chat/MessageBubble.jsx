@@ -109,6 +109,8 @@ export default function MessageBubble(props) {
               url={m().url}
               dur={m().dur}
               me={m().me}
+              date={m().date}
+              time={m().time}
               waveform={audioWaveform(m().waveform)}
               transcript={m().transcript}
               onTranscribe={() => transcribeAudioMessage(m().id)}

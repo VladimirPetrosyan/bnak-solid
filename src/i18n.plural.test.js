@@ -20,4 +20,22 @@ describe('trN', () => {
   it('uses the single Armenian form', () => {
     expect(trN('ՀՅ', 'nightsN', 4)).toBe('4 գիշեր');
   });
+
+  it('declines listing count on the map', () => {
+    expect(trN('RU', 'mapLive', 1)).toBe('1 объявление на карте');
+    expect(trN('RU', 'mapLive', 2)).toBe('2 объявления на карте');
+    expect(trN('RU', 'mapLive', 5)).toBe('5 объявлений на карте');
+    expect(trN('RU', 'mapLive', 11)).toBe('11 объявлений на карте');
+    expect(trN('RU', 'mapLive', 21)).toBe('21 объявление на карте');
+  });
+
+  it('declines listing view counts', () => {
+    expect(trN('RU', 'statViews', 1)).toBe('1 просмотр');
+    expect(trN('RU', 'statViews', 2)).toBe('2 просмотра');
+    expect(trN('RU', 'statViews', 5)).toBe('5 просмотров');
+    expect(trN('RU', 'statViews', 11)).toBe('11 просмотров');
+    expect(trN('RU', 'statViews', 21)).toBe('21 просмотр');
+    expect(trN('EN', 'statViews', 1)).toBe('1 view');
+    expect(trN('EN', 'statViews', 3)).toBe('3 views');
+  });
 });

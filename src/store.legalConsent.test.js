@@ -12,6 +12,7 @@ vi.mock('./api', () => {
     api: { get: vi.fn(), post: vi.fn(), put: vi.fn(), del: vi.fn(), upload: vi.fn(), blob: vi.fn() },
     setAuthToken: vi.fn(),
     getAuthToken: vi.fn(),
+    setApiLang: vi.fn(),
     fileURL: (p) => p,
     ApiError
   };
@@ -39,7 +40,7 @@ class MemoryStorage {
   }
 }
 
-globalThis.window = globalThis.window || { innerWidth: 1024, scrollTo: () => {} };
+globalThis.window = globalThis.window || { innerWidth: 1024, scrollTo: () => {}, location: { pathname: '/' } };
 globalThis.localStorage = globalThis.localStorage || new MemoryStorage();
 
 const { api, ApiError } = await import('./api');

@@ -1,27 +1,16 @@
 import { For, Show } from 'solid-js';
 import { state, t, go, requireAuth, unreadTotal, TEAL, MUTED } from '../store';
 import Icon from './Icon';
+import Link from './Link';
 import { bottomNavButtonStyle, bottomNavIconWrapStyle, bottomNavLabelStyle, bottomNavBadgeStyle } from './bottomNavStyle';
 
 export default function BottomNav() {
   const items = () => [
-    { key: 'search', label: t().searchW, icon: 'search', open: () => go('search') },
-    { key: 'map', label: t().mapW, icon: 'map', open: () => go('map') },
-    {
-      key: 'fav',
-      label: t().favs,
-      icon: 'heart',
-      badge: Object.keys(state.favs).length,
-      open: () => requireAuth({ type: 'go', to: 'fav' }) && go('fav')
-    },
-    {
-      key: 'chat',
-      label: t().messages,
-      icon: 'chat',
-      badge: unreadTotal(),
-      open: () => requireAuth({ type: 'go', to: 'chat' }) && go('chat')
-    },
-    { key: 'cabinet', label: t().cabinet, icon: 'user', open: () => requireAuth({ type: 'go', to: 'cabinet' }) && go('cabinet') }
+    { key: 'search', label: t().searchW, icon: 'search' },
+    { key: 'map', label: t().mapW, icon: 'map' },
+    { key: 'fav', label: t().favs, icon: 'heart', badge: Object.keys(state.favs).length, guarded: true },
+    { key: 'chat', label: t().messages, icon: 'chat', badge: unreadTotal(), guarded: true },
+    { key: 'cabinet', label: t().cabinet, icon: 'user', guarded: true }
   ];
 
   return (
@@ -30,7 +19,13 @@ export default function BottomNav() {
         {(item) => {
           const on = () => state.screen === item.key || (item.key === 'cabinet' && state.screen === 'profile');
           return (
-            <button type="button" class="bn-tap" onClick={item.open} aria-current={on() ? 'page' : undefined} style={bottomNavButtonStyle(on(), TEAL, MUTED)}>
+            <Link
+              screen={item.key}
+              navigate={item.guarded ? () => requireAuth({ type: 'go', to: item.key }) && go(item.key) : undefined}
+              class="bn-tap"
+              aria-current={on() ? 'page' : undefined}
+              style={bottomNavButtonStyle(on(), TEAL, MUTED)}
+            >
               <span style={bottomNavIconWrapStyle}>
                 <Icon name={item.icon} size={21} weight={on() ? 2.2 : 1.7} />
                 <Show when={item.badge}>
@@ -38,7 +33,7 @@ export default function BottomNav() {
                 </Show>
               </span>
               <span style={bottomNavLabelStyle}>{item.label}</span>
-            </button>
+            </Link>
           );
         }}
       </For>

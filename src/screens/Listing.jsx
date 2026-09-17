@@ -4,6 +4,7 @@ import {
   setState,
   t,
   txt,
+  txtN,
   li,
   byId,
   cardOf,
@@ -199,7 +200,7 @@ export default function Listing() {
           <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;font-size:14px;color:#6f6d68">
             <span style="display:flex;align-items:center;gap:6px">
               <Icon name="eye" size={15} stroke="#9a9793" />
-              {viewsOf(l()) == null ? '—' : txt('statViews', { n: nf(viewsOf(l())) })}
+              {viewsOf(l()) == null ? '—' : txtN('statViews', viewsOf(l()), { n: nf(viewsOf(l())) })}
             </span>
             <span style="display:flex;align-items:center;gap:6px">
               <Icon name="calendar" size={15} stroke="#9a9793" />

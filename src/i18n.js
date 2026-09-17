@@ -66,6 +66,10 @@ const T = {
   voicePlayBlocked: ['Բրաուզերը արգելափակեց ձայնագրության նվագարկումը', 'Браузер заблокировал воспроизведение — нажмите ещё раз', 'Browser blocked playback — tap again'],
   voicePlayUnsupported: ['Ձայնագրության ձևաչափը չի աջակցվում այս սարքում', 'Формат записи не поддерживается на этом устройстве', 'This device can’t play this recording format'],
   voicePlayFailed: ['Չհաջողվեց նվագարկել ձայնագրությունը', 'Не удалось воспроизвести голосовое сообщение', 'Couldn’t play the voice message'],
+  secondsN: ['{n} վայրկյան', '{n} секунда|{n} секунды|{n} секунд', '{n} second|{n} seconds'],
+  voicePlayA11y: ['Նվագարկել ձայնային հաղորդագրությունը, {dur}{when}', 'Воспроизвести голосовое сообщение, {dur}{when}', 'Play voice message, {dur}{when}'],
+  voicePauseA11y: ['Դադարեցնել ձայնային հաղորդագրությունը, {dur}', 'Приостановить голосовое сообщение, {dur}', 'Pause voice message, {dur}'],
+  voiceWhenA11y: [', {date}, {time}', ', {date} в {time}', ', {date} at {time}'],
   showTranscript: ['Ցույց տալ տեքստը', 'Показать текст', 'Show text'],
   hideTranscript: ['Թաքցնել տեքստը', 'Скрыть текст', 'Hide text'],
   transcribing: ['Ճանաչում…', 'Распознаём…', 'Transcribing…'],
@@ -149,8 +153,18 @@ const T = {
 };
 
 Object.assign(T, {
-  mapLive: ['{n} ազատ քարտեզի վրա', '{n} живых на карте', '{n} live on the map'],
+  mapLive: ['{n} ազատ քարտեզի վրա', '{n} объявление на карте|{n} объявления на карте|{n} объявлений на карте', '{n} live on the map'],
   mapSub: ['հաստատված է 72 ժամում', 'подтверждено за 72 часа', 'confirmed within 72 hours'],
+  mapViewSwitchLbl: ['Ցուցադրման ռեժիմ', 'Режим отображения', 'Display mode'],
+  mapPageTitle: ['Հայտարարությունների քարտեզ', 'Карта объявлений', 'Listings map'],
+  notFoundTitle: ['Էջը չի գտնվել', 'Страница не найдена', 'Page not found'],
+  notFoundText: [
+    'Այս հասցեն գոյություն չունի կամ տեղափոխվել է։ Ստուգեք հղումը կամ վերադարձեք որոնմանը։',
+    'Такого адреса не существует или он был перемещён. Проверьте ссылку или вернитесь к поиску.',
+    'This address doesn’t exist or has moved. Check the link or go back to search.'
+  ],
+  notFoundToSearch: ['Անցնել որոնմանը', 'К поиску', 'Go to search'],
+  notFoundToHome: ['Գլխավոր էջ', 'На главную', 'Go to homepage'],
   mapHint: ['Ժամկետանցներն ավտոմատ թաքցված են', 'Просроченные скрыты автоматически', 'Expired listings are hidden automatically'],
   searchArea: ['Փնտրել այս տարածքում', 'Искать в этой области', 'Search this area'],
   clearArea: ['Հանել տարածքի սահմանափակումը', 'Сбросить область', 'Clear area'],
@@ -618,7 +632,7 @@ Object.assign(T, {
     'Often leaves taken listings up: {c} upheld reports. Double-check before travelling.'
   ],
   onHayHomeSince: ['HayHome-ում {y}-ից', 'на HayHome с {y}', 'on HayHome since {y}'],
-  statViews: ['{n} դիտում', '{n} просмотров', '{n} views'],
+  statViews: ['{n} դիտում', '{n} просмотр|{n} просмотра|{n} просмотров', '{n} view|{n} views'],
   statFavorites: ['{n} ընտրանիում', '{n} в избранном', '{n} saved'],
   statPostedOn: ['Հրապարակվել է {x}', 'Размещено {x}', 'Posted {x}'],
   statPostedUnknown: ['Ամսաթիվն անհայտ է', 'Дата размещения неизвестна', 'Posting date unknown'],

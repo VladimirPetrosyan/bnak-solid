@@ -11,7 +11,9 @@ import { getBrowserId } from './browserId';
 import { readMigrated, safeSet, safeGet, safeRemove } from './storage';
 import { connectRealtime, disconnectRealtime, watchListing, clearListingWatch } from './realtime';
 import { validateExchangeRateSnapshot, isNewerSnapshot, amdToForeign, isSnapshotStale } from './exchangeRates';
-import { resolveLegalId, LEGAL_CONSENT_VERSION } from './legalDocs';
+import { resolveLegalId, LEGAL_CONSENT_VERSION, LEGAL_KEY_BY_ID } from './legalDocs';
+import { pageTitle } from './pageTitle';
+import { dealTitleKey } from './dealTitle';
 import { buildListingPayload } from './postPayload';
 import { isValidRepairCondition, repairConditionLabel } from './repairCondition';
 import { COUNTRIES, findCountry, findCountryByDigits, groupDigits } from './countries';
@@ -122,6 +124,7 @@ const DEFAULTS = {
   exchangeRates: null,
   legalId: null,
   legalFrom: 'search',
+  notFoundPath: null,
   msgNotice: null,
   chatAtBottom: true
 };
@@ -161,7 +164,7 @@ function load() {
 
 export const GUARDED_SCREENS = ['fav', 'chat', 'post', 'cabinet', 'profile'];
 
-function parseRoute(pathname) {
+export function parseRoute(pathname) {
   const parts = pathname.split('/').filter(Boolean);
   const [head, id] = parts;
   if (!head) return { screen: 'search' };
@@ -176,10 +179,10 @@ function parseRoute(pathname) {
   if (head === 'legal') {
     return { screen: 'legal', legalId: id ? resolveLegalId(decodeURIComponent(id)) : null, legalFrom: 'search' };
   }
-  return { screen: 'search' };
+  return { screen: 'notFound', notFoundPath: pathname };
 }
 
-function pathFor(s) {
+export function pathFor(s) {
   switch (s.screen) {
     case 'map':
       return '/map';
@@ -199,6 +202,8 @@ function pathFor(s) {
       return s.active ? '/listing/' + encodeURIComponent(s.active) : '/';
     case 'legal':
       return s.legalId ? '/legal/' + encodeURIComponent(s.legalId) : '/legal';
+    case 'notFound':
+      return s.notFoundPath || '/404';
     default:
       return '/';
   }
@@ -2313,3 +2318,30 @@ export async function openBookingChat(b) {
 }
 
 export { INK, MUTED, FAINT, SOFT, TEAL, TEAL_T, TEAL_TX, RED, RED_T, RED_TX };
+
+function listingDocTitle() {
+  const l = byId(state.active);
+  if (!l) return null;
+  const name = l.deal === 'hotel' ? l.title : roomsLabel(l);
+  return [name, addrOf(l)].filter(Boolean).join(', ');
+}
+
+function legalDocTitle() {
+  if (!state.legalId) return t().legalTitle;
+  return t()[LEGAL_KEY_BY_ID[state.legalId]] || t().legalTitle;
+}
+
+createRoot(() => {
+  createEffect(() => {
+    document.title = pageTitle(
+      state.screen,
+      {
+        dealTitle: t()[dealTitleKey(state.deal)],
+        city: cityObj().n[li()],
+        listingTitle: state.screen === 'listing' ? listingDocTitle() : null,
+        legalTitle: state.screen === 'legal' ? legalDocTitle() : null
+      },
+      t()
+    );
+  });
+});

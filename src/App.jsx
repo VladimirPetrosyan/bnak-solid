@@ -6,6 +6,7 @@ import { unlockNotifySound } from './screens/chat/notifySound';
 
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
+import Link from './components/Link';
 import Toast from './components/Toast';
 import MessageNotice from './components/MessageNotice';
 import FiltersModal from './components/modals/Filters';
@@ -26,6 +27,7 @@ import Cabinet from './screens/Cabinet';
 import Profile from './screens/Profile';
 import Auth from './screens/Auth';
 import Legal from './screens/Legal';
+import NotFound from './screens/NotFound';
 
 export default function App() {
   const timer = setInterval(() => setState('tick', (n) => n + 1), 1000);
@@ -95,7 +97,7 @@ export default function App() {
 
   return (
     <div
-      style={`min-height:100vh;background:#f7f7f6;display:flex;flex-direction:column;padding-bottom:${state.isMob && showFooterNav() ? '76px' : '0'}`}
+      style={`min-height:100vh;background:#f7f7f6;display:flex;flex-direction:column;padding-bottom:${state.isMob && showFooterNav() ? 'calc(76px + env(safe-area-inset-bottom))' : '0'}`}
     >
       <Show when={showHeader()}>
         <Header />
@@ -132,6 +134,9 @@ export default function App() {
         <Match when={state.screen === 'legal'}>
           <Legal />
         </Match>
+        <Match when={state.screen === 'notFound'}>
+          <NotFound />
+        </Match>
       </Switch>
 
       <Show when={showFooterNav()}>
@@ -147,26 +152,26 @@ export default function App() {
                 <span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
                   {t().searchW}
                 </span>
-                <button type="button" class="bn-tap" onClick={() => go('search')} style="text-align:left">
+                <Link screen="search" class="bn-tap" style="text-align:left">
                   {t().rent}
-                </button>
-                <button type="button" class="bn-tap" onClick={() => go('map')} style="text-align:left">
+                </Link>
+                <Link screen="map" class="bn-tap" style="text-align:left">
                   {t().mapW}
-                </button>
-                <button type="button" class="bn-tap" onClick={guard('fav')} style="text-align:left">
+                </Link>
+                <Link screen="fav" navigate={guard('fav')} class="bn-tap" style="text-align:left">
                   {t().favs}
-                </button>
+                </Link>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
                   {t().forOwners}
                 </span>
-                <button type="button" class="bn-tap" onClick={guard('post')} style="text-align:left">
+                <Link screen="post" navigate={guard('post')} class="bn-tap" style="text-align:left">
                   {t().post}
-                </button>
-                <button type="button" class="bn-tap" onClick={guard('cabinet')} style="text-align:left">
+                </Link>
+                <Link screen="cabinet" navigate={guard('cabinet')} class="bn-tap" style="text-align:left">
                   {t().cabinet}
-                </button>
+                </Link>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793">
@@ -180,19 +185,19 @@ export default function App() {
                 </button>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px">
-                <button
-                  type="button"
+                <Link
+                  screen="legal"
+                  navigate={() => openLegal(null)}
                   class="bn-tap"
-                  onClick={() => openLegal(null)}
                   style="text-align:left;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a9793"
                 >
                   {t().legalTitle}
-                </button>
+                </Link>
                 <For each={LEGAL_IDS}>
                   {(id) => (
-                    <button type="button" class="bn-tap" onClick={() => openLegal(id)} style="text-align:left">
+                    <Link screen="legal" legalId={id} navigate={() => openLegal(id)} class="bn-tap" style="text-align:left">
                       {t()[LEGAL_KEY_BY_ID[id]]}
-                    </button>
+                    </Link>
                   )}
                 </For>
               </div>

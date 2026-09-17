@@ -279,7 +279,10 @@ export default function Chat() {
               <div style="flex:1;min-width:0">
                 <div style="font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{seller().n[li()]}</div>
                 <Show when={!thread().support}>
-                  <div style="font-size:13px;color:#6f6d68;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">
+                  <div
+                    title={listing() ? `${roomsLabel(listing())} · ${addrOf(listing())} · ${t().honesty} ${seller().score}%` : `${t().honesty} ${seller().score}%`}
+                    style="font-size:13px;color:#6f6d68;margin-top:1px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden"
+                  >
                     <Show when={listing()}>
                       {roomsLabel(listing())} · {addrOf(listing())} ·{' '}
                     </Show>
@@ -455,6 +458,7 @@ export default function Chat() {
                         setAttachOpen(false);
                       }}
                       placeholder={t().msgPh}
+                      aria-label={t().msgPh}
                       style="flex:1;min-width:0;border:0;background:transparent;padding:10px 2px;font-size:15px"
                     />
 

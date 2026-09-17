@@ -2,6 +2,7 @@ import { For, Show } from 'solid-js';
 import { cardOf, openListing, toggleFav, openReport, hotelPriceOf, dailyPriceOf, t, TEAL, TEAL_TX } from '../store';
 import PhotoSlot from './PhotoSlot';
 import Icon from './Icon';
+import Link from './Link';
 
 export default function ListingCard(props) {
   const c = () => cardOf(props.listing);
@@ -13,9 +14,10 @@ export default function ListingCard(props) {
     <article class="bn-card" style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(28,27,25,.05);animation:bnUp .26s ease both;transition:box-shadow .18s,transform .18s;display:flex;flex-direction:column">
       <div style="position:relative;height:212px;background:#f2f1ee">
         <PhotoSlot id={c().slot} label={c().addr} src={c().photo} />
-        <button
-          type="button"
-          onClick={() => openListing(c().id)}
+        <Link
+          screen="listing"
+          active={c().id}
+          navigate={() => openListing(c().id)}
           aria-label={`${t().viewBtn}: ${c().addr}, ${c().price}`}
           style="position:absolute;inset:0;width:100%;height:100%"
         />
@@ -104,14 +106,15 @@ export default function ListingCard(props) {
       </Show>
 
       <div style="display:flex;gap:8px;padding:14px 18px 18px;margin-top:auto">
-        <button
-          type="button"
+        <Link
+          screen="listing"
+          active={c().id}
+          navigate={() => openListing(c().id)}
           class="bn-tap"
-          onClick={() => openListing(c().id)}
           style="flex:1;display:flex;align-items:center;justify-content:center;padding:11px;border-radius:12px;background:#f2f1ee;font-size:14px;font-weight:700"
         >
           {t().viewBtn}
-        </button>
+        </Link>
         <button
           type="button"
           class="bn-tap"
