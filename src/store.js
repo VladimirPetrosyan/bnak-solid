@@ -249,8 +249,19 @@ createRoot(() => {
   createEffect(() => {
     const path = pathFor(state);
     if (window.location.pathname === path) return;
-    window.history.replaceState(null, '', path);
+    window.history.pushState(null, '', path);
   });
+
+  // Кнопка "назад" в браузере иначе просто не работала — весь экранный стейт менялся через
+  // pushState/replaceState выше, но никто не слушал popstate, так что переход назад не
+  // отражался в приложении. applyRoute повторяет побочные эффекты go()/openListing (сброс
+  // телефона/галереи, подписка на realtime-статус объявления) и уважает GUARDED_SCREENS,
+  // как и первичная загрузка страницы.
+  if (typeof window.addEventListener === 'function') {
+    window.addEventListener('popstate', () => {
+      applyRoute(parseRoute(window.location.pathname));
+    });
+  }
 
   let lastAuthFlow = '';
   createEffect(() => {
@@ -328,6 +339,7 @@ const API_ERR_KEYS = {
   'cadastre certificate code is required': 'errCadastreRequired',
   invalid_repair_condition: 'errRepairCondition',
   street_too_long: 'errStreetTooLong',
+  street_not_found: 'errStreetNotFound',
   description_too_long: 'errDescTooLong',
   invalid_area: 'errAreaRange',
   invalid_floor: 'errFloor',
@@ -586,6 +598,16 @@ export async function addressSuggestions(city, district, query) {
     return await api.get('/api/geocode/suggest?' + params.toString());
   } catch {
     return [];
+  }
+}
+
+export async function geocodeDistrict(lat, lng) {
+  try {
+    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+    const res = await api.get('/api/geocode/district?' + params.toString());
+    return (res && res.district) || '';
+  } catch {
+    return '';
   }
 }
 
@@ -948,6 +970,21 @@ export function go(screen) {
   const wasListing = state.screen === 'listing';
   setState({ screen, phoneShown: false, sortOpen: false });
   if (wasListing || screen === 'listing') syncListingWatch();
+  window.scrollTo(0, 0);
+}
+
+// applyRoute — то же самое, что происходит с состоянием при переходе по ссылке/go(), но
+// вызывается из popstate (кнопки "назад"/"вперёд" браузера), где у нас есть только путь,
+// а не явный клик пользователя. Поэтому те же защиты, что и при первой загрузке страницы:
+// закрытые разделы недоступны без пользователя (см. GUARDED_SCREENS в initApp).
+function applyRoute(route) {
+  if (GUARDED_SCREENS.includes(route.screen) && !state.user) {
+    requireAuth({ type: 'go', to: route.screen });
+    return;
+  }
+  const wasListing = state.screen === 'listing';
+  setState({ ...route, phoneShown: false, sortOpen: false, gallery: null });
+  if (wasListing || route.screen === 'listing') syncListingWatch();
   window.scrollTo(0, 0);
 }
 
@@ -2056,6 +2093,7 @@ export function postState() {
       city: 'yerevan',
       dist: 'kentron',
       street: '',
+      addrConfirmed: false,
       phone: (u.phone || '').replace('+374 ', ''),
       rooms: 2,
       area: '',
@@ -2152,6 +2190,7 @@ export function editListing(id) {
       city: l.city,
       dist: l.d,
       street: l.st[li()],
+      addrConfirmed: true,
       rooms: l.rooms,
       area: String(l.area),
       fl: String(l.fl),

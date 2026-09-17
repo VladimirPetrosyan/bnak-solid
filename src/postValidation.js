@@ -13,6 +13,7 @@ function stepErrorKeys(step, s) {
     const street = s.street.trim();
     if (!street) keys.push('errStreet');
     else if (street.length > MAX_STREET_LEN) keys.push('errStreetTooLong');
+    else if (!s.addrConfirmed) keys.push('errStreetNotConfirmed');
     if (s.phone.replace(/\D/g, '').length < 8) keys.push('errPhone');
   }
   if (step === 2) {

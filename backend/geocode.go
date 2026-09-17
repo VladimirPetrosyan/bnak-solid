@@ -14,10 +14,11 @@ import (
 // адресов вместо свободного текста. Street — то, что подставляется в поле (без города и
 // страны), Full — весь адрес для показа в выпадающем списке, чтобы было видно совпадение.
 type AddressSuggestion struct {
-	Street string  `json:"street"`
-	Full   string  `json:"full"`
-	Lat    float64 `json:"lat"`
-	Lng    float64 `json:"lng"`
+	Street   string  `json:"street"`
+	Full     string  `json:"full"`
+	District string  `json:"district,omitempty"` // наш внутренний ключ района (kentron и т.п.), если Yandex его вернул и он распознан
+	Lat      float64 `json:"lat"`
+	Lng      float64 `json:"lng"`
 }
 
 // Геокодирование адреса объявления через Yandex Geocoder HTTP API — тот же ключ, что и
@@ -97,7 +98,7 @@ func geocodeQueryAddress(city, district, street string) string {
 
 // runGeocode — общий HTTP-запрос к Yandex Geocoder, используется и для получения координат
 // одного адреса (geocodeAddress), и для списка вариантов на подбор (addressSuggestions).
-func runGeocode(query string, results int) (yandexGeocodeResp, bool) {
+func runGeocode(query string, results int, kind string) (yandexGeocodeResp, bool) {
 	var out yandexGeocodeResp
 	if yandexGeocoderKey == "" || strings.TrimSpace(query) == "" {
 		return out, false
@@ -108,6 +109,9 @@ func runGeocode(query string, results int) (yandexGeocodeResp, bool) {
 		"geocode": {query},
 		"results": {strconv.Itoa(results)},
 		"lang":    {"ru_RU"},
+	}
+	if kind != "" {
+		q.Set("kind", kind)
 	}
 	req, err := http.NewRequest(http.MethodGet, yandexGeocoderURL+"?"+q.Encode(), nil)
 	if err != nil {
@@ -133,7 +137,7 @@ func runGeocode(query string, results int) (yandexGeocodeResp, bool) {
 // geocodeAddress возвращает координаты объявления по городу/району/улице. ok=false,
 // если ключ не настроен, запрос не удался или геокодер ничего не нашёл.
 func geocodeAddress(city, district, street string) (lat, lng float64, ok bool) {
-	out, ok := runGeocode(geocodeQueryAddress(city, district, street), 1)
+	out, ok := runGeocode(geocodeQueryAddress(city, district, street), 1, "")
 	if !ok {
 		return 0, 0, false
 	}
@@ -174,14 +178,47 @@ func addressSuggestions(city, district, query string, limit int) []AddressSugges
 	// эту форму первой: если она находится, это почти наверняка то, что имел в виду
 	// пользователь, и такие совпадения должны быть в начале списка, а не после шумных.
 	if alt := genitiveFallback(street); alt != "" {
-		if out, ok := runGeocode(geocodeQueryAddress(city, district, alt), limit); ok {
+		if out, ok := runGeocode(geocodeQueryAddress(city, district, alt), limit, ""); ok {
 			suggestions = append(suggestions, parseAddressSuggestions(out)...)
 		}
 	}
-	if out, ok := runGeocode(geocodeQueryAddress(city, district, street), limit); ok {
+	if out, ok := runGeocode(geocodeQueryAddress(city, district, street), limit, ""); ok {
 		suggestions = append(suggestions, parseAddressSuggestions(out)...)
 	}
-	return dedupeSuggestions(suggestions, limit)
+	suggestions = dedupeSuggestions(suggestions, limit)
+	// Address.Components у Yandex почти никогда не содержит район вместе с точным домом —
+	// район отдаётся отдельным, менее точным объектом. Поэтому докидываем его отдельным
+	// обратным геокодированием по координатам с kind=district, и только для первого (самого
+	// вероятного после genitiveFallback) варианта — иначе на каждую подсказку уходил бы
+	// отдельный запрос к Yandex.
+	if len(suggestions) > 0 && suggestions[0].District == "" {
+		if key := districtAt(suggestions[0].Lat, suggestions[0].Lng); key != "" {
+			suggestions[0].District = key
+		}
+	}
+	return suggestions
+}
+
+// districtAt — административный район Еревана по координатам (обратное геокодирование с
+// kind=district — так Yandex надёжно отдаёт район, в отличие от геокодирования по тексту
+// адреса с домом, см. addressSuggestions).
+func districtAt(lat, lng float64) string {
+	out, ok := runGeocode(strconv.FormatFloat(lng, 'f', -1, 64)+","+strconv.FormatFloat(lat, 'f', -1, 64), 1, "district")
+	if !ok {
+		return ""
+	}
+	members := out.Response.GeoObjectCollection.FeatureMember
+	if len(members) == 0 {
+		return ""
+	}
+	for _, c := range members[0].GeoObject.MetaDataProperty.GeocoderMetaData.Address.Components {
+		if c.Kind == "district" {
+			if key := matchDistrictKey(c.Name); key != "" {
+				return key
+			}
+		}
+	}
+	return ""
 }
 
 // genitiveFallback пытается подобрать русскую родительную форму для улиц, названных в
@@ -240,13 +277,17 @@ func parseAddressSuggestions(out yandexGeocodeResp) []AddressSuggestion {
 	suggestions := []AddressSuggestion{}
 	for _, m := range out.Response.GeoObjectCollection.FeatureMember {
 		meta := m.GeoObject.MetaDataProperty.GeocoderMetaData
-		var streetName, houseName string
+		var streetName, houseName, districtKey string
 		for _, c := range meta.Address.Components {
 			switch c.Kind {
 			case "street":
 				streetName = c.Name
 			case "house":
 				houseName = c.Name
+			case "district":
+				if districtKey == "" {
+					districtKey = matchDistrictKey(c.Name)
+				}
 			}
 		}
 		if streetName == "" {
@@ -260,9 +301,21 @@ func parseAddressSuggestions(out yandexGeocodeResp) []AddressSuggestion {
 		if !ok {
 			continue
 		}
-		suggestions = append(suggestions, AddressSuggestion{Street: text, Full: meta.Text, Lat: lat, Lng: lng})
+		suggestions = append(suggestions, AddressSuggestion{Street: text, Full: meta.Text, District: districtKey, Lat: lat, Lng: lng})
 	}
 	return suggestions
+}
+
+// matchDistrictKey сопоставляет название района от Yandex ("административный район
+// Кентрон") с нашим внутренним ключом ("kentron") по вхождению русского имени —
+// у Yandex бывает префикс "административный район"/"квартал", у нас — нет.
+func matchDistrictKey(yandexName string) string {
+	for key, ru := range districtRuNames {
+		if key != "center" && strings.Contains(yandexName, ru) {
+			return key
+		}
+	}
+	return ""
 }
 
 // ---------- GET /api/geocode/suggest ----------
@@ -271,4 +324,20 @@ func handleGeocodeSuggest(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	suggestions := addressSuggestions(q.Get("city"), q.Get("d"), q.Get("q"), 5)
 	writeJSON(w, http.StatusOK, suggestions)
+}
+
+// ---------- GET /api/geocode/district ----------
+
+// addressSuggestions заполняет District только у самого вероятного варианта (см. выше), чтобы
+// не тратить лишние запросы к Yandex на весь список. Если пользователь выбрал другую
+// подсказку, фронтенд донабирает район по её координатам через этот эндпоинт.
+func handleGeocodeDistrict(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	lat, errLat := strconv.ParseFloat(q.Get("lat"), 64)
+	lng, errLng := strconv.ParseFloat(q.Get("lng"), 64)
+	district := ""
+	if errLat == nil && errLng == nil {
+		district = districtAt(lat, lng)
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"district": district})
 }

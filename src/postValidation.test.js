@@ -4,6 +4,7 @@ import { postStepErrorKey, postStepErrorKeys, MAX_STREET_LEN, MAX_DESC_LEN, MAX_
 function baseDraft(overrides) {
   return {
     street: 'Abovyan 41',
+    addrConfirmed: true,
     phone: '55 214 806',
     area: '60',
     fl: '4',
@@ -80,6 +81,10 @@ describe('postStepErrorKey other steps', () => {
   it('rejects a street longer than the limit', () => {
     expect(postStepErrorKey(1, baseDraft({ street: 'a'.repeat(MAX_STREET_LEN + 1) }))).toBe('errStreetTooLong');
     expect(postStepErrorKey(1, baseDraft({ street: 'a'.repeat(MAX_STREET_LEN) }))).toBeNull();
+  });
+
+  it('rejects a street typed by hand without picking a suggestion', () => {
+    expect(postStepErrorKey(1, baseDraft({ addrConfirmed: false }))).toBe('errStreetNotConfirmed');
   });
 
   it('step 3 requires a positive price', () => {

@@ -442,7 +442,12 @@ func handleCreateListing(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if lat, lng, ok := geocodeAddress(in.City, in.District, in.Street); ok {
+	lat, lng, ok := geocodeAddress(in.City, in.District, in.Street)
+	if !ok && yandexGeocoderKey != "" {
+		writeErr(w, http.StatusBadRequest, errStreetNotFound.Error())
+		return
+	}
+	if ok {
 		in.Lat, in.Lng = lat, lng
 	}
 
@@ -513,6 +518,7 @@ var (
 	errCadastreRequired       = errors.New("cadastre certificate code is required")
 	errRepairConditionInvalid = errors.New("invalid_repair_condition")
 	errStreetTooLong          = errors.New("street_too_long")
+	errStreetNotFound         = errors.New("street_not_found")
 	errDescriptionTooLong     = errors.New("description_too_long")
 	errAreaRange              = errors.New("invalid_area")
 	errFloorRange             = errors.New("invalid_floor")
@@ -664,7 +670,12 @@ func handleUpdateListing(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if lat, lng, ok := geocodeAddress(in.City, in.District, in.Street); ok {
+	lat, lng, ok := geocodeAddress(in.City, in.District, in.Street)
+	if !ok && yandexGeocoderKey != "" {
+		writeErr(w, http.StatusBadRequest, errStreetNotFound.Error())
+		return
+	}
+	if ok {
 		in.Lat, in.Lng = lat, lng
 	}
 	if (l.Deal == "hotel") != (in.Deal == "hotel") {

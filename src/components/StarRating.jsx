@@ -1,6 +1,8 @@
 import { For } from 'solid-js';
 import Icon from './Icon';
 
+const STAR_GREEN = '#1a9c4a';
+
 export default function StarRating(props) {
   const size = () => props.size || 22;
   const interactive = () => typeof props.onChange === 'function';
@@ -10,7 +12,7 @@ export default function StarRating(props) {
       <For each={[1, 2, 3, 4, 5]}>
         {(n) => {
           const on = () => n <= props.value;
-          const star = <Icon name={on() ? 'starFilled' : 'star'} size={size()} stroke={on() ? '#e0a824' : '#c9c7c2'} weight={1.8} />;
+          const star = <Icon name={on() ? 'starFilled' : 'star'} size={size()} stroke={on() ? STAR_GREEN : '#c9c7c2'} weight={1.8} />;
           return interactive() ? (
             <button
               type="button"

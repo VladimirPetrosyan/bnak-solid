@@ -12,7 +12,8 @@ import {
   byId,
   STAY_KINDS,
   stayKindLabel,
-  addressSuggestions
+  addressSuggestions,
+  geocodeDistrict
 } from '../store';
 import { CITY, DIST, FEAT, nf } from '../data';
 import { pillStyle, label as labelStyle, input as inputStyle, TEAL, TEAL_T, TEAL_TX, INK, RED } from '../theme';
@@ -29,6 +30,7 @@ const FIELD_BY_ERR = {
   errHotelRequired: 'title',
   errStreet: 'street',
   errStreetTooLong: 'street',
+  errStreetNotConfirmed: 'street',
   errArea: 'area',
   errAreaRange: 'area',
   errFloor: 'fl',
@@ -52,10 +54,16 @@ const DEALS = ['rent', 'daily', 'sale', 'newb', 'comm', 'hotel'];
 export default function Post() {
   const p = () => postState();
   const hotel = () => p().deal === 'hotel';
-  const deals = () =>
-    p().editId
-      ? DEALS.filter((key) => (key === 'hotel') === hotel())
-      : DEALS.filter((key) => key !== 'hotel' || (state.user && state.user.role === 'hotel'));
+  const isHotelAccount = () => !!(state.user && state.user.role === 'hotel');
+  const deals = () => (p().editId ? DEALS.filter((key) => (key === 'hotel') === hotel()) : DEALS);
+  const dealAllowed = (key) => (p().editId ? true : key === 'hotel' ? isHotelAccount() : !isHotelAccount());
+  const pickDeal = (key) => {
+    if (!dealAllowed(key)) {
+      say(txt(key === 'hotel' ? 'errHotelRoleRequired' : 'errHotelAccountDealRestricted'));
+      return;
+    }
+    setPost({ deal: key });
+  };
   const [cityOpen, setCityOpen] = createSignal(false);
   const [addrSuggestions, setAddrSuggestions] = createSignal([]);
   const [addrOpen, setAddrOpen] = createSignal(false);
@@ -63,7 +71,7 @@ export default function Post() {
   let addrTimer;
   const onStreetInput = (value) => {
     clearErr('street');
-    setPost({ street: value });
+    setPost({ street: value, addrConfirmed: false });
     clearTimeout(addrTimer);
     addrTimer = setTimeout(async () => {
       const list = await addressSuggestions(p().city, p().dist, value);
@@ -74,10 +82,18 @@ export default function Post() {
   const pickAddrSuggestion = (s) => {
     clearTimeout(addrTimer);
     clearErr('street');
-    setPost({ street: s.street });
+    setPost({ street: s.street, addrConfirmed: true, ...(s.district ? { dist: s.district } : {}) });
     setAddrOpen(false);
+    if (!s.district && s.lat && s.lng) {
+      geocodeDistrict(s.lat, s.lng).then((district) => {
+        if (district) setPost({ dist: district });
+      });
+    }
   };
   onMount(() => {
+    if (!p().editId && !dealAllowed(p().deal)) {
+      setPost({ deal: isHotelAccount() ? 'hotel' : 'rent' });
+    }
     const onDocClick = (e) => {
       if (addrWrapRef && !addrWrapRef.contains(e.target)) setAddrOpen(false);
     };
@@ -200,17 +216,21 @@ export default function Post() {
               <div style={labelStyle}>{t().dealLbl}</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                 <For each={deals()}>
-                  {(key) => (
-                    <button
-                      type="button"
-                      class="bn-tap"
-                      aria-pressed={p().deal === key}
-                      onClick={() => setPost({ deal: key })}
-                      style={pillStyle(p().deal === key)}
-                    >
-                      {key === 'hotel' ? t().vHotel : t()[key]}
-                    </button>
-                  )}
+                  {(key) => {
+                    const allowed = () => dealAllowed(key);
+                    return (
+                      <button
+                        type="button"
+                        class="bn-tap"
+                        aria-pressed={p().deal === key}
+                        aria-disabled={!allowed()}
+                        onClick={() => pickDeal(key)}
+                        style={`${pillStyle(p().deal === key)};${allowed() ? '' : 'opacity:.4;cursor:not-allowed'}`}
+                      >
+                        {key === 'hotel' ? t().vHotel : t()[key]}
+                      </button>
+                    );
+                  }}
                 </For>
               </div>
 
@@ -348,6 +368,7 @@ export default function Post() {
                       </For>
                     </div>
                   </Show>
+                  <div style="font-size:12px;color:#9a9793;margin-top:8px;line-height:1.45">{t().streetConfirmNote}</div>
                 </div>
                 <div>
                   <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().postPhoneLbl}</div>

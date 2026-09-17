@@ -409,6 +409,11 @@ Object.assign(T, {
   distLbl: ['Թաղամաս', 'Район', 'District'],
   streetLbl: ['Փողոց և շենք', 'Улица и дом', 'Street and building'],
   streetPh: ['Աբովյան 41', 'Абовян 41', 'Abovyan 41'],
+  streetConfirmNote: [
+    'Ընտրեք տարբերակը առաջարկվող ցանկից՝ որպեսզի հասցեն ստուգված լինի։',
+    'Выберите вариант из подсказок — так мы убедимся, что адрес существует.',
+    'Pick a match from the suggestions — this confirms the address is real.'
+  ],
   postPhoneLbl: ['Հեռախոս հաստատումների համար', 'Телефон для подтверждений', 'Phone for confirmations'],
   postPhoneNote: [
     'Այս համարին կգա 72 ժամը մեկ SMS-կոդը։',
@@ -472,6 +477,16 @@ Object.assign(T, {
   previewW: ['Նախադիտում', 'Предпросмотр', 'Preview'],
   awaitConf: ['ՍՊԱՍՈՒՄ Է ՀԱՍՏԱՏՄԱՆ', 'ЖДЁТ ПОДТВЕРЖДЕНИЯ', 'AWAITING CONFIRMATION'],
   errStreet: ['Նշեք փողոցը և շենքը', 'Укажите улицу и дом', 'Enter the street and building'],
+  errStreetNotConfirmed: [
+    'Ընտրեք հասցեն ցուցադրվող ցանկից, հակառակ դեպքում հասցեն չի ստուգվի',
+    'Выберите адрес из списка подсказок — иначе мы не сможем проверить, что он существует',
+    'Pick the address from the suggestions list — otherwise we can’t confirm it exists'
+  ],
+  errStreetNotFound: [
+    'Նման հասցե չի գտնվել։ Մուտքագրեք փողոցը և շենքի համարը և ընտրեք տարբերակը ցուցադրվող ցանկից',
+    'Такой адрес не найден. Введите улицу и дом и выберите вариант из подсказок',
+    'This address wasn’t found. Enter the street and building number and pick a match from the suggestions'
+  ],
   errPhone: ['Նշեք հեռախոսահամարը', 'Укажите номер телефона', 'Enter a phone number'],
   errArea: ['Նշեք մակերեսը', 'Укажите площадь', 'Enter the area'],
   errAreaRange: ['Մակերեսը պետք է լինի մինչև 3000 մ²', 'Площадь должна быть не больше 3000 м²', 'Area must be at most 3000 m²'],
@@ -1196,6 +1211,11 @@ Object.assign(T, {
     'Հյուրանոցային օբյեկտ կարող են տեղադրել միայն «Հյուրանոց/հոստել» դերով հաշիվները։ Ուղարկեք հայտ դերի փոփոխության համար։',
     'Публиковать объекты размещения могут только аккаунты с ролью «Отель/хостел». Подайте заявку на смену роли в кабинете.',
     'Only accounts with the "Hotel/hostel" role can publish stays. Request a role change from your dashboard.'
+  ],
+  errHotelAccountDealRestricted: [
+    'Ձեր հաշիվն ունի «Հյուրանոց/հոստել» տեսակ, ուստի կարող եք տեղադրել միայն հյուրանոցներ և հոստելներ։ Հաշվի տեսակը փոխելու համար դիմեք անձնական հաշվում։',
+    'Ваш аккаунт имеет тип «Отель/хостел», поэтому вы можете размещать только отели и хостелы. Чтобы сменить тип аккаунта, подайте заявку на смену роли в личном кабинете.',
+    'Your account type is "Hotel/hostel", so you can only list hotels and hostels. To change your account type, request a role change from your dashboard.'
   ],
   errRoleInvalid: ['Անթույլատրելի դեր', 'Недопустимая роль', 'Invalid role'],
   errRoleAlreadyHeld: ['Այս դերն արդեն ձեզ մոտ է', 'У вас уже есть эта роль', 'You already have this role'],

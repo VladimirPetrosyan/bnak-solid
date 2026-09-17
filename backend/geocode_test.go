@@ -96,6 +96,62 @@ func TestAddressSuggestionsReturnsNilForBlankQuery(t *testing.T) {
 	}
 }
 
+func TestParseAddressSuggestionsExtractsDistrict(t *testing.T) {
+	// снято с реального ответа Yandex Geocoder на "Армения, Ереван, Малатия-Себастия"
+	out := decodeGeocodeResp(t, `{"response":{"GeoObjectCollection":{"featureMember":[{"GeoObject":{
+		"metaDataProperty":{"GeocoderMetaData":{
+			"text":"Армения, Ереван, улица Тестовая, 1",
+			"Address":{"Components":[
+				{"kind":"country","name":"Армения"},
+				{"kind":"locality","name":"Ереван"},
+				{"kind":"district","name":"административный район Малатия-Себастия"},
+				{"kind":"street","name":"улица Тестовая"},
+				{"kind":"house","name":"1"}
+			]}
+		}},
+		"Point":{"pos":"44.5 40.18"}
+	}}]}}}`)
+
+	got := parseAddressSuggestions(out)
+	if len(got) != 1 || got[0].District != "malatia" {
+		t.Fatalf("got %+v, want district = \"malatia\"", got)
+	}
+}
+
+func TestParseAddressSuggestionsLeavesDistrictEmptyWhenNotRecognized(t *testing.T) {
+	out := decodeGeocodeResp(t, `{"response":{"GeoObjectCollection":{"featureMember":[{"GeoObject":{
+		"metaDataProperty":{"GeocoderMetaData":{
+			"text":"Армения, Ереван, проспект Комитаса, 1",
+			"Address":{"Components":[
+				{"kind":"street","name":"проспект Комитаса"},
+				{"kind":"house","name":"1"}
+			]}
+		}},
+		"Point":{"pos":"44.5 40.18"}
+	}}]}}}`)
+
+	got := parseAddressSuggestions(out)
+	if len(got) != 1 || got[0].District != "" {
+		t.Fatalf("got %+v, want empty district (Yandex gave none)", got)
+	}
+}
+
+func TestMatchDistrictKey(t *testing.T) {
+	cases := map[string]string{
+		"административный район Кентрон":          "kentron",
+		"административный район Малатия-Себастия": "malatia",
+		"квартал Покр Кентрон":                    "kentron",
+		"административный район Канакер-Зейтун":   "kanaker",
+		"деревня где-то в другом месте":           "",
+		"": "",
+	}
+	for in, want := range cases {
+		if got := matchDistrictKey(in); got != want {
+			t.Fatalf("matchDistrictKey(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
 func TestGenitiveFallbackAddsAOnArmenianSurnameStreets(t *testing.T) {
 	cases := map[string]string{
 		"Маргарян 45":   "Маргаряна 45",
