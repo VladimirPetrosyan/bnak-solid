@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatListingDate, postedAtOf, viewsOf, favoritesOf } from './listingStats';
+import { formatListingDate, postedAtOf, viewsOf, favoritesOf, complaintsOf } from './listingStats';
 
 describe('formatListingDate', () => {
   it('formats a valid ISO date for each language', () => {
@@ -43,19 +43,22 @@ describe('postedAtOf', () => {
   });
 });
 
-describe('viewsOf / favoritesOf', () => {
+describe('viewsOf / favoritesOf / complaintsOf', () => {
   it('use the real backend count when present', () => {
     expect(viewsOf({ id: 'r1', views: 42 })).toBe(42);
     expect(favoritesOf({ id: 'r1', favorites: 7 })).toBe(7);
+    expect(complaintsOf({ id: 'r1', complaints: 3 })).toBe(3);
   });
 
   it('is null when stats have not loaded yet', () => {
     expect(viewsOf({ id: 'r1' })).toBeNull();
     expect(favoritesOf({ id: 'r1' })).toBeNull();
+    expect(complaintsOf({ id: 'r1' })).toBeNull();
   });
 
   it('handles a missing listing', () => {
     expect(viewsOf(null)).toBeNull();
     expect(favoritesOf(undefined)).toBeNull();
+    expect(complaintsOf(null)).toBeNull();
   });
 });

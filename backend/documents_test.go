@@ -65,7 +65,7 @@ func newCreateListingRequestNoDocument(t *testing.T, listingJSON string) *http.R
 }
 
 func validListingJSON() string {
-	in := listingInput{Deal: "rent", City: "yerevan", Street: "Test str", Price: 100000, Area: 40, CadastreCode: "CAD-1", RepairCondition: "good"}
+	in := listingInput{Deal: "rent", City: "yerevan", Street: "Test str", Price: 100000, Area: 40, Floor: 4, FloorsTotal: 9, CadastreCode: "CAD-1", RepairCondition: "good"}
 	b, _ := json.Marshal(in)
 	return string(b)
 }
@@ -268,7 +268,7 @@ func TestCreateListingMissingRepairConditionRejected(t *testing.T) {
 	setupTestPrivateDocs(t)
 	owner := mustCreateUser(t, "tenant")
 
-	in := listingInput{Deal: "rent", City: "yerevan", Street: "Test str", Price: 100000, Area: 40, CadastreCode: "CAD-1"}
+	in := listingInput{Deal: "rent", City: "yerevan", Street: "Test str", Price: 100000, Area: 40, Floor: 4, FloorsTotal: 9, CadastreCode: "CAD-1"}
 	b, _ := json.Marshal(in)
 	req := newCreateListingRequest(t, string(b), "cert.pdf", pdfBytes)
 	rec := createListingAs(t, owner, req)
@@ -284,7 +284,7 @@ func TestCreateListingInvalidRepairConditionRejected(t *testing.T) {
 	owner := mustCreateUser(t, "tenant")
 
 	in := listingInput{
-		Deal: "rent", City: "yerevan", Street: "Test str", Price: 100000, Area: 40,
+		Deal: "rent", City: "yerevan", Street: "Test str", Price: 100000, Area: 40, Floor: 4, FloorsTotal: 9,
 		CadastreCode: "CAD-1", RepairCondition: "luxury",
 	}
 	b, _ := json.Marshal(in)

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const confirmWindow = 72 * time.Hour
@@ -324,12 +325,20 @@ func handleMyListings(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
+	complaints, err := complaintCounts(ids, time.Now().Add(-90*24*time.Hour))
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
 
 	out := []map[string]any{}
 	for _, l := range list {
 		l.Photos = loadPhotos(l.ID)
 		l.Videos = loadVideos(l.ID)
-		entry := map[string]any{"listing": l, "owner": loadOwnerSummary(l.OwnerID), "views": views[l.ID], "favorites": favorites[l.ID]}
+		entry := map[string]any{
+			"listing": l, "owner": loadOwnerSummary(l.OwnerID),
+			"views": views[l.ID], "favorites": favorites[l.ID], "complaints": complaints[l.ID],
+		}
 		if l.Deal == "hotel" {
 			info, err := stayInfoFor(db, l.ID, stayQuery{})
 			if err != nil {
@@ -412,11 +421,9 @@ func handleCreateListing(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad json")
 		return
 	}
+	in = normalizeListingInput(in)
 	if in.Deal == "hotel" {
-		in.Title = normalizeSpaces(in.Title)
 		in.Price, in.Rooms, in.Area = 0, 0, 0
-	} else {
-		in.Title, in.StayKind, in.CheckIn, in.CheckOut = "", "", "", ""
 	}
 	if err := validateListingInput(in); err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())
@@ -483,10 +490,23 @@ func createListingWithDocument(id, ownerID string, in listingInput, featuresJSON
 
 // ---------- PUT /api/listings/{id} ----------
 
+const (
+	maxStreetLen      = 120
+	maxDescriptionLen = 1500
+	maxListingArea    = 3000
+	maxFloorsTotal    = 200
+)
+
 var (
 	errListingInvalid         = errors.New("street, price and area are required")
 	errCadastreRequired       = errors.New("cadastre certificate code is required")
 	errRepairConditionInvalid = errors.New("invalid_repair_condition")
+	errStreetTooLong          = errors.New("street_too_long")
+	errDescriptionTooLong     = errors.New("description_too_long")
+	errAreaRange              = errors.New("invalid_area")
+	errFloorRange             = errors.New("invalid_floor")
+	errFloorsTotalRange       = errors.New("invalid_floors_total")
+	errFloorExceedsTotal      = errors.New("floor_exceeds_floors_total")
 )
 
 var validRepairConditions = map[string]bool{
@@ -510,6 +530,12 @@ func validStayTime(s string) bool {
 }
 
 func validateListingInput(in listingInput) error {
+	if utf8.RuneCountInString(in.Street) > maxStreetLen {
+		return errStreetTooLong
+	}
+	if utf8.RuneCountInString(in.Description) > maxDescriptionLen {
+		return errDescriptionTooLong
+	}
 	if in.Deal == "hotel" {
 		if strings.TrimSpace(in.Title) == "" || strings.TrimSpace(in.Street) == "" {
 			return errHotelInvalid
@@ -524,6 +550,18 @@ func validateListingInput(in listingInput) error {
 	}
 	if strings.TrimSpace(in.Street) == "" || in.Price <= 0 || in.Area <= 0 {
 		return errListingInvalid
+	}
+	if in.Area > maxListingArea {
+		return errAreaRange
+	}
+	if in.FloorsTotal < 1 || in.FloorsTotal > maxFloorsTotal {
+		return errFloorsTotalRange
+	}
+	if in.Floor < 1 || in.Floor > maxFloorsTotal {
+		return errFloorRange
+	}
+	if in.Floor > in.FloorsTotal {
+		return errFloorExceedsTotal
 	}
 	if strings.TrimSpace(in.CadastreCode) == "" {
 		return errCadastreRequired

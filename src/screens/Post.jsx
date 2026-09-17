@@ -1,13 +1,26 @@
 import { createSignal, For, Show } from 'solid-js';
 import { state, setState, t, txt, li, postState, setPost, say, publishListing, byId, STAY_KINDS, stayKindLabel } from '../store';
 import { CITY, DIST, FEAT, nf } from '../data';
-import { pillStyle, label as labelStyle, input as inputStyle, TEAL, TEAL_T, TEAL_TX, INK } from '../theme';
+import { pillStyle, label as labelStyle, input as inputStyle, TEAL, TEAL_T, TEAL_TX, INK, RED } from '../theme';
 import MediaShelf from '../components/MediaShelf';
 import Icon from '../components/Icon';
 import InfoTooltip from '../components/InfoTooltip';
 import { documentFile, setDocumentFile, validateDocumentFile, formatFileSize } from '../documentUpload';
-import { postStepErrorKey } from '../postValidation';
+import { postStepErrorKeys, MAX_STREET_LEN, MAX_DESC_LEN, MAX_AREA, MAX_FLOORS_TOTAL } from '../postValidation';
 import { REPAIR_CONDITIONS, REPAIR_LABELS, REPAIR_HINTS } from '../repairCondition';
+
+const FIELD_BY_ERR = {
+  errHotelRequired: 'title',
+  errStreet: 'street',
+  errStreetTooLong: 'street',
+  errArea: 'area',
+  errAreaRange: 'area',
+  errFloor: 'fl',
+  errFloorExceeds: 'fl',
+  errFloorsTotal: 'fls',
+  errDescTooLong: 'desc',
+  errPrice: 'price'
+};
 
 const DOC_ERR_KEY = { missing: 'errDoc', type: 'errDocType', size: 'errDocSize' };
 
@@ -35,10 +48,29 @@ export default function Post() {
     p().editId ? ((byId(p().editId) || {}).photos || [])[0] : (media().find((f) => f.kind === 'image') || {}).url;
   let docInput;
 
+  const [errFields, setErrFields] = createSignal([]);
+  const hasErr = (name) => errFields().includes(name);
+  const clearErr = (name) => {
+    if (hasErr(name)) setErrFields((f) => f.filter((x) => x !== name));
+  };
+  const errStyle = (name) => (hasErr(name) ? `${inputStyle};border-color:${RED}` : inputStyle);
+
+  let titleRef, streetRef, areaRef, flRef, flsRef, descRef, priceRef;
+  const fieldRef = { title: () => titleRef, street: () => streetRef, area: () => areaRef, fl: () => flRef, fls: () => flsRef, desc: () => descRef, price: () => priceRef };
+
+  const fieldMessage = (key) => txt(key);
+
   const valid = (step) => {
-    const key = postStepErrorKey(step, p());
-    if (key) return say(txt(key)) || false;
-    return true;
+    const keys = postStepErrorKeys(step, p());
+    if (!keys.length) {
+      setErrFields([]);
+      return true;
+    }
+    setErrFields(keys.map((k) => FIELD_BY_ERR[k]).filter(Boolean));
+    say(fieldMessage(keys[0]));
+    const ref = fieldRef[FIELD_BY_ERR[keys[0]]];
+    ref && ref()?.focus();
+    return false;
   };
 
   const next = () => {
@@ -57,7 +89,9 @@ export default function Post() {
   };
 
   const digitsOnly = (e) => {
-    const v = e.currentTarget.value.replace(/\D/g, '');
+    const raw = e.currentTarget.value;
+    const v = raw.replace(/\D/g, '');
+    if (raw.includes('-') && v) say(txt('errNoNegative'));
     e.currentTarget.value = v;
     return v;
   };
@@ -143,11 +177,16 @@ export default function Post() {
                   </div>
                   <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().hotelNameLbl}</div>
                   <input
+                    ref={(el) => (titleRef = el)}
                     value={p().title}
-                    onInput={(e) => setPost({ title: e.currentTarget.value })}
+                    onInput={(e) => {
+                      clearErr('title');
+                      setPost({ title: e.currentTarget.value });
+                    }}
                     placeholder={t().hotelNamePh}
                     maxLength={80}
-                    style={`${inputStyle};font-weight:700`}
+                    aria-invalid={hasErr('title')}
+                    style={`${errStyle('title')};font-weight:700`}
                   />
                 </div>
               </Show>
@@ -217,10 +256,16 @@ export default function Post() {
                 <div>
                   <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().streetLbl}</div>
                   <input
+                    ref={(el) => (streetRef = el)}
                     value={p().street}
-                    onInput={(e) => setPost({ street: e.currentTarget.value })}
+                    onInput={(e) => {
+                      clearErr('street');
+                      setPost({ street: e.currentTarget.value });
+                    }}
                     placeholder={t().streetPh}
-                    style={inputStyle}
+                    maxLength={MAX_STREET_LEN}
+                    aria-invalid={hasErr('street')}
+                    style={errStyle('street')}
                   />
                 </div>
                 <div>
@@ -279,15 +324,60 @@ export default function Post() {
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:16px;margin-top:24px">
                 <div>
                   <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().areaLbl}</div>
-                  <input value={p().area} onInput={(e) => setPost({ area: digitsOnly(e) })} placeholder="62" style={inputStyle} />
+                  <input
+                    ref={(el) => (areaRef = el)}
+                    type="number"
+                    inputmode="numeric"
+                    min="1"
+                    max={MAX_AREA}
+                    step="1"
+                    value={p().area}
+                    onInput={(e) => {
+                      clearErr('area');
+                      setPost({ area: digitsOnly(e) });
+                    }}
+                    placeholder="62"
+                    aria-invalid={hasErr('area')}
+                    style={errStyle('area')}
+                  />
                 </div>
                 <div>
                   <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().floorLbl}</div>
-                  <input value={p().fl} onInput={(e) => setPost({ fl: digitsOnly(e) })} placeholder="4" style={inputStyle} />
+                  <input
+                    ref={(el) => (flRef = el)}
+                    type="number"
+                    inputmode="numeric"
+                    min="1"
+                    max={MAX_FLOORS_TOTAL}
+                    step="1"
+                    value={p().fl}
+                    onInput={(e) => {
+                      clearErr('fl');
+                      setPost({ fl: digitsOnly(e) });
+                    }}
+                    placeholder="4"
+                    aria-invalid={hasErr('fl')}
+                    style={errStyle('fl')}
+                  />
                 </div>
                 <div>
                   <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().floorsLbl}</div>
-                  <input value={p().fls} onInput={(e) => setPost({ fls: digitsOnly(e) })} placeholder="9" style={inputStyle} />
+                  <input
+                    ref={(el) => (flsRef = el)}
+                    type="number"
+                    inputmode="numeric"
+                    min="1"
+                    max={MAX_FLOORS_TOTAL}
+                    step="1"
+                    value={p().fls}
+                    onInput={(e) => {
+                      clearErr('fls');
+                      setPost({ fls: digitsOnly(e) });
+                    }}
+                    placeholder="9"
+                    aria-invalid={hasErr('fls')}
+                    style={errStyle('fls')}
+                  />
                 </div>
               </div>
               </Show>
@@ -373,12 +463,23 @@ export default function Post() {
                 <div style="font-size:12px;color:#9a9793;margin-top:12px">{t().photosNote}</div>
               </Show>
 
-              <div style="font-size:13px;font-weight:600;color:#6f6d68;margin:24px 0 8px">{t().descLbl}</div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:24px 0 8px">
+                <div style="font-size:13px;font-weight:600;color:#6f6d68">{t().descLbl}</div>
+                <div style={`font-size:12px;font-weight:600;color:${(p().desc || '').length > MAX_DESC_LEN ? RED : '#9a9793'}`}>
+                  {(p().desc || '').length}/{MAX_DESC_LEN}
+                </div>
+              </div>
               <textarea
+                ref={(el) => (descRef = el)}
                 value={p().desc}
-                onInput={(e) => setPost({ desc: e.currentTarget.value })}
+                onInput={(e) => {
+                  clearErr('desc');
+                  setPost({ desc: e.currentTarget.value });
+                }}
                 placeholder={t().descPh}
-                style="width:100%;min-height:96px;padding:12px 16px;border-radius:13px;border:1px solid #e8e7e4;background:#fbfbfa;font-size:15px;resize:vertical"
+                maxLength={MAX_DESC_LEN}
+                aria-invalid={hasErr('desc')}
+                style={`width:100%;min-height:96px;padding:12px 16px;border-radius:13px;border:1px solid ${hasErr('desc') ? RED : '#e8e7e4'};background:#fbfbfa;font-size:15px;resize:vertical`}
               />
             </div>
           </Show>
@@ -399,10 +500,15 @@ export default function Post() {
                   <div>
                     <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().priceLbl}</div>
                     <input
+                      ref={(el) => (priceRef = el)}
                       value={p().price}
-                      onInput={(e) => setPost({ price: digitsOnly(e) })}
+                      onInput={(e) => {
+                        clearErr('price');
+                        setPost({ price: digitsOnly(e) });
+                      }}
                       placeholder="380000"
-                      style={`${inputStyle};font-weight:700`}
+                      aria-invalid={hasErr('price')}
+                      style={`${errStyle('price')};font-weight:700`}
                     />
                   </div>
                   <div>
@@ -514,7 +620,10 @@ export default function Post() {
             <button
               type="button"
               class="bn-tap"
-              onClick={() => setPost({ step: Math.max(1, p().step - 1) })}
+              onClick={() => {
+                setErrFields([]);
+                setPost({ step: Math.max(1, p().step - 1) });
+              }}
               style="display:flex;align-items:center;padding:16px 20px;border-radius:14px;background:#f2f1ee;font-size:15px;font-weight:700"
             >
               {t().backW}

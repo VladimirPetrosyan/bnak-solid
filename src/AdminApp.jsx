@@ -877,6 +877,9 @@ function UserDetail(props) {
 
 function Panel(props) {
   const [section, setSection] = sig('overview');
+  createEffect(() => {
+    document.title = SECTION_META[section()].title + ' — HayHome Admin';
+  });
   const [data, setData] = createStore({ users: [], reports: [], listings: [] });
   const [sel, setSel] = createStore({ status: null, deal: null, city: null, role: null, resolution: null });
   const [revisionsCount, setRevisionsCount] = sig(0);
@@ -1316,6 +1319,7 @@ function Panel(props) {
                         value={userQuery()}
                         onInput={(e) => setUserQuery(e.currentTarget.value)}
                         placeholder="Поиск по имени, телефону"
+                        aria-label="Поиск пользователей"
                         style={`border:1px solid ${BORDER};border-radius:3px;padding:5px 9px;font-size:12px;width:160px;background:#fff;color:${INK}`}
                       />
                     </div>

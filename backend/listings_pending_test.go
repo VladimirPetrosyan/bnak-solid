@@ -15,7 +15,7 @@ func TestCreateListingIsPendingAndHiddenFromPublic(t *testing.T) {
 
 	in := listingInput{
 		Deal: "rent", City: "yerevan", Street: "Test str",
-		Price: 100000, Area: 40, CadastreCode: "CAD-1", RepairCondition: "good",
+		Price: 100000, Area: 40, Floor: 4, FloorsTotal: 9, CadastreCode: "CAD-1", RepairCondition: "good",
 	}
 	listingJSON, _ := json.Marshal(in)
 	req := newCreateListingRequest(t, string(listingJSON), "cert.pdf", pdfBytes)

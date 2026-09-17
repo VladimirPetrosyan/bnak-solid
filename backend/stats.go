@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"strings"
+	"time"
 )
 
 const browserIDHeader = "X-Browser-Id"
@@ -109,4 +110,34 @@ func viewCounts(listingIDs []string) (map[string]int, error) {
 
 func favoriteCounts(listingIDs []string) (map[string]int, error) {
 	return batchCounts("favorites", listingIDs)
+}
+
+// complaintCounts считает жалобы «уже сдана» за последние since..now, которые
+// модерация не отклонила (pending или upheld) — отклонённые (dismissed) не должны
+// портить репутацию продавца.
+func complaintCounts(listingIDs []string, since time.Time) (map[string]int, error) {
+	out := map[string]int{}
+	if len(listingIDs) == 0 {
+		return out, nil
+	}
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(listingIDs)), ",")
+	args := make([]any, 0, len(listingIDs)+1)
+	args = append(args, since)
+	for _, id := range listingIDs {
+		args = append(args, id)
+	}
+	rows, err := db.Query(`SELECT listing_id, COUNT(*) FROM reports WHERE status != 'dismissed' AND created_at >= ? AND listing_id IN (`+placeholders+`) GROUP BY listing_id`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id string
+		var n int
+		if err := rows.Scan(&id, &n); err != nil {
+			return nil, err
+		}
+		out[id] = n
+	}
+	return out, rows.Err()
 }

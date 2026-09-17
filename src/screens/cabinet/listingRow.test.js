@@ -87,19 +87,25 @@ describe('listingRow', () => {
     expect(r.btnLabel()).toBe('actConfirm');
   });
 
-  it('flagged listing offers to answer and reports one complaint', () => {
+  it('flagged listing offers to answer and reports the real complaint count', () => {
     const deps = makeDeps({ statusOf: () => 'flagged' });
-    const r = listingRow(listing, deps);
+    const flagged = { ...listing, complaints: 3 };
+    const r = listingRow(flagged, deps);
     expect(r.isFlag()).toBe(true);
     expect(r.chipText()).toBe('stFlag');
     expect(r.left()).toBe('reviewW');
     expect(r.btnLabel()).toBe('actAnswer');
     expect(r.btnBg()).toBe('RED');
-    expect(r.complaints()).toBe(2);
+    expect(r.complaints()).toBe(3);
 
     r.act();
     expect(deps.confirmBySms).toHaveBeenCalledWith('l1');
     expect(deps.returnToFeed).not.toHaveBeenCalled();
+  });
+
+  it('never invents a complaint count that was not reported by the API', () => {
+    const r = listingRow(listing, makeDeps({ statusOf: () => 'flagged' }));
+    expect(r.complaints()).toBe(0);
   });
 
   it('archived/rented listing offers to return it to the feed', () => {

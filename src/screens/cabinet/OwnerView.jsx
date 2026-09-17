@@ -9,6 +9,7 @@ import { useCabinetRows } from './rows';
 
 export default function OwnerView() {
   const { rows, dueLeft, activeNow } = useCabinetRows();
+  const complaintsTotal = () => rows().reduce((sum, r) => sum + r.complaints(), 0);
 
   return (
     <>
@@ -21,8 +22,8 @@ export default function OwnerView() {
           bg={dueLeft() ? RED_T : '#fff'}
           fg={dueLeft() ? RED_TX : INK}
         />
-        <Kpi label={t().kpiComp} value="0" note={t().hRow2} />
-        <Kpi label={t().kpiScore} value="100%" note={t().kpiScore} bg={TEAL_T} fg={TEAL_TX} />
+        <Kpi label={t().kpiComp} value={String(complaintsTotal())} note={t().hRow2} />
+        <Kpi label={t().kpiTotal} value={String(rows().length)} note={t().kpiTotal} bg={TEAL_T} fg={TEAL_TX} />
       </div>
 
       <Show when={rows().length === 0}>

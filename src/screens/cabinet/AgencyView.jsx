@@ -10,6 +10,10 @@ export default function AgencyView() {
   const { rows, dueLeft, activeNow } = useCabinetRows();
   const shownRows = () =>
     rows().filter((r) => (state.cabTab === 'all' ? true : state.cabTab === 'due' ? (r.isDue() || r.isFlag()) && !r.done() : r.isArch()));
+  const complaintsTotal = () => rows().reduce((sum, r) => sum + r.complaints(), 0);
+  const archivedTotal = () => rows().filter((r) => r.isArch()).length;
+  // Управление агентами ещё не реализовано на бэкенде — команда всегда пуста, пока не появится реальный API.
+  const team = () => [];
 
   return (
     <>
@@ -22,8 +26,8 @@ export default function AgencyView() {
           bg={dueLeft() ? RED_T : '#fff'}
           fg={dueLeft() ? RED_TX : INK}
         />
-        <Kpi label={t().kpiComp} value="2" note={t().hRow2} />
-        <Kpi label={t().kpiScore} value="94%" note={t().kpiScore} bg={TEAL_T} fg={TEAL_TX} />
+        <Kpi label={t().kpiComp} value={String(complaintsTotal())} note={t().hRow2} />
+        <Kpi label={t().kpiTotal} value={String(rows().length)} note={t().kpiTotal} bg={TEAL_T} fg={TEAL_TX} />
       </div>
 
       <Show when={dueLeft() > 0}>
@@ -137,51 +141,46 @@ export default function AgencyView() {
 
       <div style="margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px">
         <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
-          <div style={labelStyle}>{t().honestyTitle}</div>
-          <div style="display:flex;align-items:baseline;gap:12px;margin-top:12px;flex-wrap:wrap">
-            <span style="font-size:36px;font-weight:800;letter-spacing:-.035em">94%</span>
-            <span style="font-size:13px;color:#6f6d68;font-weight:600">{txt('honestyAbove', { n: 78 })}</span>
-          </div>
-          <div style="margin-top:16px;height:9px;border-radius:999px;background:#f2f1ee;overflow:hidden">
-            <div style="width:94%;height:100%;border-radius:999px;background:#0e7c73" />
-          </div>
+          <div style={labelStyle}>{t().agencyStatsTitle}</div>
           <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px;font-size:14px">
             <div style="display:flex;justify-content:space-between;gap:12px">
               <span style="color:#6f6d68">{t().hRow1}</span>
-              <span style="font-weight:700">126 / 134</span>
+              <span style="font-weight:700">
+                {activeNow()} / {rows().length}
+              </span>
             </div>
             <div style="display:flex;justify-content:space-between;gap:12px">
               <span style="color:#6f6d68">{t().hRow2}</span>
-              <span style="font-weight:700">2</span>
+              <span style="font-weight:700">{complaintsTotal()}</span>
             </div>
             <div style="display:flex;justify-content:space-between;gap:12px">
               <span style="color:#6f6d68">{t().hRow3}</span>
-              <span style="font-weight:700">31 / 33</span>
+              <span style="font-weight:700">
+                {archivedTotal()} / {rows().length}
+              </span>
             </div>
           </div>
         </div>
 
         <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
           <div style={labelStyle}>{t().teamTitle}</div>
-          <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
-            <For
-              each={[
-                ['ԱՀ', ['Անի Հ.', 'Ани А.', 'Ani H.'], '6 · 98%'],
-                ['ԴՊ', ['Դավիթ Պ.', 'Давид П.', 'Davit P.'], '5 · 94%'],
-                ['ՄՔ', ['Մարիամ Ք.', 'Мариам К.', 'Mariam K.'], '3 · 91%']
-              ]}
-            >
-              {([ini, name, note]) => (
-                <div style="display:flex;align-items:center;gap:12px">
-                  <span style="width:32px;height:32px;border-radius:999px;background:#e8f4f2;color:#0a5f59;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">
-                    {ini}
-                  </span>
-                  <span style="flex:1;font-size:14px;font-weight:600">{name[li()]}</span>
-                  <span style="font-size:13px;color:#6f6d68;font-variant-numeric:tabular-nums">{note}</span>
-                </div>
-              )}
-            </For>
-          </div>
+          <Show
+            when={team().length}
+            fallback={<div style="margin-top:16px;font-size:14px;color:#6f6d68">{t().teamEmpty}</div>}
+          >
+            <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
+              <For each={team()}>
+                {(member) => (
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <span style="width:32px;height:32px;border-radius:999px;background:#e8f4f2;color:#0a5f59;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">
+                      {member.ini}
+                    </span>
+                    <span style="flex:1;font-size:14px;font-weight:600">{member.name[li()]}</span>
+                  </div>
+                )}
+              </For>
+            </div>
+          </Show>
           <div style="margin-top:16px;font-size:13px;color:#6f6d68;line-height:1.5">{t().teamNote}</div>
         </div>
       </div>

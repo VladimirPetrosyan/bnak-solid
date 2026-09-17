@@ -1,5 +1,5 @@
 import { canPromote, vipShortfall, vipTimeLeft } from './walletModel';
-import { viewsOf, favoritesOf } from '../../listingStats';
+import { viewsOf, favoritesOf, complaintsOf } from '../../listingStats';
 
 export function listingRow(listing, deps) {
   const {
@@ -80,7 +80,7 @@ export function listingRow(listing, deps) {
     vipLabel,
     vipTimeLabel,
     onVip,
-    complaints: () => (isFlag() ? Math.max(1, 2) : 0),
+    complaints: () => complaintsOf(listing) || 0,
     chipBg: () => (st() === 'fresh' ? TEAL_T : st() === 'aging' ? SOFT : isArch() ? SOFT : RED_T),
     chipFg: () => (st() === 'fresh' ? TEAL_TX : st() === 'aging' ? MUTED : isArch() ? FAINT : RED_TX),
     chipText: () =>

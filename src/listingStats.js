@@ -22,3 +22,7 @@ export function viewsOf(l) {
 export function favoritesOf(l) {
   return l && typeof l.favorites === 'number' ? l.favorites : null;
 }
+
+export function complaintsOf(l) {
+  return l && typeof l.complaints === 'number' ? l.complaints : null;
+}

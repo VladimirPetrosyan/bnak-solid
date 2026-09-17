@@ -15,7 +15,7 @@ import (
 )
 
 func baseListingInput() listingInput {
-	return listingInput{Deal: "rent", City: "yerevan", Street: "Test str", Price: 100000, Area: 40, CadastreCode: "CAD-1", RepairCondition: "good", Features: []string{}}
+	return listingInput{Deal: "rent", City: "yerevan", Street: "Test str", Price: 100000, Area: 40, Floor: 4, FloorsTotal: 9, CadastreCode: "CAD-1", RepairCondition: "good", Features: []string{}}
 }
 
 func mustCreateFullListing(t *testing.T, ownerID, status string, in listingInput) string {

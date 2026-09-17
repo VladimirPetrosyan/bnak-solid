@@ -14,6 +14,7 @@ import { validateExchangeRateSnapshot, isNewerSnapshot, amdToForeign, isSnapshot
 import { resolveLegalId, LEGAL_CONSENT_VERSION, LEGAL_KEY_BY_ID } from './legalDocs';
 import { pageTitle } from './pageTitle';
 import { dealTitleKey } from './dealTitle';
+import { findDuplicateSearch } from './savedSearch';
 import { buildListingPayload } from './postPayload';
 import { isValidRepairCondition, repairConditionLabel } from './repairCondition';
 import { COUNTRIES, findCountry, findCountryByDigits, groupDigits } from './countries';
@@ -321,6 +322,12 @@ const API_ERR_KEYS = {
   'street, price and area are required': 'errListingRequired',
   'cadastre certificate code is required': 'errCadastreRequired',
   invalid_repair_condition: 'errRepairCondition',
+  street_too_long: 'errStreetTooLong',
+  description_too_long: 'errDescTooLong',
+  invalid_area: 'errAreaRange',
+  invalid_floor: 'errFloor',
+  invalid_floors_total: 'errFloorsTotal',
+  floor_exceeds_floors_total: 'errFloorExceeds',
   'not your listing': 'errNotYourListing',
   'listing not found': 'errListingNotFound',
   'bad multipart form': 'errBadForm',
@@ -403,6 +410,7 @@ function normalizeRemote(item) {
     outcome: item.outcome || null,
     views: typeof item.views === 'number' ? item.views : undefined,
     favorites: typeof item.favorites === 'number' ? item.favorites : undefined,
+    complaints: typeof item.complaints === 'number' ? item.complaints : undefined,
     title: l.title || '',
     stayKind: l.stayKind || '',
     checkIn: l.checkIn || '',
@@ -430,6 +438,7 @@ function mergeRemoteItem(base, incoming) {
     owner: mergeDefinedFields(base.owner, incoming.owner),
     views: typeof incoming.views === 'number' ? incoming.views : base.views,
     favorites: typeof incoming.favorites === 'number' ? incoming.favorites : base.favorites,
+    complaints: typeof incoming.complaints === 'number' ? incoming.complaints : base.complaints,
     pendingRevision: incoming.pendingRevision !== undefined ? incoming.pendingRevision : base.pendingRevision,
     outcome: incoming.outcome !== undefined ? incoming.outcome : base.outcome,
     stay: base.stay || incoming.stay
@@ -2154,17 +2163,18 @@ export async function confirmAll() {
 }
 
 export function saveSearch() {
-  const titleKey = { rent: 'titleRent', daily: 'titleDaily', sale: 'titleSale', newb: 'titleNew', comm: 'titleComm', hotel: 'titleHotel', all: 'titleAll' }[state.deal];
+  const filters = { deal: state.deal, city: cityK(), rooms: state.rooms, priceMax: state.priceMax };
+  if (findDuplicateSearch(state.savedSearches, filters)) {
+    say(txt('searchAlreadySaved'));
+    return;
+  }
   const label =
-    t()[titleKey] +
+    t()[dealTitleKey(state.deal)] +
     ' · ' +
     cityObj().n[li()] +
     (state.rooms !== 'all' ? ' · ' + state.rooms : '') +
     (state.priceMax ? ' · ≤ ' + nf(+state.priceMax) + ' ֏' : '');
-  setState(
-    'savedSearches',
-    state.savedSearches.concat([{ label, deal: state.deal, city: cityK(), rooms: state.rooms, priceMax: state.priceMax }])
-  );
+  setState('savedSearches', state.savedSearches.concat([{ ...filters, label }]));
   say(txt('savedToast'));
 }
 
