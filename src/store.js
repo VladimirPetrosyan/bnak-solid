@@ -122,7 +122,8 @@ const DEFAULTS = {
   exchangeRates: null,
   legalId: null,
   legalFrom: 'search',
-  msgNotice: null
+  msgNotice: null,
+  chatAtBottom: true
 };
 
 const PERSIST = [
@@ -1152,20 +1153,21 @@ function handleRealtimeEvent(type, data) {
   else if (type === 'support.message') receiveSupportMessage(data);
 }
 
-function supportUnreadFrom(messages) {
-  return messages.some((m) => m.sender === 'admin' && !m.readAt);
+function supportUnreadCountFrom(messages) {
+  return messages.filter((m) => m.sender === 'admin' && !m.readAt).length;
 }
 
 export function receiveSupportMessage(data) {
   const message = data && data.message;
   if (!message) return;
   setState('support', 'messages', (msgs) => (msgs.some((m) => m.id === message.id) ? msgs : [...msgs, message]));
-  if (state.screen === 'chat' && state.thread === SUPPORT_KEY) {
-    markSupportRead();
+  if (message.sender === 'user') return;
+  if (state.screen === 'chat' && state.thread === SUPPORT_KEY && state.chatAtBottom !== false) {
+    markThreadSeen(SUPPORT_KEY);
     return;
   }
-  setState('unread', SUPPORT_KEY, true);
-  if (message.sender !== 'user') notifyIncomingMessage(SUPPORT_KEY, message, { name: t().supportW, ini: '🎧' });
+  setState('unread', SUPPORT_KEY, (n) => unreadCountOf(n) + 1);
+  notifyIncomingMessage(SUPPORT_KEY, message, { name: t().supportW, ini: '🎧' });
 }
 
 export async function loadSupportMessages() {
@@ -1173,19 +1175,14 @@ export async function loadSupportMessages() {
   try {
     const messages = await api.get('/api/support/messages');
     setState('support', { messages, loading: false });
-    if (supportUnreadFrom(messages)) setState('unread', SUPPORT_KEY, true);
+    if (!pendingMarkRead.has(SUPPORT_KEY)) {
+      const count = supportUnreadCountFrom(messages);
+      if (count > 0) setState('unread', SUPPORT_KEY, count);
+      else clearUnreadLocal(SUPPORT_KEY);
+    }
   } catch {
     setState('support', { loading: false });
   }
-}
-
-export async function markSupportRead() {
-  const unread = { ...state.unread };
-  delete unread[SUPPORT_KEY];
-  setState('unread', unread);
-  try {
-    await api.post('/api/support/read');
-  } catch {}
 }
 
 let pendingSupportSeq = 0;
@@ -1556,12 +1553,15 @@ function mapRemoteMsg(m) {
   };
 }
 
+// Открытие треда больше не сбрасывает unread сразу — счётчик обнуляется только когда
+// UI (Chat.jsx) подтвердит, что пользователь реально долистал до последних сообщений,
+// см. markThreadSeen/setChatAtBottom. chatAtBottom сбрасываем в false, пока это не
+// подтверждено, чтобы realtime-сообщение, пришедшее в этот же момент, не считалось
+// прочитанным раньше времени.
 export function openThread(key) {
-  const unread = { ...state.unread };
-  delete unread[key];
-  setState({ thread: key, unread });
+  setState({ thread: key, chatAtBottom: false });
   if (key === SUPPORT_KEY) {
-    loadSupportMessages().then(markSupportRead);
+    loadSupportMessages();
     return;
   }
   const th = threadsAll()[key];
@@ -1623,20 +1623,76 @@ export async function loadThreadsRemote() {
     setState('unread', (u) => {
       const next = { ...u };
       list.forEach((item) => {
-        if (item.unread > 0) next[item.thread.id] = item.unread;
-        else delete next[item.thread.id];
+        const id = item.thread.id;
+        // Не затираем оптимистичный локальный "прочитано", пока подтверждение (POST /read)
+        // ещё в полёте — иначе более медленный ответ этого GET может вернуть unread badge
+        // на тред, который пользователь уже реально дочитал (race condition, см. п.14).
+        if (pendingMarkRead.has(id)) return;
+        // Solid-стор при setState('unread', fn) мёрджит возвращаемый объект с текущим —
+        // просто пропущенный ключ (delete next[id]) не удаляется, нужно явно next[id] = undefined.
+        next[id] = item.unread > 0 ? item.unread : undefined;
       });
       return next;
     });
   } catch {}
 }
 
-export function unreadCountOf(v) {
-  return typeof v === 'number' ? v : v ? 1 : 0;
+export function unreadCountOf(value) {
+  const count = Number(value);
+  return Number.isFinite(count) ? Math.max(0, count) : 0;
 }
 
+// Верхний badge — число диалогов с непрочитанными сообщениями, а не сумма сообщений
+// по всем диалогам (10 сообщений от одного собеседника — это 1 непрочитанный диалог).
 export function unreadTotal() {
   return Object.values(state.unread).filter((v) => unreadCountOf(v) > 0).length;
+}
+
+// Сообщается из Chat.jsx: находится ли пользователь сейчас внизу открытого треда
+// (видит последнее сообщение). Используется, чтобы решить, увеличивать ли unread на
+// входящее realtime-сообщение, или сразу считать его прочитанным.
+export function setChatAtBottom(atBottom) {
+  setState('chatAtBottom', atBottom);
+}
+
+// Solid-стор не удаляет ключ, если его просто нет в объекте, возвращённом из
+// setState('unread', fn) — нужен путь до конкретного ключа с явным undefined.
+function clearUnreadLocal(key) {
+  if (key in state.unread) setState('unread', key, undefined);
+}
+
+const markReadTimers = new Map();
+const MARK_READ_DEBOUNCE_MS = 250;
+// Треды, для которых подтверждение "прочитано" уже принято локально, но POST /read ещё
+// не завершился — пока ключ здесь, loadThreadsRemote/loadSupportMessages не должны
+// перезаписывать их unread ответом, который мог быть сформирован backend'ом до этого POST.
+const pendingMarkRead = new Set();
+
+function persistMarkRead(key) {
+  const req = key === SUPPORT_KEY ? api.post('/api/support/read') : api.post('/api/threads/' + key + '/read');
+  return req.catch(() => {}).finally(() => pendingMarkRead.delete(key));
+}
+
+// Не шлём POST /read на каждое websocket-сообщение — если подряд прилетает пачка
+// сообщений (или пользователь быстро листает несколько тредов), запросы схлопываются
+// в один через debounce на threadId.
+function scheduleMarkRead(key) {
+  pendingMarkRead.add(key);
+  clearTimeout(markReadTimers.get(key));
+  const timer = setTimeout(() => {
+    markReadTimers.delete(key);
+    persistMarkRead(key);
+  }, MARK_READ_DEBOUNCE_MS);
+  markReadTimers.set(key, timer);
+}
+
+// Единственное место, которое действительно "прочитывает" тред: локально чистит badge
+// сразу (оптимистично) и с debounce уведомляет backend. Вызывать только когда точно
+// известно, что пользователь видит последние сообщения треда (см. Chat.jsx bottom-detection).
+export function markThreadSeen(key) {
+  if (!key) return;
+  clearUnreadLocal(key);
+  scheduleMarkRead(key);
 }
 
 export async function openThreadFor(listingId) {
@@ -1650,9 +1706,7 @@ export async function openThreadFor(listingId) {
     const resp = await api.post('/api/threads', { listingId });
     const o = l.ownerInfo || {};
     await loadThreadMessages(resp.threadId, listingId, { id: l.ownerId, name: o.name, role: o.role, ini: o.ini });
-    const unread = { ...state.unread };
-    delete unread[resp.threadId];
-    setState({ thread: resp.threadId, unread });
+    setState({ thread: resp.threadId, chatAtBottom: false });
     go('chat');
   } catch (e) {
     say(apiErrText(e));
@@ -1691,8 +1745,8 @@ export function receiveRealtimeMessage(payload) {
   if (!mergeIncomingMessages(threadId, [message])) return;
   const mine = !!(state.user && message.senderId === state.user.id);
   if (mine) return;
-  if (state.screen === 'chat' && state.thread === threadId) {
-    api.post('/api/threads/' + threadId + '/read').catch(() => {});
+  if (state.screen === 'chat' && state.thread === threadId && state.chatAtBottom !== false) {
+    markThreadSeen(threadId);
   } else {
     setState('unread', threadId, (n) => unreadCountOf(n) + 1);
     notifyIncomingMessage(threadId, message, cur.other);

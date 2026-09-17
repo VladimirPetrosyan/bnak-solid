@@ -8,6 +8,9 @@ import {
   threadsAll,
   chatSellerOf,
   openThread,
+  markThreadSeen,
+  setChatAtBottom,
+  unreadCountOf,
   sendMsg,
   sendAudioMsg,
   sendVideoMsg,
@@ -67,6 +70,11 @@ const EMOJI = [
   '⏰',
   '📷'
 ];
+
+// дистанция от низа списка сообщений (px), в пределах которой пользователь считается
+// "внизу" чата — используется чтобы решить, сбрасывать ли unread и автоскроллить ли
+// новые сообщения (см. store.markThreadSeen)
+const BOTTOM_THRESHOLD = 80;
 
 const plainBtn =
   'width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:transparent;flex:0 0 auto';
@@ -136,13 +144,39 @@ export default function Chat() {
     onError: () => say(txt('micDenied'))
   });
 
+  // Не сигнал: не должен запускать реактивные эффекты сам по себе, только читаться ими —
+  // иначе checkBottom() (вызывается из onScroll и из эффекта ниже) зациклит createEffect.
+  let atBottom = true;
+
+  const checkBottom = () => {
+    if (!msgsRef) return atBottom;
+    const dist = msgsRef.scrollHeight - msgsRef.scrollTop - msgsRef.clientHeight;
+    setShowScrollDown(dist > 120);
+    const wasAtBottom = atBottom;
+    atBottom = dist <= BOTTOM_THRESHOLD;
+    setChatAtBottom(atBottom);
+    const key = currentKey();
+    if (atBottom && key && (!wasAtBottom || unreadCountOf(state.unread[key]) > 0)) {
+      markThreadSeen(key);
+    }
+    return atBottom;
+  };
+
+  let lastKey;
   createEffect(() => {
-    const trigger = [thread()?.msgs.length || 0, currentKey(), viewport()?.height];
-    if (msgsRef)
+    const key = currentKey();
+    const switchedThread = key !== lastKey;
+    lastKey = key;
+    if (switchedThread) {
+      atBottom = true;
+      setChatAtBottom(true);
+    }
+    const trigger = [thread()?.msgs.length || 0, key, viewport()?.height];
+    if (msgsRef && (switchedThread || atBottom))
       queueMicrotask(() => {
         msgsRef.scrollTop = msgsRef.scrollHeight;
+        checkBottom();
       });
-    setShowScrollDown(false);
     return trigger;
   });
 
@@ -270,10 +304,7 @@ export default function Chat() {
             <div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column">
               <div
                 ref={msgsRef}
-                onScroll={(e) => {
-                  const el = e.currentTarget;
-                  setShowScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 120);
-                }}
+                onScroll={checkBottom}
                 style="flex:1;min-height:0;padding:24px 20px;display:flex;flex-direction:column;gap:16px;background:#fbfbfa;overflow-y:auto;overflow-x:hidden"
               >
                 <Index each={thread().msgs}>

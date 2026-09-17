@@ -149,20 +149,14 @@ func threadOr403(w http.ResponseWriter, r *http.Request) (*Thread, bool) {
 }
 
 // ---------- GET /api/threads/{id}/messages ----------
+// Загрузка истории не помечает сообщения прочитанными — это отдельная операция
+// (POST /api/threads/{id}/read, см. handleMarkThreadRead), которую фронтенд вызывает
+// только когда пользователь реально долистал до низа чата.
 
 func handleListMessages(w http.ResponseWriter, r *http.Request) {
 	t, ok := threadOr403(w, r)
 	if !ok {
 		return
-	}
-	u := userFromCtx(r.Context())
-
-	readAt := time.Now()
-	if res, err := db.Exec(`UPDATE messages SET read_at = ? WHERE thread_id = ? AND sender_id != ? AND read_at IS NULL`,
-		readAt, t.ID, u.ID); err == nil {
-		if n, _ := res.RowsAffected(); n > 0 {
-			publishChatRead(t, u.ID, readAt)
-		}
 	}
 
 	rows, err := db.Query(`SELECT `+messageCols+` FROM messages WHERE thread_id = ? ORDER BY id ASC`, t.ID)
@@ -336,10 +330,16 @@ func handleMarkThreadRead(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
-	if n, _ := res.RowsAffected(); n > 0 {
+	marked, _ := res.RowsAffected()
+	if marked > 0 {
 		publishChatRead(t, u.ID, readAt)
 	}
-	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"ok":          true,
+		"thread_id":   t.ID,
+		"marked_read": marked,
+		"read_at":     readAt,
+	})
 }
 
 // publishChatRead уведомляет отправителя, что участник reader прочитал его сообщения в

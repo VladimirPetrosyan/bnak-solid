@@ -11,6 +11,7 @@ vi.mock('./api', () => {
   return {
     api: { get: vi.fn(), post: vi.fn(), put: vi.fn(), del: vi.fn(), upload: vi.fn(), blob: vi.fn() },
     setAuthToken: vi.fn(),
+    setApiLang: vi.fn(),
     getAuthToken: vi.fn(),
     fileURL: (p) => p,
     ApiError,
@@ -23,7 +24,7 @@ vi.mock('./realtime', () => ({
   disconnectRealtime: vi.fn()
 }));
 
-globalThis.window = globalThis.window || { innerWidth: 1024, scrollTo: () => {} };
+globalThis.window = globalThis.window || { innerWidth: 1024, scrollTo: () => {}, location: { pathname: '/' } };
 globalThis.localStorage = globalThis.localStorage || {
   data: {},
   getItem(k) {
@@ -43,12 +44,14 @@ const { state, setState, threadsAll, SUPPORT_KEY, openThread, sendMsg, loadSuppo
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.useRealTimers();
   setState({
     user: { id: 'me', role: 'tenant' },
     token: 'tok',
     threads: {},
     unread: {},
     thread: null,
+    chatAtBottom: true,
     draft: '',
     support: { messages: [], loading: false }
   });
@@ -73,15 +76,25 @@ describe('support pseudo-thread', () => {
     expect(th.msgs[0]).toMatchObject({ me: true, text: 'hi' });
   });
 
-  it('opening it fetches /api/support/messages and marks it read, not /api/threads', async () => {
-    api.get.mockResolvedValue([]);
+  it('opening it fetches /api/support/messages (not /api/threads) without marking it read upfront', async () => {
+    api.get.mockResolvedValue([
+      { id: 1, sender: 'admin', text: 'hi', readAt: null },
+      { id: 2, sender: 'admin', text: 'there', readAt: null },
+      { id: 3, sender: 'admin', text: '?', readAt: null }
+    ]);
     api.post.mockResolvedValue({ ok: true });
+    setState('unread', SUPPORT_KEY, 3);
     openThread(SUPPORT_KEY);
+    // unread must survive until Chat.jsx confirms the user actually reached the bottom —
+    // opening the thread alone must not clear it or call /read.
+    expect(state.unread[SUPPORT_KEY]).toBe(3);
+    expect(state.chatAtBottom).toBe(false);
     await Promise.resolve();
     await Promise.resolve();
     expect(api.get).toHaveBeenCalledWith('/api/support/messages');
     expect(api.get).not.toHaveBeenCalledWith(expect.stringContaining('/api/threads'));
-    expect(api.post).toHaveBeenCalledWith('/api/support/read');
+    expect(api.post).not.toHaveBeenCalledWith('/api/support/read');
+    expect(state.unread[SUPPORT_KEY]).toBe(3);
   });
 
   it('sendMsg on the support thread posts to /api/support/messages', () => {
@@ -100,17 +113,43 @@ describe('receiveSupportMessage', () => {
     setState('screen', 'search');
     receiveSupportMessage({ message: { id: 1, sender: 'admin', text: 'hi', createdAt: '2026-01-01T10:00:00Z' } });
     expect(state.support.messages).toHaveLength(1);
-    expect(state.unread[SUPPORT_KEY]).toBe(true);
+    expect(state.unread[SUPPORT_KEY]).toBe(1);
   });
 
-  it('does not mark unread and marks read server-side when the support thread is open', async () => {
+  it('increments the exact unread count instead of clamping it to 1', () => {
+    setState('thread', 'other');
+    setState('screen', 'search');
+    receiveSupportMessage({ message: { id: 1, sender: 'admin', text: 'a' } });
+    receiveSupportMessage({ message: { id: 2, sender: 'admin', text: 'b' } });
+    receiveSupportMessage({ message: { id: 3, sender: 'admin', text: 'c' } });
+    expect(state.unread[SUPPORT_KEY]).toBe(3);
+  });
+
+  it('does not set unread and schedules a debounced read call when the support thread is open at the bottom', async () => {
+    vi.useFakeTimers();
     setState('screen', 'chat');
     setState('thread', SUPPORT_KEY);
     api.post.mockResolvedValue({ ok: true });
     receiveSupportMessage({ message: { id: 1, sender: 'admin', text: 'hi', createdAt: '2026-01-01T10:00:00Z' } });
     expect(state.unread[SUPPORT_KEY]).toBeUndefined();
-    await Promise.resolve();
+    expect(api.post).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(300);
     expect(api.post).toHaveBeenCalledWith('/api/support/read');
+  });
+
+  it('marks unread even when the support thread is open if scrolled away from the bottom', () => {
+    setState('screen', 'chat');
+    setState('thread', SUPPORT_KEY);
+    setState('chatAtBottom', false);
+    receiveSupportMessage({ message: { id: 1, sender: 'admin', text: 'hi' } });
+    expect(state.unread[SUPPORT_KEY]).toBe(1);
+  });
+
+  it('does not mark unread for its own message echoed back', () => {
+    setState('thread', 'other');
+    setState('screen', 'search');
+    receiveSupportMessage({ message: { id: 1, sender: 'user', text: 'hi' } });
+    expect(state.unread[SUPPORT_KEY]).toBeUndefined();
   });
 
   it('dedupes by message id', () => {
@@ -126,10 +165,13 @@ describe('receiveSupportMessage', () => {
 });
 
 describe('loadSupportMessages', () => {
-  it('marks support unread when fetched messages include an unread admin reply', async () => {
-    api.get.mockResolvedValue([{ id: 1, sender: 'admin', text: 'hi', readAt: null }]);
+  it('reflects the exact number of unread admin replies, not just a boolean flag', async () => {
+    api.get.mockResolvedValue([
+      { id: 1, sender: 'admin', text: 'hi', readAt: null },
+      { id: 2, sender: 'admin', text: 'there', readAt: null }
+    ]);
     await loadSupportMessages();
-    expect(state.unread[SUPPORT_KEY]).toBe(true);
+    expect(state.unread[SUPPORT_KEY]).toBe(2);
   });
 
   it('does not mark unread when all admin messages are already read', async () => {

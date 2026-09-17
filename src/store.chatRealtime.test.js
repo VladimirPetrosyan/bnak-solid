@@ -11,6 +11,7 @@ vi.mock('./api', () => {
   return {
     api: { get: vi.fn(), post: vi.fn(), put: vi.fn(), del: vi.fn(), upload: vi.fn(), blob: vi.fn() },
     setAuthToken: vi.fn(),
+    setApiLang: vi.fn(),
     getAuthToken: vi.fn(),
     fileURL: (p) => p,
     ApiError,
@@ -23,7 +24,7 @@ vi.mock('./realtime', () => ({
   disconnectRealtime: vi.fn()
 }));
 
-globalThis.window = globalThis.window || { innerWidth: 1024, scrollTo: () => {} };
+globalThis.window = globalThis.window || { innerWidth: 1024, scrollTo: () => {}, location: { pathname: '/' } };
 globalThis.localStorage = globalThis.localStorage || {
   data: {},
   getItem(k) {
@@ -39,9 +40,15 @@ globalThis.localStorage = globalThis.localStorage || {
 
 const { api } = await import('./api');
 const { disconnectRealtime } = await import('./realtime');
-const { state, setState, receiveRealtimeMessage, receiveRealtimeRead, loadThreadMessages, signOut } = await import(
-  './store'
-);
+const {
+  state,
+  setState,
+  receiveRealtimeMessage,
+  receiveRealtimeRead,
+  loadThreadMessages,
+  signOut,
+  unreadTotal
+} = await import('./store');
 
 function remoteThread(overrides) {
   return { remote: true, listing: 'L1', other: { id: 'owner1', name: 'Owner' }, msgs: [], ...overrides };
@@ -49,8 +56,17 @@ function remoteThread(overrides) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.useRealTimers();
   api.post.mockResolvedValue(undefined);
-  setState({ user: { id: 'me', role: 'tenant' }, token: 'tok', threads: {}, unread: {}, thread: null });
+  setState({
+    user: { id: 'me', role: 'tenant' },
+    token: 'tok',
+    threads: {},
+    unread: {},
+    thread: null,
+    screen: 'chat',
+    chatAtBottom: true
+  });
 });
 
 describe('receiveRealtimeMessage', () => {
@@ -157,13 +173,48 @@ describe('receiveRealtimeMessage', () => {
     expect(state.threads.th1.msgs.map((m) => m.id)).toEqual([5, 7]);
   });
 
-  it('calls the read endpoint and does not set unread for a message in the open thread', () => {
+  it('does not set unread and schedules a debounced read call for a message in the open thread at the bottom', async () => {
+    vi.useFakeTimers();
     setState('threads', { th1: remoteThread() });
     setState('thread', 'th1');
     api.post.mockResolvedValue({ ok: true });
     receiveRealtimeMessage({ message: { id: 1, senderId: 'owner1', text: 'hi' }, threadId: 'th1' });
-    expect(api.post).toHaveBeenCalledWith('/api/threads/th1/read');
     expect(state.unread.th1).toBeUndefined();
+    expect(api.post).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(api.post).toHaveBeenCalledWith('/api/threads/th1/read');
+  });
+
+  it('collapses a burst of messages in the open thread into a single debounced read call', async () => {
+    vi.useFakeTimers();
+    setState('threads', { th1: remoteThread() });
+    setState('thread', 'th1');
+    api.post.mockResolvedValue({ ok: true });
+    for (let i = 1; i <= 20; i++) {
+      receiveRealtimeMessage({ message: { id: i, senderId: 'owner1', text: 'm' + i }, threadId: 'th1' });
+    }
+    expect(state.unread.th1).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(api.post).toHaveBeenCalledTimes(1);
+    expect(api.post).toHaveBeenCalledWith('/api/threads/th1/read');
+  });
+
+  it('marks unread even in the open thread when the user has scrolled away from the bottom', () => {
+    setState('threads', { th1: remoteThread() });
+    setState('thread', 'th1');
+    setState('chatAtBottom', false);
+    receiveRealtimeMessage({ message: { id: 1, senderId: 'owner1', text: 'hi' }, threadId: 'th1' });
+    expect(state.unread.th1).toBe(1);
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it('keeps the exact per-thread unread count instead of clamping it to 1 (100 messages)', () => {
+    setState('threads', { th1: remoteThread() });
+    setState('thread', 'other-thread');
+    for (let i = 1; i <= 100; i++) {
+      receiveRealtimeMessage({ message: { id: i, senderId: 'owner1', text: 'm' }, threadId: 'th1' });
+    }
+    expect(state.unread.th1).toBe(100);
   });
 
   it('marks unread and does not call the read endpoint for a closed thread', () => {
@@ -175,13 +226,20 @@ describe('receiveRealtimeMessage', () => {
   });
 
   it('keeps the message even when the read endpoint call fails', async () => {
+    vi.useFakeTimers();
     setState('threads', { th1: remoteThread() });
     setState('thread', 'th1');
     api.post.mockRejectedValue(new Error('network'));
     receiveRealtimeMessage({ message: { id: 1, senderId: 'owner1', text: 'hi' }, threadId: 'th1' });
     expect(state.threads.th1.msgs[0].text).toBe('hi');
-    await Promise.resolve();
-    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(300);
+  });
+});
+
+describe('unreadTotal', () => {
+  it('counts dialogs with at least one unread message, not the sum of all unread messages', () => {
+    setState('unread', { th1: 100, th2: 4, th3: 0 });
+    expect(unreadTotal()).toBe(2);
   });
 });
 

@@ -89,12 +89,20 @@ func handleMarkSupportRead(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
-	if _, err := db.Exec(`UPDATE support_messages SET read_at = ? WHERE thread_id = ? AND sender = 'admin' AND read_at IS NULL`,
-		time.Now(), threadID); err != nil {
+	readAt := time.Now()
+	res, err := db.Exec(`UPDATE support_messages SET read_at = ? WHERE thread_id = ? AND sender = 'admin' AND read_at IS NULL`,
+		readAt, threadID)
+	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	marked, _ := res.RowsAffected()
+	writeJSON(w, http.StatusOK, map[string]any{
+		"ok":          true,
+		"thread_id":   threadID,
+		"marked_read": marked,
+		"read_at":     readAt,
+	})
 }
 
 // ---------- POST /api/support/messages ----------

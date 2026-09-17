@@ -15,7 +15,7 @@ func listenChat(t *testing.T, userID string) *realtimeConn {
 	return c
 }
 
-func TestListMessagesMarksReadAndNotifiesSenderOverRealtime(t *testing.T) {
+func TestListMessagesDoesNotMarkRead(t *testing.T) {
 	setupTestDB(t)
 	owner := mustCreateUser(t, "owner")
 	tenant := mustCreateUser(t, "tenant")
@@ -38,17 +38,19 @@ func TestListMessagesMarksReadAndNotifiesSenderOverRealtime(t *testing.T) {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 
+	var unread int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM messages WHERE thread_id = ? AND sender_id != ? AND read_at IS NULL`,
+		thread, owner).Scan(&unread); err != nil {
+		t.Fatalf("count unread: %v", err)
+	}
+	if unread != 1 {
+		t.Fatalf("loading history must not mark messages read, want 1 unread, got %d", unread)
+	}
+
 	select {
 	case raw := <-conn.send:
-		var env realtimeEnvelope
-		if err := json.Unmarshal(raw, &env); err != nil {
-			t.Fatalf("decode event: %v", err)
-		}
-		if env.Type != "chat.read" {
-			t.Fatalf("type = %q, want chat.read", env.Type)
-		}
+		t.Fatalf("want no chat.read event from just loading history, got %s", raw)
 	default:
-		t.Fatal("want a chat.read event sent to the message sender")
 	}
 }
 
