@@ -523,52 +523,54 @@ function SupportPanel(props) {
   const canSend = () => !!draft().trim() && !!activeId();
 
   return (
-    <section style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;align-items:stretch">
-      <div style={`flex:1 1 300px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;overflow:hidden;align-self:flex-start`}>
-        <div style={`padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};font-size:13px;font-weight:600`}>
+    <section style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;align-items:stretch;flex:1;min-height:0">
+      <div style={`flex:1 1 300px;min-width:0;min-height:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;display:flex;flex-direction:column`}>
+        <div style={`padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};font-size:13px;font-weight:600;flex:0 0 auto`}>
           Диалоги с поддержкой
         </div>
-        <Show when={threads().length === 0}>
-          <div style={`padding:32px 20px;text-align:center;font-size:13px;color:${TEXT_GHOST}`}>Обращений нет</div>
-        </Show>
-        <For each={threads()}>
-          {(th) => {
-            const active_ = () => th.threadId === activeId();
-            const unread = () => th.unread > 0;
-            return (
-              <button
-                type="button"
-                onClick={() => openThread(th.threadId)}
-                style={`width:100%;text-align:left;border:0;border-bottom:1px solid ${BORDER_SOFT};border-left:3px solid ${active_() ? ACCENT : unread() ? DANGER : 'transparent'};background:${active_() ? ACCENT_ROW : '#fff'};cursor:pointer;padding:11px 14px;display:flex;flex-direction:column;gap:4px`}
-              >
-                <span style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-                  <span style="display:flex;align-items:center;gap:7px;min-width:0">
-                    <Dot on={onlineOf(th.user.id)} />
-                    <span
-                      style={`font-size:13px;font-weight:${unread() ? 600 : 400};overflow:hidden;text-overflow:ellipsis;white-space:nowrap`}
-                    >
-                      {th.user.name || th.user.phone}
+        <div style="flex:1;min-height:0;overflow-y:auto">
+          <Show when={threads().length === 0}>
+            <div style={`padding:32px 20px;text-align:center;font-size:13px;color:${TEXT_GHOST}`}>Обращений нет</div>
+          </Show>
+          <For each={threads()}>
+            {(th) => {
+              const active_ = () => th.threadId === activeId();
+              const unread = () => th.unread > 0;
+              return (
+                <button
+                  type="button"
+                  onClick={() => openThread(th.threadId)}
+                  style={`width:100%;text-align:left;border:0;border-bottom:1px solid ${BORDER_SOFT};border-left:3px solid ${active_() ? ACCENT : unread() ? DANGER : 'transparent'};background:${active_() ? ACCENT_ROW : '#fff'};cursor:pointer;padding:11px 14px;display:flex;flex-direction:column;gap:4px`}
+                >
+                  <span style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                    <span style="display:flex;align-items:center;gap:7px;min-width:0">
+                      <Dot on={onlineOf(th.user.id)} />
+                      <span
+                        style={`font-size:13px;font-weight:${unread() ? 600 : 400};overflow:hidden;text-overflow:ellipsis;white-space:nowrap`}
+                      >
+                        {th.user.name || th.user.phone}
+                      </span>
+                    </span>
+                    <span style={`font-family:${MONO};font-size:10.5px;color:${TEXT_GHOST}`}>
+                      {th.lastMessage ? dateOnly(th.lastMessage.createdAt) : ''}
                     </span>
                   </span>
-                  <span style={`font-family:${MONO};font-size:10.5px;color:${TEXT_GHOST}`}>
-                    {th.lastMessage ? dateOnly(th.lastMessage.createdAt) : ''}
+                  <span style={`font-size:11.5px;color:${TEXT_MUTED};overflow:hidden;text-overflow:ellipsis;white-space:nowrap`}>
+                    {th.lastMessage ? (th.lastMessage.sender === 'admin' ? 'Вы: ' : '') + supportMsgText(th.lastMessage) : 'Нет сообщений'}
                   </span>
-                </span>
-                <span style={`font-size:11.5px;color:${TEXT_MUTED};overflow:hidden;text-overflow:ellipsis;white-space:nowrap`}>
-                  {th.lastMessage ? (th.lastMessage.sender === 'admin' ? 'Вы: ' : '') + supportMsgText(th.lastMessage) : 'Нет сообщений'}
-                </span>
-              </button>
-            );
-          }}
-        </For>
+                </button>
+              );
+            }}
+          </For>
+        </div>
       </div>
 
-      <div style={`flex:1 1 420px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;display:flex;flex-direction:column`}>
+      <div style={`flex:1 1 420px;min-width:0;min-height:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;display:flex;flex-direction:column`}>
         <Show
           when={activeId()}
           fallback={<div style={`margin:auto;padding:26px 18px;font-size:12.5px;color:${TEXT_FAINT}`}>Выберите диалог слева.</div>}
         >
-          <div style="display:flex;flex-direction:column;height:640px">
+          <div style="display:flex;flex-direction:column;flex:1;min-height:0">
             <div style={`padding:13px 16px;border-bottom:1px solid ${BORDER};display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;flex:0 0 auto`}>
               <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
                 <div style="font-size:14px;font-weight:600">{active() ? active().user.name || active().user.phone : ''}</div>
@@ -1116,7 +1118,7 @@ function Panel(props) {
     <div style="min-height:100vh;display:grid;grid-template-columns:232px minmax(0,1fr);font-family:inherit;color:#16171a;background:#fbfbfa">
       <Sidebar section={section} onSelect={setSection} counts={navCounts()} />
 
-      <main style="min-width:0;padding:28px 32px 72px">
+      <main style="min-width:0;height:100vh;overflow-y:auto;padding:28px 32px 72px;display:flex;flex-direction:column">
         <div style="display:flex;justify-content:flex-end;margin-bottom:-6px">
           <button
             type="button"
