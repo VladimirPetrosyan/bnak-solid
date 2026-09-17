@@ -168,6 +168,23 @@ CREATE TABLE IF NOT EXISTS role_requests (
 CREATE INDEX IF NOT EXISTS idx_role_requests_user ON role_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_role_requests_status ON role_requests(status);
 
+-- agency_agents/listing_agents — минимальная версия учёта агентов: ростер контактов внутри
+-- аккаунта агентства и ответственный за объект. Без отдельных логинов/прав per-agent —
+-- это не отдельные пользователи, а справочник, которым управляет сам аккаунт агентства.
+CREATE TABLE IF NOT EXISTS agency_agents (
+	id         TEXT PRIMARY KEY,
+	agency_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	name       TEXT NOT NULL,
+	phone      TEXT NOT NULL DEFAULT '',
+	created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_agency_agents_agency ON agency_agents(agency_id);
+
+CREATE TABLE IF NOT EXISTS listing_agents (
+	listing_id TEXT PRIMARY KEY REFERENCES listings(id) ON DELETE CASCADE,
+	agent_id   TEXT NOT NULL REFERENCES agency_agents(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS threads (
 	id         TEXT PRIMARY KEY,
 	listing_id TEXT NOT NULL REFERENCES listings(id) ON DELETE CASCADE,

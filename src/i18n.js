@@ -63,18 +63,42 @@ const T = {
   roomsN: ['{n} սեն.', '{n} комн.', '{n} rooms'],
   floorN: ['{a}/{b} հարկ', '{a}/{b} эт.', 'floor {a}/{b}'],
   distFromCenter: ['{x} կենտրոնից', '{x} от центра', '{x} from center'],
-  voicePlayBlocked: ['Բրաուզերը արգելափակեց ձայնագրության նվագարկումը', 'Браузер заблокировал воспроизведение — нажмите ещё раз', 'Browser blocked playback — tap again'],
-  voicePlayUnsupported: ['Ձայնագրության ձևաչափը չի աջակցվում այս սարքում', 'Формат записи не поддерживается на этом устройстве', 'This device can’t play this recording format'],
-  voicePlayFailed: ['Չհաջողվեց նվագարկել ձայնագրությունը', 'Не удалось воспроизвести голосовое сообщение', 'Couldn’t play the voice message'],
+  voicePlayBlocked: [
+    'Բրաուզերը արգելափակեց ձայնագրության նվագարկումը',
+    'Браузер заблокировал воспроизведение — нажмите ещё раз',
+    'Browser blocked playback — tap again'
+  ],
+  voicePlayUnsupported: [
+    'Ձայնագրության ձևաչափը չի աջակցվում այս սարքում',
+    'Формат записи не поддерживается на этом устройстве',
+    'This device can’t play this recording format'
+  ],
+  voicePlayFailed: [
+    'Չհաջողվեց նվագարկել ձայնագրությունը',
+    'Не удалось воспроизвести голосовое сообщение',
+    'Couldn’t play the voice message'
+  ],
   secondsN: ['{n} վայրկյան', '{n} секунда|{n} секунды|{n} секунд', '{n} second|{n} seconds'],
-  voicePlayA11y: ['Նվագարկել ձայնային հաղորդագրությունը, {dur}{when}', 'Воспроизвести голосовое сообщение, {dur}{when}', 'Play voice message, {dur}{when}'],
-  voicePauseA11y: ['Դադարեցնել ձայնային հաղորդագրությունը, {dur}', 'Приостановить голосовое сообщение, {dur}', 'Pause voice message, {dur}'],
+  voicePlayA11y: [
+    'Նվագարկել ձայնային հաղորդագրությունը, {dur}{when}',
+    'Воспроизвести голосовое сообщение, {dur}{when}',
+    'Play voice message, {dur}{when}'
+  ],
+  voicePauseA11y: [
+    'Դադարեցնել ձայնային հաղորդագրությունը, {dur}',
+    'Приостановить голосовое сообщение, {dur}',
+    'Pause voice message, {dur}'
+  ],
   voiceWhenA11y: [', {date}, {time}', ', {date} в {time}', ', {date} at {time}'],
   showTranscript: ['Ցույց տալ տեքստը', 'Показать текст', 'Show text'],
   hideTranscript: ['Թաքցնել տեքստը', 'Скрыть текст', 'Hide text'],
   transcribing: ['Ճանաչում…', 'Распознаём…', 'Transcribing…'],
   errNotVoiceMessage: ['Սա ձայնագրություն չէ', 'Это не голосовое сообщение', 'This isn’t a voice message'],
-  errTranscribeFailed: ['Չհաջողվեց ճանաչել ձայնագրությունը', 'Не удалось распознать голосовое сообщение', 'Couldn’t transcribe the voice message'],
+  errTranscribeFailed: [
+    'Չհաջողվեց ճանաչել ձայնագրությունը',
+    'Не удалось распознать голосовое сообщение',
+    'Couldn’t transcribe the voice message'
+  ],
   mUnit: ['մ', 'м', 'm'],
   kmUnit: ['կմ', 'км', 'km'],
   perMonth: ['/ ամիս', '/ мес', '/ mo'],
@@ -453,9 +477,21 @@ Object.assign(T, {
   errAreaRange: ['Մակերեսը պետք է լինի մինչև 3000 մ²', 'Площадь должна быть не больше 3000 м²', 'Area must be at most 3000 m²'],
   errFloor: ['Նշեք հարկը (1-ից 200)', 'Укажите этаж (от 1 до 200)', 'Enter the floor (1 to 200)'],
   errFloorsTotal: ['Նշեք հարկայնությունը (1-ից 200)', 'Укажите этажность дома (от 1 до 200)', 'Enter the number of floors (1 to 200)'],
-  errFloorExceeds: ['Հարկը չի կարող գերազանցել հարկայնությունը', 'Этаж не может быть больше этажности дома', 'The floor can’t be higher than the building’s floor count'],
-  errStreetTooLong: ['Հասցեն չափազանց երկար է (մինչև 120 նիշ)', 'Адрес слишком длинный (максимум 120 символов)', 'Address is too long (max 120 characters)'],
-  errDescTooLong: ['Նկարագրությունը չափազանց երկար է (մինչև 1500 նիշ)', 'Описание слишком длинное (максимум 1500 символов)', 'Description is too long (max 1500 characters)'],
+  errFloorExceeds: [
+    'Հարկը չի կարող գերազանցել հարկայնությունը',
+    'Этаж не может быть больше этажности дома',
+    'The floor can’t be higher than the building’s floor count'
+  ],
+  errStreetTooLong: [
+    'Հասցեն չափազանց երկար է (մինչև 120 նիշ)',
+    'Адрес слишком длинный (максимум 120 символов)',
+    'Address is too long (max 120 characters)'
+  ],
+  errDescTooLong: [
+    'Նկարագրությունը չափազանց երկար է (մինչև 1500 նիշ)',
+    'Описание слишком длинное (максимум 1500 символов)',
+    'Description is too long (max 1500 characters)'
+  ],
   errNoNegative: ['Բացասական արժեքներ չեն թույլատրվում', 'Отрицательные значения не допускаются', 'Negative values aren’t allowed'],
   errPhotos: ['Ավելացրեք առնվազն 5 լուսանկար', 'Добавьте минимум 5 фотографий', 'Add at least 5 photos'],
   errRepairCondition: ['Նշեք վերանորոգման որակը', 'Укажите качество ремонта', 'Choose the renovation condition'],
@@ -549,11 +585,25 @@ Object.assign(T, {
   outcomeSrcOther: ['Այլ', 'Другое', 'Other'],
   teamTitle: ['Թիմ', 'Команда', 'Team'],
   teamNote: [
-    'Գործակալների կառավարումը շուտով հասանելի կլինի։ Առայժմ հաստատումները կատարում է հաշվի սեփականատերը։',
-    'Управление агентами скоро появится. Пока подтверждения выполняет владелец аккаунта.',
-    'Agent management is coming soon. For now, confirmations are handled by the account owner.'
+    'Ագենտները ցուցակ են՝ առանց առանձին մուտքի կամ իրավունքների։ Նշանակեք պատասխանատու օբյեկտների ցանկում։',
+    'Агенты — это список контактов без отдельного входа и прав. Назначайте ответственного в списке объектов.',
+    'Agents are a contact roster without their own login or permissions. Assign one as responsible in the listings table.'
   ],
   teamEmpty: ['Թիմում դեռ ոչ ոք չկա', 'В команде пока никого нет', 'No one on the team yet'],
+  agentNameLbl: ['Անուն', 'Имя', 'Name'],
+  agentPhoneLbl: ['Հեռախոս', 'Телефон', 'Phone'],
+  agentNamePh: ['Անի Ակոպյան', 'Ани Акопян', 'Ani Hakobyan'],
+  addAgentBtn: ['Ավելացնել գործակալ', 'Добавить агента', 'Add agent'],
+  agentAddedToast: ['Գործակալն ավելացված է', 'Агент добавлен', 'Agent added'],
+  errAgentNameRequired: ['Նշեք անունը', 'Укажите имя', 'Enter a name'],
+  errAgentNotFound: ['Գործակալը չի գտնվել', 'Агент не найден', 'Agent not found'],
+  errAgencyRoleRequired: [
+    'Հասանելի է միայն գործակալության դերով հաշիվներին',
+    'Доступно только аккаунтам с ролью «Агентство»',
+    'Only available to agency accounts'
+  ],
+  responsibleAgentLbl: ['Պատասխանատու', 'Ответственный', 'Responsible'],
+  noAgentW: ['Չի նշանակվել', 'Не назначен', 'Unassigned'],
   agencyStatsTitle: ['Գործակալության ցուցանիշներ', 'Показатели агентства', 'Agency metrics'],
   hRow1: ['Ակտիվ / ընդամենը', 'Активных / всего', 'Active / total'],
   hRow2: ['Բողոքներ 90 օրում', 'Жалоб за 90 дней', 'Reports in 90 days'],
@@ -578,11 +628,23 @@ Object.assign(T, {
   saveW: ['Պահպանել', 'Сохранить', 'Save'],
   profileTitle: ['Պրոֆիլի խմբագրում', 'Редактирование профиля', 'Edit profile'],
   secPersonal: ['Անձնական տվյալներ', 'Личные данные', 'Personal details'],
-  secPersonalSub: ['Այսպես ձեզ կտեսնեն հայտարարություններում և չատում', 'Так вас увидят в объявлениях и в чате', 'How you appear in listings and chats'],
+  secPersonalSub: [
+    'Այսպես ձեզ կտեսնեն հայտարարություններում և չատում',
+    'Так вас увидят в объявлениях и в чате',
+    'How you appear in listings and chats'
+  ],
   secPhone: ['Հեռախոսահամար', 'Номер телефона', 'Phone number'],
-  secPhoneSub: ['Օգտագործվում է մուտքի համար, փոփոխությունը հաստատվում է SMS-ով', 'Используется для входа, смена подтверждается кодом из SMS', 'Used to sign in, changes are confirmed by SMS'],
+  secPhoneSub: [
+    'Օգտագործվում է մուտքի համար, փոփոխությունը հաստատվում է SMS-ով',
+    'Используется для входа, смена подтверждается кодом из SMS',
+    'Used to sign in, changes are confirmed by SMS'
+  ],
   secSecurity: ['Անվտանգություն', 'Безопасность', 'Security'],
-  secSecuritySub: ['Գաղտնաբառը փոխելուց հետո մյուս սարքերից դուրս կգաք', 'После смены пароля на других устройствах будет выполнен выход', 'Changing the password signs you out on other devices'],
+  secSecuritySub: [
+    'Գաղտնաբառը փոխելուց հետո մյուս սարքերից դուրս կգաք',
+    'После смены пароля на других устройствах будет выполнен выход',
+    'Changing the password signs you out on other devices'
+  ],
   firstNameLbl: ['Անուն', 'Имя', 'First name'],
   lastNameLbl: ['Ազգանուն', 'Фамилия', 'Last name'],
   nameSavedToast: ['Տվյալները պահպանված են', 'Данные сохранены', 'Details saved'],
@@ -785,12 +847,12 @@ Object.assign(T, {
   errBadJson: ['Սխալ ձևաչափի հարցում', 'Некорректный запрос', 'Malformed request'],
   errInvalidPhone: ['Անվավեր հեռախոսահամար', 'Некорректный номер телефона', 'Invalid phone number'],
   errDbError: ['Սերվերի սխալ, փորձեք կրկին', 'Ошибка сервера, попробуйте ещё раз', 'Server error, please try again'],
-  errSmsFailed: ['SMS-ը չուղարկվեց, փորձեք կրկին', 'Не удалось отправить SMS, попробуйте ещё раз', "Couldn't send the SMS, please try again"],
-  errTooManyRequests: [
-    'Սպասեք {n} վրկ և կրկին փորձեք',
-    'Подождите {n} сек. и попробуйте снова',
-    'Wait {n}s and try again'
+  errSmsFailed: [
+    'SMS-ը չուղարկվեց, փորձեք կրկին',
+    'Не удалось отправить SMS, попробуйте ещё раз',
+    "Couldn't send the SMS, please try again"
   ],
+  errTooManyRequests: ['Սպասեք {n} վրկ և կրկին փորձեք', 'Подождите {n} сек. и попробуйте снова', 'Wait {n}s and try again'],
   errCodeNotRequested: ['Նախ պահանջեք կոդ', 'Сначала запросите код', 'Request a code first'],
   errCodeExpired: ['Կոդի ժամկետը լրացել է, պահանջեք նորը', 'Код устарел, запросите новый', 'Code expired, request a new one'],
   errWrongCode: ['Սխալ կոդ', 'Неверный код', 'Wrong code'],
@@ -992,7 +1054,11 @@ Object.assign(T, {
   kindGuesthouse: ['Հյուրատուն', 'Гостевой дом', 'Guesthouse'],
   hotelW: ['Հյուրանոց', 'Отель', 'Hotel'],
   roleHotel: ['Հյուրանոց / հոսթել', 'Отель / хостел', 'Hotel / hostel'],
-  roleHotelN: ['Համարներ, օրացույց, ամրագրման հարցումներ', 'Номера, календарь, запросы на бронирование', 'Rooms, calendar, booking requests'],
+  roleHotelN: [
+    'Համարներ, օրացույց, ամրագրման հարցումներ',
+    'Номера, календарь, запросы на бронирование',
+    'Rooms, calendar, booking requests'
+  ],
   hotelNameLbl: ['Անվանումը', 'Название', 'Property name'],
   hotelNamePh: ['Օրինակ՝ Ararat Hostel', 'Например, Ararat Hostel', 'e.g. Ararat Hostel'],
   stayKindLbl: ['Օբյեկտի տեսակը', 'Тип объекта', 'Property type'],
@@ -1018,9 +1084,17 @@ Object.assign(T, {
   breakfastIncl: ['Նախաճաշը ներառված է', 'Завтрак включён', 'Breakfast included'],
   roomsLeft: ['Մնացել է՝ {n}', 'Осталось: {n}', '{n} left'],
   soldOut: ['Ձեր ամսաթվերին ազատ չէ', 'Нет мест на ваши даты', 'Not available for your dates'],
-  tooManyGuests: ['Համարը նախատեսված չէ այդքան հյուրի համար', 'Номер не рассчитан на столько гостей', 'This room doesn’t fit that many guests'],
+  tooManyGuests: [
+    'Համարը նախատեսված չէ այդքան հյուրի համար',
+    'Номер не рассчитан на столько гостей',
+    'This room doesn’t fit that many guests'
+  ],
   requestBookingBtn: ['Հարցնել ամրագրում', 'Запросить бронирование', 'Request booking'],
-  bookingNoPay: ['Հիմա վճարել պետք չէ. հյուրանոցը կհաստատի հարցումը չաթում', 'Платить сейчас не нужно — отель подтвердит запрос в чате', 'No payment now — the hotel confirms your request in chat'],
+  bookingNoPay: [
+    'Հիմա վճարել պետք չէ. հյուրանոցը կհաստատի հարցումը չաթում',
+    'Платить сейчас не нужно — отель подтвердит запрос в чате',
+    'No payment now — the hotel confirms your request in chat'
+  ],
   bookingSentToast: ['Հարցումն ուղարկված է հյուրանոցին', 'Запрос отправлен отелю', 'Request sent to the hotel'],
   noRoomsYet: ['Համարները դեռ ավելացված չեն', 'Номера пока не добавлены', 'No rooms added yet'],
   hotelRoomsLater: [
@@ -1034,7 +1108,11 @@ Object.assign(T, {
     'Attach your business registration or ownership document. Only moderators see it.'
   ],
   cabHotel: ['Իմ օբյեկտները', 'Мои объекты', 'My properties'],
-  cabHotelS: ['Համարներ, օրացույց և ամրագրման հարցումներ', 'Номера, календарь и запросы на бронирование', 'Rooms, calendar and booking requests'],
+  cabHotelS: [
+    'Համարներ, օրացույց և ամրագրման հարցումներ',
+    'Номера, календарь и запросы на бронирование',
+    'Rooms, calendar and booking requests'
+  ],
   addHotel: ['Ավելացնել օբյեկտ', 'Добавить объект', 'Add property'],
   allActual: ['Ամեն ինչ արդիական է', 'Всё актуально', 'All up to date'],
   tabRooms: ['Համարներ', 'Номера', 'Rooms'],
@@ -1055,8 +1133,16 @@ Object.assign(T, {
   deleteW: ['Ջնջել', 'Удалить', 'Delete'],
   roomSavedToast: ['Համարը պահպանված է', 'Номер сохранён', 'Room saved'],
   roomDeletedToast: ['Համարը ջնջված է', 'Номер удалён', 'Room deleted'],
-  roomsNeeded: ['Ավելացրեք համարներ, որպեսզի օբյեկտը հայտնվի որոնման մեջ', 'Добавьте номера, чтобы объект появился в поиске', 'Add rooms so the property shows up in search'],
-  calHint: ['Սեղմեք օրերին, հետո փակեք կամ բացեք ընտրվածները', 'Выделите дни и закройте или откройте их', 'Select days, then close or open them'],
+  roomsNeeded: [
+    'Ավելացրեք համարներ, որպեսզի օբյեկտը հայտնվի որոնման մեջ',
+    'Добавьте номера, чтобы объект появился в поиске',
+    'Add rooms so the property shows up in search'
+  ],
+  calHint: [
+    'Սեղմեք օրերին, հետո փակեք կամ բացեք ընտրվածները',
+    'Выделите дни и закройте или откройте их',
+    'Select days, then close or open them'
+  ],
   calClosed: ['Փակ', 'Закрыто', 'Closed'],
   calFree: ['{a}/{b}', '{a} из {b}', '{a} of {b}'],
   closeSelected: ['Փակել', 'Закрыть выбранные', 'Close selected'],
@@ -1083,7 +1169,11 @@ Object.assign(T, {
   kpiRequests: ['Նոր հարցումներ', 'Новые запросы', 'New requests'],
   kpiUpcoming: ['Հաստատված ամրագրումներ', 'Подтверждённые брони', 'Confirmed bookings'],
   noHotelsT: ['Օբյեկտներ դեռ չկան', 'Объектов пока нет', 'No properties yet'],
-  noHotelsS: ['Ավելացրեք հյուրանոց, հոսթել կամ հյուրատուն՝ մոտ 3 րոպե', 'Добавьте отель, хостел или гостевой дом — около 3 минут', 'Add a hotel, hostel or guesthouse — about 3 minutes'],
+  noHotelsS: [
+    'Ավելացրեք հյուրանոց, հոսթել կամ հյուրատուն՝ մոտ 3 րոպե',
+    'Добавьте отель, хостел или гостевой дом — около 3 минут',
+    'Add a hotel, hostel or guesthouse — about 3 minutes'
+  ],
   prevMonth: ['Նախորդ ամիսը', 'Предыдущий месяц', 'Previous month'],
   nextMonth: ['Հաջորդ ամիսը', 'Следующий месяц', 'Next month'],
   bookingConfirmedToast: ['Ամրագրումը հաստատված է', 'Бронирование подтверждено', 'Booking confirmed'],
@@ -1107,7 +1197,11 @@ Object.assign(T, {
   ],
   errRoleInvalid: ['Անթույլատրելի դեր', 'Недопустимая роль', 'Invalid role'],
   errRoleAlreadyHeld: ['Այս դերն արդեն ձեզ մոտ է', 'У вас уже есть эта роль', 'You already have this role'],
-  errRoleRequestPending: ['Դուք արդեն ունեք հայտ ուսումնասիրման փուլում', 'У вас уже есть заявка на рассмотрении', 'You already have a pending request'],
+  errRoleRequestPending: [
+    'Դուք արդեն ունեք հայտ ուսումնասիրման փուլում',
+    'У вас уже есть заявка на рассмотрении',
+    'You already have a pending request'
+  ],
   errRoleRequestResolved: ['Հայտն արդեն մշակված է', 'Заявка уже обработана', 'This request has already been resolved'],
   roleRequestSentToast: [
     'Հայտն ուղարկված է։ Կապվենք ձեզ հետ ստուգումից հետո։',

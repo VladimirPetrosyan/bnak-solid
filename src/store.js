@@ -120,6 +120,9 @@ const DEFAULTS = {
   tokenWallet: { data: null, loading: false, error: null },
   roleRequest: { data: null, loading: false, error: null },
   roleRequestBusy: false,
+  agencyAgents: { data: [], loading: false, error: null },
+  agencyAgentBusy: false,
+  responsibleAgentBusy: {},
   promoteBusy: {},
   confirmBusy: {},
   realtimeStatus: 'offline',
@@ -336,6 +339,9 @@ const API_ERR_KEYS = {
   'role request already pending': 'errRoleRequestPending',
   role_request_not_found: 'errNotFound',
   role_request_already_resolved: 'errRoleRequestResolved',
+  agency_role_required: 'errAgencyRoleRequired',
+  agent_name_required: 'errAgentNameRequired',
+  agent_not_found: 'errAgentNotFound',
   'not your listing': 'errNotYourListing',
   'listing not found': 'errListingNotFound',
   'bad multipart form': 'errBadForm',
@@ -423,7 +429,8 @@ function normalizeRemote(item) {
     stayKind: l.stayKind || '',
     checkIn: l.checkIn || '',
     checkOut: l.checkOut || '',
-    stay: item.stay || null
+    stay: item.stay || null,
+    responsibleAgent: item.responsibleAgent || null
   };
 }
 
@@ -449,7 +456,8 @@ function mergeRemoteItem(base, incoming) {
     complaints: typeof incoming.complaints === 'number' ? incoming.complaints : base.complaints,
     pendingRevision: incoming.pendingRevision !== undefined ? incoming.pendingRevision : base.pendingRevision,
     outcome: incoming.outcome !== undefined ? incoming.outcome : base.outcome,
-    stay: base.stay || incoming.stay
+    stay: base.stay || incoming.stay,
+    responsibleAgent: incoming.responsibleAgent !== undefined ? incoming.responsibleAgent : base.responsibleAgent
   };
 }
 
@@ -565,6 +573,50 @@ export async function requestRoleChange(role) {
     say(apiErrText(e));
   } finally {
     setState('roleRequestBusy', false);
+  }
+}
+
+export async function refreshAgencyAgents() {
+  if (!state.token) {
+    setState('agencyAgents', { data: [], loading: false, error: null });
+    return;
+  }
+  const requestToken = state.token;
+  setState('agencyAgents', { loading: true, error: null });
+  try {
+    const data = await api.get('/api/agency/agents');
+    if (state.token !== requestToken) return;
+    setState('agencyAgents', { data, loading: false, error: null });
+  } catch (e) {
+    if (state.token !== requestToken) return;
+    setState('agencyAgents', { loading: false, error: apiErrText(e) });
+  }
+}
+
+export async function addAgencyAgent(name, phone) {
+  if (state.agencyAgentBusy) return;
+  setState('agencyAgentBusy', true);
+  try {
+    await api.post('/api/agency/agents', { name, phone });
+    await refreshAgencyAgents();
+    say(txt('agentAddedToast'));
+  } catch (e) {
+    say(apiErrText(e));
+  } finally {
+    setState('agencyAgentBusy', false);
+  }
+}
+
+export async function setResponsibleAgent(listingId, agentId) {
+  if (state.responsibleAgentBusy[listingId]) return;
+  setState('responsibleAgentBusy', listingId, true);
+  try {
+    await api.put('/api/listings/' + listingId + '/responsible-agent', { agentId: agentId || '' });
+    await loadMyRemoteListings();
+  } catch (e) {
+    say(apiErrText(e));
+  } finally {
+    setState('responsibleAgentBusy', listingId, false);
   }
 }
 
@@ -760,7 +812,17 @@ export function visible() {
     const repairOn = Object.keys(state.repair).filter((k) => state.repair[k]);
     if (repairOn.length && !repairOn.includes(l.repairCondition)) return false;
     if (q) {
-      const hay = (addrOf(l) + ' ' + l.title + ' ' + l.st.join(' ') + ' ' + (DIST[l.d] || []).join(' ') + ' ' + sel.n.join(' ')).toLowerCase();
+      const hay = (
+        addrOf(l) +
+        ' ' +
+        l.title +
+        ' ' +
+        l.st.join(' ') +
+        ' ' +
+        (DIST[l.d] || []).join(' ') +
+        ' ' +
+        sel.n.join(' ')
+      ).toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -797,9 +859,13 @@ export function cardOf(l) {
     tags:
       l.deal === 'hotel'
         ? [roomsLabel(l), (DIST[l.d] || DIST.center)[li()], distanceToCenterOf(l)].filter(Boolean)
-        : [roomsLabel(l), l.area + ' m²', txt('floorN', { a: l.fl, b: l.fls }), (DIST[l.d] || DIST.center)[li()], distanceToCenterOf(l)].filter(
-            Boolean
-          ),
+        : [
+            roomsLabel(l),
+            l.area + ' m²',
+            txt('floorN', { a: l.fl, b: l.fls }),
+            (DIST[l.d] || DIST.center)[li()],
+            distanceToCenterOf(l)
+          ].filter(Boolean),
     chipBg: warm ? RED_T : st === 'archived' ? '#eeedea' : 'rgba(255,255,255,.94)',
     chipFg: warm ? RED_TX : st === 'fresh' ? TEAL_TX : MUTED,
     chipDot: warm ? RED : st === 'fresh' ? TEAL : '#c9c7c2',
@@ -884,7 +950,17 @@ export function requireAuth(after) {
   if (state.user) return true;
   const from = state.screen === 'auth' ? state.auth.from : state.screen;
   setState({
-    auth: { ...state.auth, step: 'entry', code: '', password: '', forgot: false, after: after || null, from, legalAccepted: false, busy: false },
+    auth: {
+      ...state.auth,
+      step: 'entry',
+      code: '',
+      password: '',
+      forgot: false,
+      after: after || null,
+      from,
+      legalAccepted: false,
+      busy: false
+    },
     screen: 'auth'
   });
   return false;
@@ -1242,10 +1318,7 @@ let pendingSupportSeq = 0;
 
 function addPendingSupportMessage(msg) {
   const id = 'pending-' + ++pendingSupportSeq;
-  setState('support', 'messages', (msgs) => [
-    ...msgs,
-    { sender: 'user', pending: true, createdAt: new Date().toISOString(), ...msg, id }
-  ]);
+  setState('support', 'messages', (msgs) => [...msgs, { sender: 'user', pending: true, createdAt: new Date().toISOString(), ...msg, id }]);
   return id;
 }
 
@@ -2339,7 +2412,10 @@ export async function loadBookings() {
 export async function requestBooking(listingId, roomTypeId) {
   if (!requireAuth({ type: 'go', to: 'listing' })) return;
   const { checkIn, checkOut, guests } = state.stay;
-  const resp = await attemptApi(() => api.post('/api/listings/' + listingId + '/bookings', { roomTypeId, checkIn, checkOut, guests }), 'bookingSentToast');
+  const resp = await attemptApi(
+    () => api.post('/api/listings/' + listingId + '/bookings', { roomTypeId, checkIn, checkOut, guests }),
+    'bookingSentToast'
+  );
   if (!resp) return;
   applyBookings([resp.booking]);
   const l = byId(listingId);

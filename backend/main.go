@@ -171,6 +171,7 @@ func main() {
 	mux.HandleFunc("POST /api/listings/{id}/promote", requireAuth(handlePromoteListing))
 	mux.HandleFunc("GET /api/listings/{id}/document", requireAuth(handleGetListingDocument))
 	mux.HandleFunc("GET /api/listings/{id}/revision", requireAuth(handleGetListingRevision))
+	mux.HandleFunc("PUT /api/listings/{id}/responsible-agent", requireAuth(handleSetResponsibleAgent))
 
 	// отели и хостелы: номера, календарь, брони — см. stays.go
 	mux.HandleFunc("GET /api/listings/{id}/rooms", handleListRooms)
@@ -215,6 +216,10 @@ func main() {
 	// заявки на повышение роли (agency/hotel) — применяются только через одобрение в админке
 	mux.HandleFunc("POST /api/role-requests", requireAuth(handleCreateRoleRequest))
 	mux.HandleFunc("GET /api/role-requests/me", requireAuth(handleMyRoleRequest))
+
+	// ростер агентов агентства (минимальная версия, см. agency_agents.go)
+	mux.HandleFunc("POST /api/agency/agents", requireAuth(handleCreateAgencyAgent))
+	mux.HandleFunc("GET /api/agency/agents", requireAuth(handleMyAgencyAgents))
 
 	// панель администратора — отдельный логин/пароль, отдельные сессии (см. admin_auth.go),
 	// обычные пользователи не имеют и не могут получить сюда доступ через свой аккаунт

@@ -167,6 +167,15 @@ type RoleRequest struct {
 	ResolvedBy *string    `json:"resolvedBy,omitempty"`
 }
 
+// AgencyAgent — контакт в ростере агентства (не отдельный логин, см. agency_agents.go).
+type AgencyAgent struct {
+	ID        string    `json:"id"`
+	AgencyID  string    `json:"agencyId"`
+	Name      string    `json:"name"`
+	Phone     string    `json:"phone"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 // Thread — переписка вокруг конкретного объявления между арендатором и владельцем.
 type Thread struct {
 	ID        string    `json:"id"`

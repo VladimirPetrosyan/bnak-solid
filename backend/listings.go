@@ -330,6 +330,11 @@ func handleMyListings(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
+	agents, err := responsibleAgents(ids)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
 
 	out := []map[string]any{}
 	for _, l := range list {
@@ -338,6 +343,9 @@ func handleMyListings(w http.ResponseWriter, r *http.Request) {
 		entry := map[string]any{
 			"listing": l, "owner": loadOwnerSummary(l.OwnerID),
 			"views": views[l.ID], "favorites": favorites[l.ID], "complaints": complaints[l.ID],
+		}
+		if a, ok := agents[l.ID]; ok {
+			entry["responsibleAgent"] = a
 		}
 		if l.Deal == "hotel" {
 			info, err := stayInfoFor(db, l.ID, stayQuery{})

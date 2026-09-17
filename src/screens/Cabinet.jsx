@@ -1,5 +1,5 @@
 import { Show, onMount } from 'solid-js';
-import { state, t, txt, myItems, confirmAll, requireAuth, go, refreshTokenWallet, refreshRoleRequest } from '../store';
+import { state, t, txt, myItems, confirmAll, requireAuth, go, refreshTokenWallet, refreshRoleRequest, refreshAgencyAgents } from '../store';
 import Icon from '../components/Icon';
 import { useCabinetRows } from './cabinet/rows';
 import TenantView from './cabinet/TenantView';
@@ -18,6 +18,7 @@ export default function Cabinet() {
     if (state.user) {
       refreshTokenWallet();
       refreshRoleRequest();
+      if (state.user.role === 'agency') refreshAgencyAgents();
     }
   });
 
@@ -29,7 +30,8 @@ export default function Cabinet() {
             {{ agency: user().name, owner: t().cabOwner, hotel: t().cabHotel }[user().role] || t().cabTenant}
           </h1>
           <div style="font-size:15px;color:#6f6d68">
-            {{ agency: txt('cabAgencyS', { n: items().length }), owner: t().cabOwnerS, hotel: t().cabHotelS }[user().role] || t().cabTenantS}
+            {{ agency: txt('cabAgencyS', { n: items().length }), owner: t().cabOwnerS, hotel: t().cabHotelS }[user().role] ||
+              t().cabTenantS}
           </div>
         </div>
 

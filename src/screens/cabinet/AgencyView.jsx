@@ -1,6 +1,20 @@
-import { For, Show } from 'solid-js';
-import { state, setState, t, txt, li, editListing, markRented, openListing, addrOf, roomsLabel, priceOf, perOf } from '../../store';
-import { RED_T, RED_TX, TEAL_T, TEAL_TX, INK, MUTED, label as labelStyle } from '../../theme';
+import { createSignal, For, Show } from 'solid-js';
+import {
+  state,
+  setState,
+  t,
+  txt,
+  editListing,
+  markRented,
+  openListing,
+  addrOf,
+  roomsLabel,
+  priceOf,
+  perOf,
+  addAgencyAgent,
+  setResponsibleAgent
+} from '../../store';
+import { RED_T, RED_TX, TEAL_T, TEAL_TX, INK, MUTED, input as inputStyle, label as labelStyle } from '../../theme';
 import Icon from '../../components/Icon';
 import Kpi from './Kpi';
 import VipAction from './VipAction';
@@ -12,8 +26,17 @@ export default function AgencyView() {
     rows().filter((r) => (state.cabTab === 'all' ? true : state.cabTab === 'due' ? (r.isDue() || r.isFlag()) && !r.done() : r.isArch()));
   const complaintsTotal = () => rows().reduce((sum, r) => sum + r.complaints(), 0);
   const archivedTotal = () => rows().filter((r) => r.isArch()).length;
-  // Управление агентами ещё не реализовано на бэкенде — команда всегда пуста, пока не появится реальный API.
-  const team = () => [];
+  const team = () => state.agencyAgents.data;
+
+  const [agentName, setAgentName] = createSignal('');
+  const [agentPhone, setAgentPhone] = createSignal('');
+  const submitAgent = () => {
+    const name = agentName().trim();
+    if (!name || state.agencyAgentBusy) return;
+    addAgencyAgent(name, agentPhone().trim());
+    setAgentName('');
+    setAgentPhone('');
+  };
 
   return (
     <>
@@ -82,14 +105,29 @@ export default function AgencyView() {
                 <div
                   style={`display:grid;grid-template-columns:2.4fr 1.5fr 1fr .8fr .9fr 1.9fr;border-bottom:1px solid #f4f3f0;align-items:center;background:${r.isDue() || r.isFlag() ? '#fffaf9' : '#fff'}`}
                 >
-                  <button type="button" onClick={() => openListing(r.listing.id)} style="padding:16px 20px;text-align:left">
-                    <div style="font-size:15px;font-weight:700">
-                      {roomsLabel(r.listing)}, {r.listing.area} m², {txt('floorN', { a: r.listing.fl, b: r.listing.fls })}
-                    </div>
-                    <div style="font-size:13px;color:#6f6d68;margin-top:4px">
-                      {addrOf(r.listing)} · {priceOf(r.listing)} {perOf(r.listing)}
-                    </div>
-                  </button>
+                  <div style="padding:16px 20px">
+                    <button type="button" onClick={() => openListing(r.listing.id)} style="text-align:left">
+                      <div style="font-size:15px;font-weight:700">
+                        {roomsLabel(r.listing)}, {r.listing.area} m², {txt('floorN', { a: r.listing.fl, b: r.listing.fls })}
+                      </div>
+                      <div style="font-size:13px;color:#6f6d68;margin-top:4px">
+                        {addrOf(r.listing)} · {priceOf(r.listing)} {perOf(r.listing)}
+                      </div>
+                    </button>
+                    <Show when={state.agencyAgents.data.length}>
+                      <select
+                        value={(r.listing.responsibleAgent || {}).id || ''}
+                        onChange={(e) => setResponsibleAgent(r.listing.id, e.currentTarget.value)}
+                        disabled={!!state.responsibleAgentBusy[r.listing.id]}
+                        style="margin-top:8px;font-size:12px;font-weight:600;color:#6f6d68;border:1px solid #e8e7e4;border-radius:8px;padding:4px 8px;background:#fbfbfa;max-width:100%"
+                      >
+                        <option value="">
+                          {t().responsibleAgentLbl}: {t().noAgentW}
+                        </option>
+                        <For each={state.agencyAgents.data}>{(a) => <option value={a.id}>{a.name}</option>}</For>
+                      </select>
+                    </Show>
+                  </div>
                   <div style="padding:16px 20px">
                     <span
                       style={`display:inline-flex;align-items:center;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;background:${r.chipBg()};color:${r.chipFg()}`}
@@ -164,26 +202,61 @@ export default function AgencyView() {
 
         <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
           <div style={labelStyle}>{t().teamTitle}</div>
-          <Show
-            when={team().length}
-            fallback={<div style="margin-top:16px;font-size:14px;color:#6f6d68">{t().teamEmpty}</div>}
-          >
+          <Show when={team().length} fallback={<div style="margin-top:16px;font-size:14px;color:#6f6d68">{t().teamEmpty}</div>}>
             <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
               <For each={team()}>
                 {(member) => (
                   <div style="display:flex;align-items:center;gap:12px">
                     <span style="width:32px;height:32px;border-radius:999px;background:#e8f4f2;color:#0a5f59;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">
-                      {member.ini}
+                      {agentInitials(member.name)}
                     </span>
-                    <span style="flex:1;font-size:14px;font-weight:600">{member.name[li()]}</span>
+                    <span style="flex:1;font-size:14px;font-weight:600">{member.name}</span>
+                    <Show when={member.phone}>
+                      <span style="font-size:13px;color:#6f6d68">{member.phone}</span>
+                    </Show>
                   </div>
                 )}
               </For>
             </div>
           </Show>
+          <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+            <input
+              value={agentName()}
+              onInput={(e) => setAgentName(e.currentTarget.value)}
+              placeholder={t().agentNamePh}
+              maxLength={80}
+              style={`${inputStyle};flex:1 1 140px`}
+            />
+            <input
+              value={agentPhone()}
+              onInput={(e) => setAgentPhone(e.currentTarget.value)}
+              placeholder={t().agentPhoneLbl}
+              maxLength={32}
+              style={`${inputStyle};flex:1 1 120px`}
+            />
+            <button
+              type="button"
+              class="bn-tap"
+              disabled={!agentName().trim() || state.agencyAgentBusy}
+              onClick={submitAgent}
+              style={`padding:12px 16px;border-radius:13px;font-size:13px;font-weight:700;background:#0e7c73;color:#fff;opacity:${!agentName().trim() || state.agencyAgentBusy ? 0.6 : 1}`}
+            >
+              {t().addAgentBtn}
+            </button>
+          </div>
           <div style="margin-top:16px;font-size:13px;color:#6f6d68;line-height:1.5">{t().teamNote}</div>
         </div>
       </div>
     </>
   );
+}
+
+function agentInitials(name) {
+  return (name || '')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
 }
