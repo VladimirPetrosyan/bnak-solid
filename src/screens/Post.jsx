@@ -314,7 +314,7 @@ export default function Post() {
               </div>
 
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:16px;margin-top:24px">
-                <div ref={addrWrapRef} style="position:relative">
+                <div ref={addrWrapRef} style="position:relative;align-self:start">
                   <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().streetLbl}</div>
                   <input
                     ref={(el) => (streetRef = el)}

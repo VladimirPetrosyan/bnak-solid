@@ -95,3 +95,46 @@ func TestAddressSuggestionsReturnsNilForBlankQuery(t *testing.T) {
 		t.Fatalf("got %+v, want nil for blank query", got)
 	}
 }
+
+func TestGenitiveFallbackAddsAOnArmenianSurnameStreets(t *testing.T) {
+	cases := map[string]string{
+		"Маргарян 45":   "Маргаряна 45",
+		"Абовян":        "Абовяна",
+		"улица Туманян": "улица Туманяна",
+	}
+	for in, want := range cases {
+		if got := genitiveFallback(in); got != want {
+			t.Fatalf("genitiveFallback(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestGenitiveFallbackNoOpWhenAlreadyDeclinedOrNotApplicable(t *testing.T) {
+	cases := []string{
+		"Маргаряна 45",      // уже родительный падеж
+		"проспект Комитаса", // не оканчивается на "н"
+		"45",                // только номер дома, кириллицы нет
+		"",
+	}
+	for _, in := range cases {
+		if got := genitiveFallback(in); got != "" {
+			t.Fatalf("genitiveFallback(%q) = %q, want \"\"", in, got)
+		}
+	}
+}
+
+func TestDedupeSuggestionsRemovesRepeatsAndRespectsLimit(t *testing.T) {
+	in := []AddressSuggestion{
+		{Street: "улица Маргаряна, 45", Full: "Армения, Ереван, улица Маргаряна, 45"},
+		{Street: "улица Маргаряна, 45", Full: "Армения, Ереван, улица Маргаряна, 45"}, // тот же дом от второго запроса
+		{Street: "улица Маро Маргарян", Full: "Армения, Ереван, улица Маро Маргарян"},
+		{Street: "дорога Норк-Мараш", Full: "Армения, Ереван, дорога Норк-Мараш"},
+	}
+	got := dedupeSuggestions(in, 2)
+	if len(got) != 2 {
+		t.Fatalf("got %d suggestions, want 2 (limit)", len(got))
+	}
+	if got[0].Full != in[0].Full || got[1].Full != in[2].Full {
+		t.Fatalf("got %+v, want first two unique entries in order", got)
+	}
+}

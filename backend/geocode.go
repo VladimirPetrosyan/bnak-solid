@@ -168,11 +168,70 @@ func addressSuggestions(city, district, query string, limit int) []AddressSugges
 	if street == "" {
 		return nil
 	}
-	out, ok := runGeocode(geocodeQueryAddress(city, district, street), limit)
-	if !ok {
-		return nil
+	suggestions := []AddressSuggestion{}
+	// см. genitiveFallback — большинство "именных" улиц Еревана требуют родительный падеж
+	// ("Маргаряна", не "Маргарян"), без него Yandex подбирает совсем другую улицу. Спрашиваем
+	// эту форму первой: если она находится, это почти наверняка то, что имел в виду
+	// пользователь, и такие совпадения должны быть в начале списка, а не после шумных.
+	if alt := genitiveFallback(street); alt != "" {
+		if out, ok := runGeocode(geocodeQueryAddress(city, district, alt), limit); ok {
+			suggestions = append(suggestions, parseAddressSuggestions(out)...)
+		}
 	}
-	return parseAddressSuggestions(out)
+	if out, ok := runGeocode(geocodeQueryAddress(city, district, street), limit); ok {
+		suggestions = append(suggestions, parseAddressSuggestions(out)...)
+	}
+	return dedupeSuggestions(suggestions, limit)
+}
+
+// genitiveFallback пытается подобрать русскую родительную форму для улиц, названных в
+// честь армянских фамилий на "-ян" (Абовян -> Абовяна, Маргарян -> Маргаряна и т.п.) — в
+// Ереване это подавляющее большинство "именных" улиц. Yandex Geocoder не считает
+// "Абовян" и "Абовяна" словоформами одной улицы, так что запрос без родительного падежа
+// либо ничего не находит, либо подбирает совсем другое место с похожим написанием.
+// Возвращает "" если преобразовывать нечего (последнее кириллическое слово не на "н").
+func genitiveFallback(query string) string {
+	words := strings.Fields(query)
+	for i := len(words) - 1; i >= 0; i-- {
+		w := []rune(words[i])
+		if len(w) == 0 || !containsCyrillic(w) {
+			continue
+		}
+		last := w[len(w)-1]
+		if last != 'н' && last != 'Н' {
+			return ""
+		}
+		words[i] = string(w) + "а"
+		return strings.Join(words, " ")
+	}
+	return ""
+}
+
+func containsCyrillic(w []rune) bool {
+	for _, r := range w {
+		if (r >= 'а' && r <= 'я') || (r >= 'А' && r <= 'Я') || r == 'ё' || r == 'Ё' {
+			return true
+		}
+	}
+	return false
+}
+
+// dedupeSuggestions убирает повторы (два запроса-варианта могут найти один и тот же дом)
+// и обрезает до limit.
+func dedupeSuggestions(in []AddressSuggestion, limit int) []AddressSuggestion {
+	seen := map[string]bool{}
+	out := []AddressSuggestion{}
+	for _, s := range in {
+		if seen[s.Full] {
+			continue
+		}
+		seen[s.Full] = true
+		out = append(out, s)
+		if len(out) >= limit {
+			break
+		}
+	}
+	return out
 }
 
 // parseAddressSuggestions — чистая часть addressSuggestions без сетевого вызова, отдельно
