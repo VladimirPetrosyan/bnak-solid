@@ -523,7 +523,7 @@ function SupportPanel(props) {
   const canSend = () => !!draft().trim() && !!activeId();
 
   return (
-    <section style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;align-items:stretch;flex:1;min-height:0">
+    <section style="display:flex;gap:16px;flex-wrap:nowrap;margin-top:16px;align-items:stretch;flex:1;min-height:0">
       <div style={`flex:1 1 300px;min-width:0;min-height:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;display:flex;flex-direction:column`}>
         <div style={`padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};font-size:13px;font-weight:600;flex:0 0 auto`}>
           Диалоги с поддержкой
