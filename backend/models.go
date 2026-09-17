@@ -155,6 +155,18 @@ type Report struct {
 	CreatedAt  time.Time `json:"createdAt"`
 }
 
+// RoleRequest — заявка пользователя на повышение роли (agency/hotel), требует
+// решения модератора/поддержки в админке, не применяется автоматически.
+type RoleRequest struct {
+	ID         string     `json:"id"`
+	UserID     string     `json:"userId"`
+	Role       string     `json:"role"`   // agency | hotel
+	Status     string     `json:"status"` // pending | approved | rejected
+	CreatedAt  time.Time  `json:"createdAt"`
+	ResolvedAt *time.Time `json:"resolvedAt,omitempty"`
+	ResolvedBy *string    `json:"resolvedBy,omitempty"`
+}
+
 // Thread — переписка вокруг конкретного объявления между арендатором и владельцем.
 type Thread struct {
 	ID        string    `json:"id"`

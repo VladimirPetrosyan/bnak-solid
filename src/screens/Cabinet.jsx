@@ -1,5 +1,5 @@
 import { Show, onMount } from 'solid-js';
-import { state, t, txt, myItems, confirmAll, requireAuth, go, refreshTokenWallet } from '../store';
+import { state, t, txt, myItems, confirmAll, requireAuth, go, refreshTokenWallet, refreshRoleRequest } from '../store';
 import Icon from '../components/Icon';
 import { useCabinetRows } from './cabinet/rows';
 import TenantView from './cabinet/TenantView';
@@ -7,6 +7,7 @@ import OwnerView from './cabinet/OwnerView';
 import AgencyView from './cabinet/AgencyView';
 import TokenWallet from './cabinet/TokenWallet';
 import HotelView from './cabinet/HotelView';
+import RoleUpgrade from './cabinet/RoleUpgrade';
 
 export default function Cabinet() {
   const user = () => state.user || { role: 'tenant', name: '', ini: '?' };
@@ -14,7 +15,10 @@ export default function Cabinet() {
   const { dueLeft } = useCabinetRows();
 
   onMount(() => {
-    if (state.user) refreshTokenWallet();
+    if (state.user) {
+      refreshTokenWallet();
+      refreshRoleRequest();
+    }
   });
 
   return (
@@ -75,6 +79,7 @@ export default function Cabinet() {
         <div style="margin-top:16px">
           <TokenWallet />
         </div>
+        <RoleUpgrade />
       </Show>
 
       <Show when={user().role === 'hotel'}>

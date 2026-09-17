@@ -424,6 +424,10 @@ func handleCreateListing(w http.ResponseWriter, r *http.Request) {
 	in = normalizeListingInput(in)
 	if in.Deal == "hotel" {
 		in.Price, in.Rooms, in.Area = 0, 0, 0
+		if u.Role != "hotel" {
+			writeErr(w, http.StatusForbidden, errHotelRoleRequired.Error())
+			return
+		}
 	}
 	if err := validateListingInput(in); err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())
@@ -448,13 +452,11 @@ func handleCreateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// автору выдаём роль владельца (или отеля), если раньше был просто арендатором — как в демо
+	// автору выдаём роль владельца, если раньше был просто арендатором — публикация
+	// обычного объявления не требует одобрения. Роль agency/hotel так не выдаётся —
+	// см. role_requests.go: только через заявку, одобренную поддержкой.
 	if u.Role == "tenant" {
-		role := "owner"
-		if in.Deal == "hotel" {
-			role = "hotel"
-		}
-		db.Exec(`UPDATE users SET role = ? WHERE id = ?`, role, u.ID)
+		db.Exec(`UPDATE users SET role = 'owner' WHERE id = ?`, u.ID)
 	}
 	row := db.QueryRow(`SELECT `+listingCols+` FROM listings WHERE id = ?`, id)
 	l, _ := scanListing(row)
@@ -514,9 +516,10 @@ var validRepairConditions = map[string]bool{
 }
 
 var (
-	errHotelInvalid = errors.New("hotel title and address are required")
-	errStayKind     = errors.New("invalid_stay_kind")
-	errStayTime     = errors.New("invalid_stay_time")
+	errHotelInvalid      = errors.New("hotel title and address are required")
+	errStayKind          = errors.New("invalid_stay_kind")
+	errStayTime          = errors.New("invalid_stay_time")
+	errHotelRoleRequired = errors.New("hotel_role_required")
 )
 
 var validStayKinds = map[string]bool{"hotel": true, "hostel": true, "guesthouse": true}

@@ -212,6 +212,10 @@ func main() {
 	mux.HandleFunc("POST /api/realtime/ticket", requireAuth(handleIssueRealtimeTicket))
 	mux.HandleFunc("GET /api/realtime", handleRealtimeUpgrade)
 
+	// заявки на повышение роли (agency/hotel) — применяются только через одобрение в админке
+	mux.HandleFunc("POST /api/role-requests", requireAuth(handleCreateRoleRequest))
+	mux.HandleFunc("GET /api/role-requests/me", requireAuth(handleMyRoleRequest))
+
 	// панель администратора — отдельный логин/пароль, отдельные сессии (см. admin_auth.go),
 	// обычные пользователи не имеют и не могут получить сюда доступ через свой аккаунт
 	mux.HandleFunc("POST /api/admin/login", handleAdminLogin)
@@ -224,6 +228,9 @@ func main() {
 	mux.HandleFunc("POST /api/admin/users/{id}/support-thread", requireAdminSession(handleAdminOpenUserThread))
 	mux.HandleFunc("GET /api/admin/reports", requireAdminSession(handleAdminReports))
 	mux.HandleFunc("POST /api/admin/reports/{id}/resolve", requireAdminSession(handleAdminResolveReport))
+	mux.HandleFunc("GET /api/admin/role-requests", requireAdminSession(handleAdminRoleRequests))
+	mux.HandleFunc("POST /api/admin/role-requests/{id}/approve", requireAdminSession(handleAdminResolveRoleRequest(true)))
+	mux.HandleFunc("POST /api/admin/role-requests/{id}/reject", requireAdminSession(handleAdminResolveRoleRequest(false)))
 	mux.HandleFunc("GET /api/admin/listings", requireAdminSession(handleAdminListings))
 	mux.HandleFunc("POST /api/admin/listings/{id}/status", requireAdminSession(handleAdminSetListingStatus))
 	mux.HandleFunc("POST /api/admin/listings/regeocode", requireAdminSession(handleAdminRegeocodeListings))

@@ -36,7 +36,10 @@ const DEALS = ['rent', 'daily', 'sale', 'newb', 'comm', 'hotel'];
 export default function Post() {
   const p = () => postState();
   const hotel = () => p().deal === 'hotel';
-  const deals = () => (p().editId ? DEALS.filter((key) => (key === 'hotel') === hotel()) : DEALS);
+  const deals = () =>
+    p().editId
+      ? DEALS.filter((key) => (key === 'hotel') === hotel())
+      : DEALS.filter((key) => key !== 'hotel' || (state.user && state.user.role === 'hotel'));
   const [cityOpen, setCityOpen] = createSignal(false);
   const [media, setMedia] = createSignal([]);
   const setMediaFiles = (next) => {
@@ -56,7 +59,15 @@ export default function Post() {
   const errStyle = (name) => (hasErr(name) ? `${inputStyle};border-color:${RED}` : inputStyle);
 
   let titleRef, streetRef, areaRef, flRef, flsRef, descRef, priceRef;
-  const fieldRef = { title: () => titleRef, street: () => streetRef, area: () => areaRef, fl: () => flRef, fls: () => flsRef, desc: () => descRef, price: () => priceRef };
+  const fieldRef = {
+    title: () => titleRef,
+    street: () => streetRef,
+    area: () => areaRef,
+    fl: () => flRef,
+    fls: () => flsRef,
+    desc: () => descRef,
+    price: () => priceRef
+  };
 
   const fieldMessage = (key) => txt(key);
 
@@ -67,7 +78,7 @@ export default function Post() {
       return true;
     }
     setErrFields(keys.map((k) => FIELD_BY_ERR[k]).filter(Boolean));
-    say(fieldMessage(keys[0]));
+    say([...new Set(keys.map(fieldMessage))].join(' · '));
     const ref = fieldRef[FIELD_BY_ERR[keys[0]]];
     ref && ref()?.focus();
     return false;
@@ -224,7 +235,9 @@ export default function Post() {
                               }}
                               style={`width:100%;display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;font-size:14px;font-weight:${on() ? 700 : 600};background:${on() ? TEAL_T : 'transparent'};color:${on() ? TEAL_TX : INK}`}
                             >
-                              <span style={`width:7px;height:7px;border-radius:999px;display:block;background:${on() ? TEAL : '#dedcd7'}`} />
+                              <span
+                                style={`width:7px;height:7px;border-radius:999px;display:block;background:${on() ? TEAL : '#dedcd7'}`}
+                              />
                               <span>{CITY[key].n[li()]}</span>
                             </button>
                           );
@@ -270,9 +283,7 @@ export default function Post() {
                 </div>
                 <div>
                   <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().postPhoneLbl}</div>
-                  <div
-                    style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:13px;border:1px solid #e8e7e4;background:#f2f1ee"
-                  >
+                  <div style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:13px;border:1px solid #e8e7e4;background:#f2f1ee">
                     <span style="font-size:15px;font-weight:700;color:#4a4844">{(state.user && state.user.phone) || ''}</span>
                   </div>
                   <div style="font-size:12px;color:#9a9793;margin-top:8px;line-height:1.45">{t().postPhoneNote}</div>
@@ -287,99 +298,109 @@ export default function Post() {
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:16px;margin-bottom:24px">
                   <div>
                     <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().checkInTimeLbl}</div>
-                    <input type="time" value={p().checkInTime} onInput={(e) => setPost({ checkInTime: e.currentTarget.value })} style={inputStyle} />
+                    <input
+                      type="time"
+                      value={p().checkInTime}
+                      onInput={(e) => setPost({ checkInTime: e.currentTarget.value })}
+                      style={inputStyle}
+                    />
                   </div>
                   <div>
                     <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().checkOutTimeLbl}</div>
-                    <input type="time" value={p().checkOutTime} onInput={(e) => setPost({ checkOutTime: e.currentTarget.value })} style={inputStyle} />
+                    <input
+                      type="time"
+                      value={p().checkOutTime}
+                      onInput={(e) => setPost({ checkOutTime: e.currentTarget.value })}
+                      style={inputStyle}
+                    />
                   </div>
                 </div>
               </Show>
               <Show when={!hotel()}>
-              <div style={labelStyle}>{t().roomsLbl}</div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                <For
-                  each={[
-                    ['0', t().studio],
-                    ['1', '1'],
-                    ['2', '2'],
-                    ['3', '3'],
-                    ['4', '4+']
-                  ]}
-                >
-                  {([key, text]) => (
-                    <button
-                      type="button"
-                      class="bn-tap"
-                      aria-pressed={String(p().rooms) === key}
-                      onClick={() => setPost({ rooms: +key })}
-                      style={pillStyle(String(p().rooms) === key)}
-                    >
-                      {text}
-                    </button>
-                  )}
-                </For>
-              </div>
+                <div style={labelStyle}>{t().roomsLbl}</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                  <For
+                    each={[
+                      ['0', t().studio],
+                      ['1', '1'],
+                      ['2', '2'],
+                      ['3', '3'],
+                      ['4', '4+']
+                    ]}
+                  >
+                    {([key, text]) => (
+                      <button
+                        type="button"
+                        class="bn-tap"
+                        aria-pressed={String(p().rooms) === key}
+                        onClick={() => setPost({ rooms: +key })}
+                        style={pillStyle(String(p().rooms) === key)}
+                      >
+                        {text}
+                      </button>
+                    )}
+                  </For>
+                </div>
 
-              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:16px;margin-top:24px">
-                <div>
-                  <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().areaLbl}</div>
-                  <input
-                    ref={(el) => (areaRef = el)}
-                    type="number"
-                    inputmode="numeric"
-                    min="1"
-                    max={MAX_AREA}
-                    step="1"
-                    value={p().area}
-                    onInput={(e) => {
-                      clearErr('area');
-                      setPost({ area: digitsOnly(e) });
-                    }}
-                    placeholder="62"
-                    aria-invalid={hasErr('area')}
-                    style={errStyle('area')}
-                  />
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:16px;margin-top:24px">
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().areaLbl}</div>
+                    <input
+                      ref={(el) => (areaRef = el)}
+                      type="number"
+                      inputmode="numeric"
+                      min="1"
+                      max={MAX_AREA}
+                      step="1"
+                      value={p().area}
+                      onInput={(e) => {
+                        clearErr('area');
+                        setPost({ area: digitsOnly(e) });
+                      }}
+                      placeholder="62"
+                      aria-invalid={hasErr('area')}
+                      style={errStyle('area')}
+                    />
+                  </div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().floorLbl}</div>
+                    <input
+                      ref={(el) => (flRef = el)}
+                      type="number"
+                      inputmode="numeric"
+                      min="1"
+                      max={MAX_FLOORS_TOTAL}
+                      step="1"
+                      value={p().fl}
+                      onInput={(e) => {
+                        clearErr('fl');
+                        setPost({ fl: digitsOnly(e) });
+                      }}
+                      placeholder="4"
+                      aria-invalid={hasErr('fl')}
+                      style={errStyle('fl')}
+                    />
+                  </div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().floorsLbl}</div>
+                    <input
+                      ref={(el) => (flsRef = el)}
+                      type="number"
+                      inputmode="numeric"
+                      min="1"
+                      max={MAX_FLOORS_TOTAL}
+                      step="1"
+                      value={p().fls}
+                      onInput={(e) => {
+                        clearErr('fls');
+                        setPost({ fls: digitsOnly(e) });
+                      }}
+                      placeholder="9"
+                      aria-invalid={hasErr('fls')}
+                      style={errStyle('fls')}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().floorLbl}</div>
-                  <input
-                    ref={(el) => (flRef = el)}
-                    type="number"
-                    inputmode="numeric"
-                    min="1"
-                    max={MAX_FLOORS_TOTAL}
-                    step="1"
-                    value={p().fl}
-                    onInput={(e) => {
-                      clearErr('fl');
-                      setPost({ fl: digitsOnly(e) });
-                    }}
-                    placeholder="4"
-                    aria-invalid={hasErr('fl')}
-                    style={errStyle('fl')}
-                  />
-                </div>
-                <div>
-                  <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().floorsLbl}</div>
-                  <input
-                    ref={(el) => (flsRef = el)}
-                    type="number"
-                    inputmode="numeric"
-                    min="1"
-                    max={MAX_FLOORS_TOTAL}
-                    step="1"
-                    value={p().fls}
-                    onInput={(e) => {
-                      clearErr('fls');
-                      setPost({ fls: digitsOnly(e) });
-                    }}
-                    placeholder="9"
-                    aria-invalid={hasErr('fls')}
-                    style={errStyle('fls')}
-                  />
-                </div>
-              </div>
               </Show>
 
               <div style={`${labelStyle};margin-top:${hotel() ? 0 : 24}px`}>{t().featLbl}</div>
@@ -400,36 +421,36 @@ export default function Post() {
               </div>
 
               <Show when={!hotel()}>
-              <div style={`${labelStyle};margin-top:24px;display:flex;align-items:center`}>
-                <span>{t().kReno}</span>
-                <InfoTooltip label={t().repairInfoLabel}>
-                  <div style="display:flex;flex-direction:column;gap:8px">
-                    <For each={REPAIR_CONDITIONS}>
-                      {(key) => (
-                        <div>
-                          <div style="font-weight:700">{REPAIR_LABELS[key][li()]}</div>
-                          <div style="opacity:.82;margin-top:2px">{REPAIR_HINTS[key][li()]}</div>
-                        </div>
-                      )}
-                    </For>
-                  </div>
-                </InfoTooltip>
-              </div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                <For each={REPAIR_CONDITIONS}>
-                  {(key) => (
-                    <button
-                      type="button"
-                      class="bn-tap"
-                      aria-pressed={p().repair === key}
-                      onClick={() => setPost({ repair: key })}
-                      style={pillStyle(p().repair === key)}
-                    >
-                      {REPAIR_LABELS[key][li()]}
-                    </button>
-                  )}
-                </For>
-              </div>
+                <div style={`${labelStyle};margin-top:24px;display:flex;align-items:center`}>
+                  <span>{t().kReno}</span>
+                  <InfoTooltip label={t().repairInfoLabel}>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <For each={REPAIR_CONDITIONS}>
+                        {(key) => (
+                          <div>
+                            <div style="font-weight:700">{REPAIR_LABELS[key][li()]}</div>
+                            <div style="opacity:.82;margin-top:2px">{REPAIR_HINTS[key][li()]}</div>
+                          </div>
+                        )}
+                      </For>
+                    </div>
+                  </InfoTooltip>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                  <For each={REPAIR_CONDITIONS}>
+                    {(key) => (
+                      <button
+                        type="button"
+                        class="bn-tap"
+                        aria-pressed={p().repair === key}
+                        onClick={() => setPost({ repair: key })}
+                        style={pillStyle(p().repair === key)}
+                      >
+                        {REPAIR_LABELS[key][li()]}
+                      </button>
+                    )}
+                  </For>
+                </div>
               </Show>
 
               <div style={`${labelStyle};margin-top:24px`}>{t().photosLbl}</div>
@@ -495,28 +516,28 @@ export default function Post() {
                 </div>
               </Show>
               <Show when={!hotel()}>
-              <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:16px">
-                  <div>
-                    <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().priceLbl}</div>
-                    <input
-                      ref={(el) => (priceRef = el)}
-                      value={p().price}
-                      onInput={(e) => {
-                        clearErr('price');
-                        setPost({ price: digitsOnly(e) });
-                      }}
-                      placeholder="380000"
-                      aria-invalid={hasErr('price')}
-                      style={`${errStyle('price')};font-weight:700`}
-                    />
-                  </div>
-                  <div>
-                    <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().depositLbl}</div>
-                    <input value={p().dep} onInput={(e) => setPost({ dep: e.currentTarget.value })} style={inputStyle} />
+                <div style="background:#fff;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(28,27,25,.05)">
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:16px">
+                    <div>
+                      <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().priceLbl}</div>
+                      <input
+                        ref={(el) => (priceRef = el)}
+                        value={p().price}
+                        onInput={(e) => {
+                          clearErr('price');
+                          setPost({ price: digitsOnly(e) });
+                        }}
+                        placeholder="380000"
+                        aria-invalid={hasErr('price')}
+                        style={`${errStyle('price')};font-weight:700`}
+                      />
+                    </div>
+                    <div>
+                      <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().depositLbl}</div>
+                      <input value={p().dep} onInput={(e) => setPost({ dep: e.currentTarget.value })} style={inputStyle} />
+                    </div>
                   </div>
                 </div>
-              </div>
               </Show>
             </div>
           </Show>
@@ -643,31 +664,35 @@ export default function Post() {
               </div>
             </div>
             <Show when={hotel()}>
-              <div style="margin-top:16px;font-size:20px;font-weight:800;letter-spacing:-.02em;overflow-wrap:anywhere">{p().title || '—'}</div>
+              <div style="margin-top:16px;font-size:20px;font-weight:800;letter-spacing:-.02em;overflow-wrap:anywhere">
+                {p().title || '—'}
+              </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">{stayKindLabel(p().stayKind)}</span>
+                <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">
+                  {stayKindLabel(p().stayKind)}
+                </span>
                 <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">
                   {p().checkInTime || '—'} / {p().checkOutTime || '—'}
                 </span>
               </div>
             </Show>
             <Show when={!hotel()}>
-            <div style="margin-top:16px;font-size:22px;font-weight:800;letter-spacing:-.02em">{price() ? nf(price()) + ' ֏' : '— ֏'}</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-              <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">
-                {p().rooms === 0 ? t().studio : txt('roomsN', { n: p().rooms })}
-              </span>
-              <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">
-                {p().area || '—'} m²
-              </span>
-              <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">
-                {p().fl || '—'}/{p().fls || '—'}
-              </span>
-            </div>
+              <div style="margin-top:16px;font-size:22px;font-weight:800;letter-spacing:-.02em">{price() ? nf(price()) + ' ֏' : '— ֏'}</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">
+                  {p().rooms === 0 ? t().studio : txt('roomsN', { n: p().rooms })}
+                </span>
+                <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">
+                  {p().area || '—'} m²
+                </span>
+                <span style="padding:4px 12px;border-radius:999px;background:#f2f1ee;font-size:12px;font-weight:600">
+                  {p().fl || '—'}/{p().fls || '—'}
+                </span>
+              </div>
             </Show>
             <div style="font-size:13px;color:#6f6d68;margin-top:12px">
               {(DIST[p().dist] || DIST.center)[li()]}
-              {p().street ? ', ' + p().street : ''}
+              {p().street.trim() ? ', ' + p().street.trim() : ''}
             </div>
             <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0efec;font-size:13px;color:#4a4844;line-height:1.5">
               {hotel() ? t().hotelRoomsLater : t().docNote}

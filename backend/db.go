@@ -156,6 +156,18 @@ CREATE TABLE IF NOT EXISTS reports (
 );
 CREATE INDEX IF NOT EXISTS idx_reports_listing ON reports(listing_id);
 
+CREATE TABLE IF NOT EXISTS role_requests (
+	id          TEXT PRIMARY KEY,
+	user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	role        TEXT NOT NULL,
+	status      TEXT NOT NULL DEFAULT 'pending',
+	created_at  DATETIME NOT NULL DEFAULT (datetime('now')),
+	resolved_at DATETIME,
+	resolved_by TEXT REFERENCES admins(id)
+);
+CREATE INDEX IF NOT EXISTS idx_role_requests_user ON role_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_role_requests_status ON role_requests(status);
+
 CREATE TABLE IF NOT EXISTS threads (
 	id         TEXT PRIMARY KEY,
 	listing_id TEXT NOT NULL REFERENCES listings(id) ON DELETE CASCADE,

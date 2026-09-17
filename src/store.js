@@ -118,6 +118,8 @@ const DEFAULTS = {
   remoteFavorites: [],
   remoteBusy: false,
   tokenWallet: { data: null, loading: false, error: null },
+  roleRequest: { data: null, loading: false, error: null },
+  roleRequestBusy: false,
   promoteBusy: {},
   confirmBusy: {},
   realtimeStatus: 'offline',
@@ -328,6 +330,12 @@ const API_ERR_KEYS = {
   invalid_floor: 'errFloor',
   invalid_floors_total: 'errFloorsTotal',
   floor_exceeds_floors_total: 'errFloorExceeds',
+  hotel_role_required: 'errHotelRoleRequired',
+  'invalid role': 'errRoleInvalid',
+  'already has this role': 'errRoleAlreadyHeld',
+  'role request already pending': 'errRoleRequestPending',
+  role_request_not_found: 'errNotFound',
+  role_request_already_resolved: 'errRoleRequestResolved',
   'not your listing': 'errNotYourListing',
   'listing not found': 'errListingNotFound',
   'bad multipart form': 'errBadForm',
@@ -526,6 +534,37 @@ export async function refreshTokenWallet() {
   } catch (e) {
     if (state.token !== requestToken) return;
     setState('tokenWallet', { loading: false, error: apiErrText(e) });
+  }
+}
+
+export async function refreshRoleRequest() {
+  if (!state.token) {
+    setState('roleRequest', { data: null, loading: false, error: null });
+    return;
+  }
+  const requestToken = state.token;
+  setState('roleRequest', { loading: true, error: null });
+  try {
+    const data = await api.get('/api/role-requests/me');
+    if (state.token !== requestToken) return;
+    setState('roleRequest', { data, loading: false, error: null });
+  } catch (e) {
+    if (state.token !== requestToken) return;
+    setState('roleRequest', { loading: false, error: apiErrText(e) });
+  }
+}
+
+export async function requestRoleChange(role) {
+  if (state.roleRequestBusy) return;
+  setState('roleRequestBusy', true);
+  try {
+    const data = await api.post('/api/role-requests', { role });
+    setState('roleRequest', { data, loading: false, error: null });
+    say(txt('roleRequestSentToast'));
+  } catch (e) {
+    say(apiErrText(e));
+  } finally {
+    setState('roleRequestBusy', false);
   }
 }
 
@@ -1476,6 +1515,7 @@ export function signOut() {
     remoteFavorites: [],
     bookings: [],
     tokenWallet: { data: null, loading: false, error: null },
+    roleRequest: { data: null, loading: false, error: null },
     realtimeStatus: 'offline',
     auth: { ...DEFAULTS.auth }
   });

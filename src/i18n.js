@@ -1099,7 +1099,44 @@ Object.assign(T, {
   errHotelRequired: ['Նշեք անվանումը և հասցեն', 'Укажите название и адрес', 'Enter the name and address'],
   errStayKind: ['Ընտրեք օբյեկտի տեսակը', 'Выберите тип объекта', 'Choose the property type'],
   errStayTime: ['Ստուգեք մուտքի և ելքի ժամը', 'Проверьте время заезда и выезда', 'Check the check-in and check-out times'],
-  errDealChange: ['Հայտարարության տեսակը հնարավոր չէ փոխել', 'Тип объявления нельзя изменить', 'The listing type can’t be changed']
+  errDealChange: ['Հայտարարության տեսակը հնարավոր չէ փոխել', 'Тип объявления нельзя изменить', 'The listing type can’t be changed'],
+  errHotelRoleRequired: [
+    'Հյուրանոցային օբյեկտ կարող են տեղադրել միայն «Հյուրանոց/հոստել» դերով հաշիվները։ Ուղարկեք հայտ դերի փոփոխության համար։',
+    'Публиковать объекты размещения могут только аккаунты с ролью «Отель/хостел». Подайте заявку на смену роли в кабинете.',
+    'Only accounts with the "Hotel/hostel" role can publish stays. Request a role change from your dashboard.'
+  ],
+  errRoleInvalid: ['Անթույլատրելի դեր', 'Недопустимая роль', 'Invalid role'],
+  errRoleAlreadyHeld: ['Այս դերն արդեն ձեզ մոտ է', 'У вас уже есть эта роль', 'You already have this role'],
+  errRoleRequestPending: ['Դուք արդեն ունեք հայտ ուսումնասիրման փուլում', 'У вас уже есть заявка на рассмотрении', 'You already have a pending request'],
+  errRoleRequestResolved: ['Հայտն արդեն մշակված է', 'Заявка уже обработана', 'This request has already been resolved'],
+  roleRequestSentToast: [
+    'Հայտն ուղարկված է։ Կապվենք ձեզ հետ ստուգումից հետո։',
+    'Заявка отправлена. Мы свяжемся с вами после проверки.',
+    'Request sent. We will follow up once it is reviewed.'
+  ],
+  roleUpgradeTitle: ['Ավելի շատ հնարավորություններ', 'Больше возможностей', 'More capabilities'],
+  roleUpgradeText: [
+    'Տեղադրել որպես գործակալություն կամ հյուրանոց/հոստել հնարավոր է աջակցության ստուգումից հետո։',
+    'Публиковать как агентство или отель/хостел можно после проверки поддержкой.',
+    'Posting as an agency or a hotel/hostel becomes available after support reviews your request.'
+  ],
+  roleRequestAgency: ['Հայտ․ Գործակալություն', 'Подать заявку: Агентство', 'Request: Agency'],
+  roleRequestHotel: ['Հայտ․ Հյուրանոց/հոստել', 'Подать заявку: Отель/хостел', 'Request: Hotel/hostel'],
+  roleRequestPendingAgency: [
+    '«Գործակալություն» դերի հայտը ուսումնասիրման փուլում է',
+    'Заявка на роль «Агентство» на рассмотрении',
+    '"Agency" role request is under review'
+  ],
+  roleRequestPendingHotel: [
+    '«Հյուրանոց/հոստել» դերի հայտը ուսումնասիրման փուլում է',
+    'Заявка на роль «Отель/хостел» на рассмотрении',
+    '"Hotel/hostel" role request is under review'
+  ],
+  roleRequestRejected: [
+    'Հայտը մերժվել է։ Հարցերի դեպքում գրեք աջակցությանը։',
+    'Заявка отклонена. Если это ошибка, напишите в поддержку.',
+    'Request rejected. Contact support if this looks wrong.'
+  ]
 });
 
 export const LANGS = ['ՀՅ', 'RU', 'EN'];

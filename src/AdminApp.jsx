@@ -50,7 +50,14 @@ function supportMsgText(m) {
 }
 
 const ROLE_LABEL = { tenant: 'Ищет жильё', owner: 'Сдаёт своё жильё', agency: 'Агентство', hotel: 'Отель / хостел' };
-const DEAL_LABEL = { rent: 'Аренда', daily: 'Посуточно', sale: 'Продажа', newb: 'Новостройки', comm: 'Коммерческая', hotel: 'Отель / хостел' };
+const DEAL_LABEL = {
+  rent: 'Аренда',
+  daily: 'Посуточно',
+  sale: 'Продажа',
+  newb: 'Новостройки',
+  comm: 'Коммерческая',
+  hotel: 'Отель / хостел'
+};
 
 const LISTING_STATUS = {
   pending: { label: 'Первичная модерация', bg: WARN_SOFT, fg: WARN },
@@ -220,7 +227,9 @@ function Login(props) {
 
 function Badge(props) {
   return (
-    <span style={`display:inline-block;padding:2px 7px;border-radius:2px;font-size:11px;background:${props.bg};color:${props.fg};white-space:nowrap`}>
+    <span
+      style={`display:inline-block;padding:2px 7px;border-radius:2px;font-size:11px;background:${props.bg};color:${props.fg};white-space:nowrap`}
+    >
       {props.children}
     </span>
   );
@@ -253,12 +262,18 @@ function ActBtn(props) {
 function KpiStrip(props) {
   const pct = () => 100 / props.items.length;
   return (
-    <section style={`display:flex;flex-wrap:wrap;gap:1px;border:1px solid ${BORDER};border-radius:4px;background:${DIVIDER};margin-top:22px;overflow:hidden`}>
+    <section
+      style={`display:flex;flex-wrap:wrap;gap:1px;border:1px solid ${BORDER};border-radius:4px;background:${DIVIDER};margin-top:22px;overflow:hidden`}
+    >
       <For each={props.items}>
         {(k) => (
-          <div style={`flex:1 1 calc(${pct()}% - 1px);min-width:140px;background:#fff;padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px`}>
+          <div
+            style={`flex:1 1 calc(${pct()}% - 1px);min-width:140px;background:#fff;padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px`}
+          >
             <div style={`font-size:12px;font-weight:500;color:${TEXT_MUTED}`}>{k.label}</div>
-            <div style={`font-family:${MONO};font-size:26px;font-weight:500;letter-spacing:-.02em;line-height:1;color:${k.danger ? DANGER : INK}`}>
+            <div
+              style={`font-family:${MONO};font-size:26px;font-weight:500;letter-spacing:-.02em;line-height:1;color:${k.danger ? DANGER : INK}`}
+            >
               {k.value}
             </div>
           </div>
@@ -278,7 +293,9 @@ function PageHeader(props) {
         <h1 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.02em">{meta().title}</h1>
         <div style={`font-size:13px;color:${TEXT_MUTED}`}>{meta().sub}</div>
       </div>
-      <div style={`display:flex;align-items:center;gap:8px;font-family:${MONO};font-size:11px;color:${TEXT_MUTED};text-transform:uppercase;letter-spacing:.06em`}>
+      <div
+        style={`display:flex;align-items:center;gap:8px;font-family:${MONO};font-size:11px;color:${TEXT_MUTED};text-transform:uppercase;letter-spacing:.06em`}
+      >
         <span style={`width:6px;height:6px;border-radius:50%;background:${ACCENT}`} />
         <span>данные актуальны</span>
       </div>
@@ -300,7 +317,9 @@ function ListingDetailPanel(props) {
         <For each={rows()}>
           {([label, value]) => (
             <div style="display:flex;flex-direction:column;gap:3px">
-              <span style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>{label}</span>
+              <span style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>
+                {label}
+              </span>
               <span style="font-size:13px;word-break:break-word">{value}</span>
             </div>
           )}
@@ -308,7 +327,9 @@ function ListingDetailPanel(props) {
       </div>
 
       <div>
-        <div style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT};margin-bottom:6px`}>
+        <div
+          style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT};margin-bottom:6px`}
+        >
           Описание
         </div>
         <div style="font-size:13px;line-height:1.55;white-space:pre-line;max-width:72ch">{l().desc || 'Описание не заполнено'}</div>
@@ -316,13 +337,20 @@ function ListingDetailPanel(props) {
 
       <Show when={(l().photos || []).length}>
         <div>
-          <div style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT};margin-bottom:6px`}>
+          <div
+            style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT};margin-bottom:6px`}
+          >
             Фотографии ({l().photos.length})
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <For each={l().photos}>
               {(url) => (
-                <a href={url} target="_blank" rel="noreferrer" style="display:block;width:96px;height:76px;border-radius:3px;overflow:hidden;border:1px solid #e3e3e0">
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style="display:block;width:96px;height:76px;border-radius:3px;overflow:hidden;border:1px solid #e3e3e0"
+                >
                   <img src={url} alt="" style="width:100%;height:100%;object-fit:cover;display:block" />
                 </a>
               )}
@@ -333,7 +361,9 @@ function ListingDetailPanel(props) {
 
       <Show when={(l().videos || []).length}>
         <div>
-          <div style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT};margin-bottom:6px`}>
+          <div
+            style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT};margin-bottom:6px`}
+          >
             Видео ({l().videos.length})
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -400,7 +430,13 @@ function ListingsTable(props) {
                   <div style={`font-size:11.5px;color:${l.cadastreCode ? TEXT_MUTED : DANGER}`}>{l.cadastreCode ? 'есть' : 'нет'}</div>
                   <div style={`overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${TEXT}`}>{item.owner?.name || '—'}</div>
                   <div style="display:flex;gap:6px;flex-wrap:wrap">
-                    <For each={acts}>{(a) => <ActBtn variant={a.variant} onClick={a.onClick}>{a.label}</ActBtn>}</For>
+                    <For each={acts}>
+                      {(a) => (
+                        <ActBtn variant={a.variant} onClick={a.onClick}>
+                          {a.label}
+                        </ActBtn>
+                      )}
+                    </For>
                   </div>
                 </div>
                 <Show when={open()}>
@@ -524,8 +560,12 @@ function SupportPanel(props) {
 
   return (
     <section style="display:flex;gap:16px;flex-wrap:nowrap;margin-top:16px;align-items:stretch;flex:1;min-height:0">
-      <div style={`flex:1 1 300px;min-width:0;min-height:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;display:flex;flex-direction:column`}>
-        <div style={`padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};font-size:13px;font-weight:600;flex:0 0 auto`}>
+      <div
+        style={`flex:1 1 300px;min-width:0;min-height:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;display:flex;flex-direction:column`}
+      >
+        <div
+          style={`padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};font-size:13px;font-weight:600;flex:0 0 auto`}
+        >
           Диалоги с поддержкой
         </div>
         <div style="flex:1;min-height:0;overflow-y:auto">
@@ -565,13 +605,17 @@ function SupportPanel(props) {
         </div>
       </div>
 
-      <div style={`flex:1 1 420px;min-width:0;min-height:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;display:flex;flex-direction:column`}>
+      <div
+        style={`flex:1 1 420px;min-width:0;min-height:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;display:flex;flex-direction:column`}
+      >
         <Show
           when={activeId()}
           fallback={<div style={`margin:auto;padding:26px 18px;font-size:12.5px;color:${TEXT_FAINT}`}>Выберите диалог слева.</div>}
         >
           <div style="display:flex;flex-direction:column;flex:1;min-height:0">
-            <div style={`padding:13px 16px;border-bottom:1px solid ${BORDER};display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;flex:0 0 auto`}>
+            <div
+              style={`padding:13px 16px;border-bottom:1px solid ${BORDER};display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;flex:0 0 auto`}
+            >
               <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
                 <div style="font-size:14px;font-weight:600">{active() ? active().user.name || active().user.phone : ''}</div>
                 <div style={`font-family:${MONO};font-size:11px;color:${TEXT_FAINT}`}>{active() ? active().user.phone : ''}</div>
@@ -595,11 +639,15 @@ function SupportPanel(props) {
                   {(m) => {
                     const mine = m.sender === 'admin';
                     return (
-                      <div style={`max-width:76%;align-self:${mine ? 'flex-end' : 'flex-start'};background:${mine ? ACCENT : '#fff'};color:${mine ? '#fff' : INK};border:1px solid ${mine ? ACCENT : BORDER};border-radius:6px;padding:9px 12px;display:flex;flex-direction:column;gap:4px`}>
+                      <div
+                        style={`max-width:76%;align-self:${mine ? 'flex-end' : 'flex-start'};background:${mine ? ACCENT : '#fff'};color:${mine ? '#fff' : INK};border:1px solid ${mine ? ACCENT : BORDER};border-radius:6px;padding:9px 12px;display:flex;flex-direction:column;gap:4px`}
+                      >
                         <Show
                           when={m.kind && m.kind !== 'text' && m.url}
                           fallback={
-                            <span style="font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word">{supportMsgText(m)}</span>
+                            <span style="font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word">
+                              {supportMsgText(m)}
+                            </span>
                           }
                         >
                           <a
@@ -611,7 +659,9 @@ function SupportPanel(props) {
                             {supportMsgText(m)}
                           </a>
                         </Show>
-                        <span style={`font-family:${MONO};font-size:10px;color:${mine ? 'rgba(255,255,255,.7)' : TEXT_GHOST};align-self:flex-end`}>
+                        <span
+                          style={`font-family:${MONO};font-size:10px;color:${mine ? 'rgba(255,255,255,.7)' : TEXT_GHOST};align-self:flex-end`}
+                        >
                           {timeOf(m.createdAt)}
                         </span>
                       </div>
@@ -631,7 +681,10 @@ function SupportPanel(props) {
                 </button>
               </Show>
             </div>
-            <form onSubmit={send} style={`border-top:1px solid ${BORDER};padding:12px 16px;display:flex;gap:10px;align-items:flex-end;flex:0 0 auto`}>
+            <form
+              onSubmit={send}
+              style={`border-top:1px solid ${BORDER};padding:12px 16px;display:flex;gap:10px;align-items:flex-end;flex:0 0 auto`}
+            >
               <textarea
                 value={draft()}
                 onInput={(e) => setDraft(e.currentTarget.value)}
@@ -699,11 +752,19 @@ function UserDetail(props) {
   const u = () => detail()?.user;
   const draft = () => props.draft;
   const dirty = () => !!draft();
-  const field = (key) => draft() ? draft()[key] : u()[key];
-  const setField = (key, val) => props.onDraft({ ...(draft() || { name: u().name, phone: u().phone, role: u().role, status: u().status }), [key]: val });
+  const field = (key) => (draft() ? draft()[key] : u()[key]);
+  const setField = (key, val) =>
+    props.onDraft({ ...(draft() || { name: u().name, phone: u().phone, role: u().role, status: u().status }), [key]: val });
 
   return (
-    <Show when={u()} fallback={<div style={`padding:26px 18px;font-size:12.5px;color:${TEXT_FAINT};line-height:1.5`}>Выберите пользователя слева, чтобы отредактировать профиль, написать в чат или удалить аккаунт.</div>}>
+    <Show
+      when={u()}
+      fallback={
+        <div style={`padding:26px 18px;font-size:12.5px;color:${TEXT_FAINT};line-height:1.5`}>
+          Выберите пользователя слева, чтобы отредактировать профиль, написать в чат или удалить аккаунт.
+        </div>
+      }
+    >
       <div style="display:flex;flex-direction:column">
         <div style={`padding:16px;border-bottom:1px solid ${BORDER};display:flex;flex-direction:column;gap:3px`}>
           <div style="display:flex;align-items:center;gap:8px">
@@ -725,7 +786,9 @@ function UserDetail(props) {
             />
           </label>
           <label style="display:flex;flex-direction:column;gap:5px">
-            <span style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>Телефон</span>
+            <span style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>
+              Телефон
+            </span>
             <input
               value={field('phone')}
               onInput={(e) => setField('phone', e.currentTarget.value)}
@@ -755,7 +818,9 @@ function UserDetail(props) {
           </div>
 
           <div style="display:flex;flex-direction:column;gap:6px">
-            <span style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>Статус</span>
+            <span style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>
+              Статус
+            </span>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
               {[
                 ['active', 'Активен'],
@@ -778,7 +843,9 @@ function UserDetail(props) {
           </div>
         </div>
 
-        <div style={`padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-bottom:1px solid ${BORDER}`}>
+        <div
+          style={`padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-bottom:1px solid ${BORDER}`}
+        >
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button
               type="button"
@@ -826,7 +893,9 @@ function UserDetail(props) {
                 const st = LISTING_STATUS[l.status] || LISTING_STATUS.archived;
                 const off = l.status === 'archived' || l.status === 'rented';
                 return (
-                  <div style={`display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border-top:1px solid ${BORDER_SOFT};padding:8px 0`}>
+                  <div
+                    style={`display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border-top:1px solid ${BORDER_SOFT};padding:8px 0`}
+                  >
                     <div style="display:flex;flex-direction:column;gap:3px;min-width:0">
                       <span style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
                         {roomsLabel(l)}, {l.area} m² · {DEAL_LABEL[l.deal]} · {cityLabel(l.city)}
@@ -880,7 +949,7 @@ function Panel(props) {
   createEffect(() => {
     document.title = SECTION_META[section()].title + ' — HayHome Admin';
   });
-  const [data, setData] = createStore({ users: [], reports: [], listings: [] });
+  const [data, setData] = createStore({ users: [], reports: [], listings: [], roleRequests: [] });
   const [sel, setSel] = createStore({ status: null, deal: null, city: null, role: null, resolution: null });
   const [revisionsCount, setRevisionsCount] = sig(0);
   const [supportUnread, setSupportUnread] = sig(0);
@@ -927,6 +996,13 @@ function Panel(props) {
       if (e.status === 401) props.onUnauthorized();
     }
   };
+  const loadRoleRequests = async () => {
+    try {
+      setData('roleRequests', await api.get('/api/admin/role-requests?status=pending'));
+    } catch (e) {
+      if (e.status === 401) props.onUnauthorized();
+    }
+  };
   const loadRevisionsCount = async () => {
     try {
       const list = await api.get('/api/admin/revisions?status=pending');
@@ -945,6 +1021,7 @@ function Panel(props) {
     loadUsers();
     loadReports();
     loadListings();
+    loadRoleRequests();
     loadRevisionsCount();
     loadOnline();
   };
@@ -980,6 +1057,16 @@ function Panel(props) {
       flash(action === 'uphold' ? 'Жалоба подтверждена' : 'Жалоба отклонена');
     } catch (e) {
       if (e.status === 401) props.onUnauthorized();
+    }
+  };
+  const resolveRoleRequest = async (id, approve) => {
+    try {
+      await api.post('/api/admin/role-requests/' + id + '/' + (approve ? 'approve' : 'reject'));
+      await Promise.all([loadRoleRequests(), loadUsers()]);
+      if (selectedUserId()) selectUser(selectedUserId());
+      flash(approve ? 'Роль изменена' : 'Заявка отклонена');
+    } catch (e) {
+      flash(apiErrText(e));
     }
   };
   const setListingStatus = async (id, status) => {
@@ -1076,7 +1163,9 @@ function Panel(props) {
   };
   const cityItems = () => {
     const m = countBy(listingsArr(), (l) => l.city);
-    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([k, v], i) => ({ key: k, label: cityLabel(k), value: v, color: rampColor(i) }));
+    return [...m.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, v], i) => ({ key: k, label: cityLabel(k), value: v, color: rampColor(i) }));
   };
   const roleItems = () => {
     const m = countBy(data.users, (u) => u.role);
@@ -1137,9 +1226,27 @@ function Panel(props) {
         <Show when={section() === 'overview'}>
           <KpiStrip items={[{ label: 'Онлайн сейчас', value: String(onlineCount()) }, ...kpiBase()]} />
           <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;margin-top:16px">
-            <Donut title="Объявления · статус" items={statusItems()} unit={UNIT.listing} selected={() => sel.status} onToggle={(k) => setSel('status', k)} />
-            <Donut title="Объявления · тип сделки" items={dealItems()} unit={UNIT.listing} selected={() => sel.deal} onToggle={(k) => setSel('deal', k)} />
-            <Donut title="Объявления · город" items={cityItems()} unit={UNIT.listing} selected={() => sel.city} onToggle={(k) => setSel('city', k)} />
+            <Donut
+              title="Объявления · статус"
+              items={statusItems()}
+              unit={UNIT.listing}
+              selected={() => sel.status}
+              onToggle={(k) => setSel('status', k)}
+            />
+            <Donut
+              title="Объявления · тип сделки"
+              items={dealItems()}
+              unit={UNIT.listing}
+              selected={() => sel.deal}
+              onToggle={(k) => setSel('deal', k)}
+            />
+            <Donut
+              title="Объявления · город"
+              items={cityItems()}
+              unit={UNIT.listing}
+              selected={() => sel.city}
+              onToggle={(k) => setSel('city', k)}
+            />
             <Donut
               title="Жалобы · решение"
               items={resolutionItems()}
@@ -1153,9 +1260,27 @@ function Panel(props) {
         <Show when={section() === 'listings'}>
           <KpiStrip items={kpiBase()} />
           <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;margin-top:16px">
-            <Donut title="Объявления · статус" items={statusItems()} unit={UNIT.listing} selected={() => sel.status} onToggle={(k) => setSel('status', k)} />
-            <Donut title="Объявления · тип сделки" items={dealItems()} unit={UNIT.listing} selected={() => sel.deal} onToggle={(k) => setSel('deal', k)} />
-            <Donut title="Объявления · город" items={cityItems()} unit={UNIT.listing} selected={() => sel.city} onToggle={(k) => setSel('city', k)} />
+            <Donut
+              title="Объявления · статус"
+              items={statusItems()}
+              unit={UNIT.listing}
+              selected={() => sel.status}
+              onToggle={(k) => setSel('status', k)}
+            />
+            <Donut
+              title="Объявления · тип сделки"
+              items={dealItems()}
+              unit={UNIT.listing}
+              selected={() => sel.deal}
+              onToggle={(k) => setSel('deal', k)}
+            />
+            <Donut
+              title="Объявления · город"
+              items={cityItems()}
+              unit={UNIT.listing}
+              selected={() => sel.city}
+              onToggle={(k) => setSel('city', k)}
+            />
           </section>
           <ListingsTable
             rows={data.listings}
@@ -1181,7 +1306,9 @@ function Panel(props) {
             return (
               <section style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;align-items:flex-start">
                 <div style={`flex:1 1 440px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;overflow:hidden`}>
-                  <div style={`display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT}`}>
+                  <div
+                    style={`display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT}`}
+                  >
                     <div style="font-size:13px;font-weight:600">Очередь жалоб</div>
                     <div style="display:flex;gap:4px;flex-wrap:wrap">
                       <For each={filters}>
@@ -1230,10 +1357,16 @@ function Panel(props) {
                   </For>
                 </div>
 
-                <aside style={`flex:1 1 336px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;position:sticky;top:20px`}>
+                <aside
+                  style={`flex:1 1 336px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;position:sticky;top:20px`}
+                >
                   <Show
                     when={selected()}
-                    fallback={<div style={`padding:26px 18px;font-size:12.5px;color:${TEXT_FAINT};line-height:1.5`}>Выберите жалобу слева, чтобы увидеть объявление, автора и принять решение.</div>}
+                    fallback={
+                      <div style={`padding:26px 18px;font-size:12.5px;color:${TEXT_FAINT};line-height:1.5`}>
+                        Выберите жалобу слева, чтобы увидеть объявление, автора и принять решение.
+                      </div>
+                    }
                   >
                     <div style="display:flex;flex-direction:column">
                       <div style={`padding:16px;border-bottom:1px solid ${BORDER};display:flex;flex-direction:column;gap:6px`}>
@@ -1246,7 +1379,9 @@ function Panel(props) {
                         {[
                           [
                             'Объявление',
-                            selected().listing ? `${shortId(selected().listing.id)} · ${DEAL_LABEL[selected().listing.deal]} · ${cityLabel(selected().listing.city)}` : 'Удалено'
+                            selected().listing
+                              ? `${shortId(selected().listing.id)} · ${DEAL_LABEL[selected().listing.deal]} · ${cityLabel(selected().listing.city)}`
+                              : 'Удалено'
                           ],
                           ['Владелец', selected().owner?.name || '—'],
                           ['Пожаловался', selected().reporter?.name || '—'],
@@ -1260,7 +1395,9 @@ function Panel(props) {
                         ))}
                       </div>
                       <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
-                        <div style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>Решение</div>
+                        <div style={`font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:${TEXT_FAINT}`}>
+                          Решение
+                        </div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap">
                           <Show when={selected().report.status === 'pending'}>
                             <ActBtn big variant="primary" onClick={() => resolveReport(selected().report.id, 'uphold')}>
@@ -1310,58 +1447,91 @@ function Panel(props) {
             };
             const rows = () => data.users.filter((u) => matchesFilter(u) && (!q() || (u.name + u.phone).toLowerCase().includes(q())));
             return (
-              <section style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;align-items:flex-start">
-                <div style={`flex:1 1 400px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;overflow:hidden`}>
-                  <div style={`padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};display:flex;flex-direction:column;gap:10px`}>
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-                      <div style="font-size:13px;font-weight:600">Пользователи</div>
-                      <input
-                        value={userQuery()}
-                        onInput={(e) => setUserQuery(e.currentTarget.value)}
-                        placeholder="Поиск по имени, телефону"
-                        aria-label="Поиск пользователей"
-                        style={`border:1px solid ${BORDER};border-radius:3px;padding:5px 9px;font-size:12px;width:160px;background:#fff;color:${INK}`}
-                      />
+              <>
+                <Show when={data.roleRequests.length > 0}>
+                  <section
+                    style={`margin-top:16px;border:1px solid ${WARN_BORDER};border-radius:4px;background:${WARN_SOFT};overflow:hidden`}
+                  >
+                    <div style={`padding:10px 16px;font-size:12.5px;font-weight:600;color:${WARN};border-bottom:1px solid ${WARN_BORDER}`}>
+                      Заявки на смену роли · {data.roleRequests.length}
                     </div>
-                    <div style="display:flex;gap:4px;flex-wrap:wrap">
-                      <For each={userFilters()}>
-                        {([k, label, count]) => {
-                          const on = () => userFilter() === k;
-                          return (
-                            <button
-                              type="button"
-                              class="bn-tap"
-                              onClick={() => setUserFilter(k)}
-                              style={`border:1px solid ${on() ? ACCENT : BORDER};background:${on() ? ACCENT : '#fff'};color:${on() ? '#fff' : TEXT};cursor:pointer;font-size:11.5px;padding:3px 9px;border-radius:3px;white-space:nowrap`}
-                            >
-                              {label} · {count}
-                            </button>
-                          );
-                        }}
-                      </For>
+                    <For each={data.roleRequests}>
+                      {(rq) => (
+                        <div
+                          style={`padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-bottom:1px solid ${WARN_BORDER}`}
+                        >
+                          <span style="font-size:12.5px">
+                            <b>{rq.user.name}</b> · {rq.user.phone} · {ROLE_LABEL[rq.user.role] || rq.user.role} →{' '}
+                            <b>{ROLE_LABEL[rq.request.role] || rq.request.role}</b>
+                          </span>
+                          <span style="display:flex;gap:6px">
+                            <ActBtn variant="primary" onClick={() => resolveRoleRequest(rq.request.id, true)}>
+                              Одобрить
+                            </ActBtn>
+                            <ActBtn variant="neutral" onClick={() => resolveRoleRequest(rq.request.id, false)}>
+                              Отклонить
+                            </ActBtn>
+                          </span>
+                        </div>
+                      )}
+                    </For>
+                  </section>
+                </Show>
+                <section style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;align-items:flex-start">
+                  <div style={`flex:1 1 400px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff;overflow:hidden`}>
+                    <div
+                      style={`padding:12px 16px;border-bottom:1px solid ${BORDER};background:${SURFACE_ALT};display:flex;flex-direction:column;gap:10px`}
+                    >
+                      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                        <div style="font-size:13px;font-weight:600">Пользователи</div>
+                        <input
+                          value={userQuery()}
+                          onInput={(e) => setUserQuery(e.currentTarget.value)}
+                          placeholder="Поиск по имени, телефону"
+                          aria-label="Поиск пользователей"
+                          style={`border:1px solid ${BORDER};border-radius:3px;padding:5px 9px;font-size:12px;width:160px;background:#fff;color:${INK}`}
+                        />
+                      </div>
+                      <div style="display:flex;gap:4px;flex-wrap:wrap">
+                        <For each={userFilters()}>
+                          {([k, label, count]) => {
+                            const on = () => userFilter() === k;
+                            return (
+                              <button
+                                type="button"
+                                class="bn-tap"
+                                onClick={() => setUserFilter(k)}
+                                style={`border:1px solid ${on() ? ACCENT : BORDER};background:${on() ? ACCENT : '#fff'};color:${on() ? '#fff' : TEXT};cursor:pointer;font-size:11.5px;padding:3px 9px;border-radius:3px;white-space:nowrap`}
+                              >
+                                {label} · {count}
+                              </button>
+                            );
+                          }}
+                        </For>
+                      </div>
                     </div>
+                    <Show when={rows().length === 0}>
+                      <div style={`padding:32px 20px;text-align:center;font-size:13px;color:${TEXT_GHOST}`}>Пользователей нет</div>
+                    </Show>
+                    <For each={rows()}>{(u) => <UserRow user={u} selectedId={selectedUserId()} onSelect={selectUser} />}</For>
                   </div>
-                  <Show when={rows().length === 0}>
-                    <div style={`padding:32px 20px;text-align:center;font-size:13px;color:${TEXT_GHOST}`}>Пользователей нет</div>
-                  </Show>
-                  <For each={rows()}>{(u) => <UserRow user={u} selectedId={selectedUserId()} onSelect={selectUser} />}</For>
-                </div>
 
-                <aside style={`flex:1 1 360px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff`}>
-                  <UserDetail
-                    detail={userDetail()}
-                    draft={userDraft()}
-                    onDraft={setUserDraft}
-                    onSave={saveUser}
-                    onChat={() => {
-                      setSection('support');
-                      setFocusSupportUserId(selectedUserId());
-                    }}
-                    onListingStatus={setListingStatus}
-                    onDeleteRequest={setConfirmDeleteUser}
-                  />
-                </aside>
-              </section>
+                  <aside style={`flex:1 1 360px;min-width:0;border:1px solid ${BORDER};border-radius:4px;background:#fff`}>
+                    <UserDetail
+                      detail={userDetail()}
+                      draft={userDraft()}
+                      onDraft={setUserDraft}
+                      onSave={saveUser}
+                      onChat={() => {
+                        setSection('support');
+                        setFocusSupportUserId(selectedUserId());
+                      }}
+                      onListingStatus={setListingStatus}
+                      onDeleteRequest={setConfirmDeleteUser}
+                    />
+                  </aside>
+                </section>
+              </>
             );
           })()}
         </Show>
@@ -1407,7 +1577,9 @@ function Panel(props) {
                         <div style={`font-family:${MONO};font-size:11.5px;color:${TEXT_MUTED}`}>{u.phone}</div>
                         <div style={`font-family:${MONO}`}>{statsOf(u.id).total}</div>
                         <div style={`font-family:${MONO};color:${ACCENT}`}>{statsOf(u.id).active}</div>
-                        <div style={`font-family:${MONO};color:${statsOf(u.id).flagged ? DANGER : TEXT_GHOST}`}>{statsOf(u.id).flagged}</div>
+                        <div style={`font-family:${MONO};color:${statsOf(u.id).flagged ? DANGER : TEXT_GHOST}`}>
+                          {statsOf(u.id).flagged}
+                        </div>
                         <div>
                           <Badge bg={u.status === 'blocked' ? DANGER_SOFT : ACCENT_SOFT} fg={u.status === 'blocked' ? DANGER : ACCENT}>
                             {u.status === 'blocked' ? 'Заблокирован' : 'Активен'}
@@ -1447,7 +1619,9 @@ function Panel(props) {
       </main>
 
       <Show when={confirmDeleteUser()}>
-        <div style={`position:fixed;inset:0;background:${OVERLAY};display:flex;align-items:center;justify-content:center;padding:24px;z-index:40`}>
+        <div
+          style={`position:fixed;inset:0;background:${OVERLAY};display:flex;align-items:center;justify-content:center;padding:24px;z-index:40`}
+        >
           <div style="width:100%;max-width:400px;background:#fff;border:1px solid #e3e3e0;border-radius:5px;padding:22px;display:flex;flex-direction:column;gap:14px">
             <div style="font-size:16px;font-weight:600;letter-spacing:-.01em">Удалить аккаунт?</div>
             <div style="font-size:13px;line-height:1.5;color:#4a4c50">
