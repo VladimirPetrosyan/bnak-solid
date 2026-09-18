@@ -1,5 +1,6 @@
 import rawSearch from '@tabler/icons/outline/search.svg?raw';
 import rawHeart from '@tabler/icons/outline/heart.svg?raw';
+import rawHeartFilled from '@tabler/icons/filled/heart.svg?raw';
 import rawChat from '@tabler/icons/outline/message-circle.svg?raw';
 import rawPin from '@tabler/icons/outline/map-pin.svg?raw';
 import rawCheck from '@tabler/icons/outline/check.svg?raw';
@@ -58,6 +59,7 @@ function shapesOf(svg) {
 const ICONS = {
   search: shapesOf(rawSearch),
   heart: shapesOf(rawHeart),
+  heartFilled: shapesOf(rawHeartFilled),
   chat: shapesOf(rawChat),
   pin: shapesOf(rawPin),
   check: shapesOf(rawCheck),
@@ -103,7 +105,7 @@ const ICONS = {
   starFilled: shapesOf(rawStarFilled)
 };
 
-const FILLED = new Set(['stop', 'play', 'pause', 'starFilled']);
+const FILLED = new Set(['stop', 'play', 'pause', 'starFilled', 'heartFilled']);
 
 export default function Icon(props) {
   return (

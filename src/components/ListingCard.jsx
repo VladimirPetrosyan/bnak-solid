@@ -45,7 +45,7 @@ export default function ListingCard(props) {
           aria-pressed={c().fav}
           style="position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.92)"
         >
-          <Icon name="heart" size={17} fill={c().fav ? TEAL : 'none'} stroke={c().fav ? TEAL : '#4a4844'} />
+          <Icon name={c().fav ? 'heartFilled' : 'heart'} size={17} stroke={c().fav ? TEAL : '#4a4844'} />
         </button>
       </div>
 

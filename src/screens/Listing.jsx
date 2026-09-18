@@ -375,7 +375,7 @@ export default function Listing() {
                 aria-pressed={c().fav}
                 style="display:flex;align-items:center;justify-content:center;gap:9px;padding:14px;border-radius:14px;border:1px solid #e8e7e4;font-size:14px;font-weight:600;color:#4a4844;white-space:nowrap"
               >
-                <Icon name="heart" size={16} fill={c().fav ? TEAL : 'none'} stroke={c().fav ? TEAL : '#4a4844'} style="flex:0 0 auto" />
+                <Icon name={c().fav ? 'heartFilled' : 'heart'} size={16} stroke={c().fav ? TEAL : '#4a4844'} style="flex:0 0 auto" />
                 <span>{c().fav ? t().inFavW : t().saveWatch}</span>
               </button>
             </div>
