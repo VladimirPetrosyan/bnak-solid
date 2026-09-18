@@ -194,3 +194,56 @@ func TestDedupeSuggestionsRemovesRepeatsAndRespectsLimit(t *testing.T) {
 		t.Fatalf("got %+v, want first two unique entries in order", got)
 	}
 }
+
+func decodeSuggestResp(t *testing.T, raw string) yandexSuggestResp {
+	t.Helper()
+	var out yandexSuggestResp
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		t.Fatalf("decode fixture: %v", err)
+	}
+	return out
+}
+
+func TestSuggestLabelsFormatsTitleWithSubtitle(t *testing.T) {
+	// снято с реального ответа Yandex Geosuggest на "Абов"
+	out := decodeSuggestResp(t, `{"results":[
+		{"title":{"text":"улица Абовяна"},"subtitle":{"text":"Ереван"},"tags":["street"]},
+		{"title":{"text":"улица Абовяна, 33"},"subtitle":{"text":"Ереван"},"tags":["house"]}
+	]}`)
+	got := suggestLabels(out)
+	want := []string{"Ереван, улица Абовяна", "Ереван, улица Абовяна, 33"}
+	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+		t.Fatalf("got %+v, want %+v", got, want)
+	}
+}
+
+func TestSuggestLabelsDropsBusinessResults(t *testing.T) {
+	out := decodeSuggestResp(t, `{"results":[
+		{"title":{"text":"Абовянский медицинский центр"},"subtitle":{"text":"Больница · Абовян"},"tags":["business","medicine"]},
+		{"title":{"text":"улица Абовяна, 33"},"subtitle":{"text":"Ереван"},"tags":["house"]}
+	]}`)
+	got := suggestLabels(out)
+	if len(got) != 1 || got[0] != "Ереван, улица Абовяна, 33" {
+		t.Fatalf("got %+v, want only the address, business filtered out", got)
+	}
+}
+
+func TestSuggestLabelsDedupesAndSkipsEmptyTitle(t *testing.T) {
+	out := decodeSuggestResp(t, `{"results":[
+		{"title":{"text":"улица Абовяна"},"subtitle":{"text":"Ереван"},"tags":["street"]},
+		{"title":{"text":"улица Абовяна"},"subtitle":{"text":"Ереван"},"tags":["street"]},
+		{"title":{"text":""},"subtitle":{"text":"Ереван"},"tags":["street"]}
+	]}`)
+	got := suggestLabels(out)
+	if len(got) != 1 || got[0] != "Ереван, улица Абовяна" {
+		t.Fatalf("got %+v, want a single deduped entry", got)
+	}
+}
+
+func TestSuggestLabelsEmptyOnNoResults(t *testing.T) {
+	out := decodeSuggestResp(t, `{"results":[]}`)
+	got := suggestLabels(out)
+	if len(got) != 0 {
+		t.Fatalf("got %d labels, want 0", len(got))
+	}
+}

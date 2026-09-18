@@ -13,7 +13,7 @@ import {
   STAY_KINDS,
   stayKindLabel,
   addressSuggestions,
-  geocodeDistrict
+  resolveAddress
 } from '../store';
 import { CITY, DIST, FEAT, nf } from '../data';
 import { pillStyle, label as labelStyle, input as inputStyle, TEAL, TEAL_T, TEAL_TX, INK, RED } from '../theme';
@@ -73,21 +73,25 @@ export default function Post() {
     clearErr('street');
     setPost({ street: value, addrConfirmed: false });
     clearTimeout(addrTimer);
+    if (!value.trim()) {
+      setAddrSuggestions([]);
+      setAddrOpen(false);
+      return;
+    }
     addrTimer = setTimeout(async () => {
       const list = await addressSuggestions(p().city, p().dist, value);
       setAddrSuggestions(list);
       setAddrOpen(list.length > 0);
-    }, 400);
+    }, 250);
   };
-  const pickAddrSuggestion = (s) => {
+  const pickAddrSuggestion = async (label) => {
     clearTimeout(addrTimer);
     clearErr('street');
-    setPost({ street: s.street, addrConfirmed: true, ...(s.district ? { dist: s.district } : {}) });
     setAddrOpen(false);
-    if (!s.district && s.lat && s.lng) {
-      geocodeDistrict(s.lat, s.lng).then((district) => {
-        if (district) setPost({ dist: district });
-      });
+    setPost({ street: label, addrConfirmed: false });
+    const resolved = await resolveAddress(p().city, p().dist, label);
+    if (resolved && p().street === label) {
+      setPost({ street: resolved.street, addrConfirmed: true, ...(resolved.district ? { dist: resolved.district } : {}) });
     }
   };
   onMount(() => {
@@ -334,40 +338,42 @@ export default function Post() {
               </div>
 
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:16px;margin-top:24px">
-                <div ref={addrWrapRef} style="position:relative;align-self:start">
+                <div ref={addrWrapRef} style="align-self:start">
                   <div style="font-size:13px;font-weight:600;color:#6f6d68;margin-bottom:8px">{t().streetLbl}</div>
-                  <input
-                    ref={(el) => (streetRef = el)}
-                    value={p().street}
-                    onInput={(e) => onStreetInput(e.currentTarget.value)}
-                    onFocus={() => setAddrOpen(addrSuggestions().length > 0)}
-                    placeholder={t().streetPh}
-                    maxLength={MAX_STREET_LEN}
-                    aria-invalid={hasErr('street')}
-                    autocomplete="off"
-                    style={errStyle('street')}
-                  />
-                  <Show when={addrOpen()}>
-                    <div
-                      role="listbox"
-                      style="position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7;animation:bnUp .16s ease both;max-height:260px;overflow-y:auto"
-                    >
-                      <For each={addrSuggestions()}>
-                        {(s) => (
-                          <button
-                            type="button"
-                            class="bn-tap"
-                            role="option"
-                            onClick={() => pickAddrSuggestion(s)}
-                            style="width:100%;text-align:left;display:flex;align-items:center;gap:9px;padding:11px 14px;font-size:14px;font-weight:600"
-                          >
-                            <Icon name="pin" size={14} stroke="#9a9793" style="flex:0 0 auto" />
-                            <span>{s.full}</span>
-                          </button>
-                        )}
-                      </For>
-                    </div>
-                  </Show>
+                  <div style="position:relative">
+                    <input
+                      ref={(el) => (streetRef = el)}
+                      value={p().street}
+                      onInput={(e) => onStreetInput(e.currentTarget.value)}
+                      onFocus={() => setAddrOpen(addrSuggestions().length > 0)}
+                      placeholder={t().streetPh}
+                      maxLength={MAX_STREET_LEN}
+                      aria-invalid={hasErr('street')}
+                      autocomplete="off"
+                      style={errStyle('street')}
+                    />
+                    <Show when={addrOpen()}>
+                      <div
+                        role="listbox"
+                        style="position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 18px 44px -20px rgba(28,27,25,.5),0 0 0 1px #ebeae7;animation:bnUp .16s ease both;max-height:260px;overflow-y:auto"
+                      >
+                        <For each={addrSuggestions()}>
+                          {(s) => (
+                            <button
+                              type="button"
+                              class="bn-tap"
+                              role="option"
+                              onClick={() => pickAddrSuggestion(s)}
+                              style="width:100%;text-align:left;display:flex;align-items:center;gap:9px;padding:11px 14px;font-size:14px;font-weight:600"
+                            >
+                              <Icon name="pin" size={14} stroke="#9a9793" style="flex:0 0 auto" />
+                              <span>{s}</span>
+                            </button>
+                          )}
+                        </For>
+                      </div>
+                    </Show>
+                  </div>
                   <div style="font-size:12px;color:#9a9793;margin-top:8px;line-height:1.45">{t().streetConfirmNote}</div>
                 </div>
                 <div>

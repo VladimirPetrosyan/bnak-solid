@@ -173,7 +173,7 @@ func main() {
 	mux.HandleFunc("GET /api/listings/{id}/revision", requireAuth(handleGetListingRevision))
 	mux.HandleFunc("PUT /api/listings/{id}/responsible-agent", requireAuth(handleSetResponsibleAgent))
 	mux.HandleFunc("GET /api/geocode/suggest", requireAuth(handleGeocodeSuggest))
-	mux.HandleFunc("GET /api/geocode/district", requireAuth(handleGeocodeDistrict))
+	mux.HandleFunc("GET /api/geocode/resolve", requireAuth(handleGeocodeResolve))
 
 	// отели и хостелы: номера, календарь, брони — см. stays.go
 	mux.HandleFunc("GET /api/listings/{id}/rooms", handleListRooms)

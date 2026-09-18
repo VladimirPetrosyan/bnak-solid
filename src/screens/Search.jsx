@@ -121,7 +121,7 @@ export default function Search() {
             type="button"
             class="bn-tap"
             onClick={() => setState({ filtersOpen: true, sortOpen: false })}
-            style="display:flex;align-items:center;justify-content:center;gap:9px;height:48px;padding:0 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:15px;font-weight:700;flex:0 0 auto"
+            style={`display:flex;align-items:center;justify-content:center;gap:9px;height:48px;padding:0 20px;border-radius:14px;background:#0e7c73;color:#fff;font-size:15px;font-weight:700;flex:${state.isMob ? '1 1 100%' : '0 0 auto'}`}
           >
             <Icon name="search" size={16} stroke="#fff" weight={2.2} />
             <span>{t().find}</span>

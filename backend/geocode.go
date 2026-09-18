@@ -30,6 +30,22 @@ type AddressSuggestion struct {
 // оставляет прежние координаты (тот самый случайный фолбэк) как есть.
 var yandexGeocoderURL = "https://geocode-maps.yandex.ru/1.x/"
 
+// yandexSuggestURL — Yandex Geosuggest API, отдельный продукт от HTTP Геокодера (включается
+// в консоли Yandex отдельно, тем же ключом). В отличие от Geocoder — специализированный
+// сервис автодополнения по мере ввода: отдаёт совпадения уже с первого символа, как в
+// Яндекс.Картах/Такси, в т.ч. на армянском. Прямые server-to-server запросы сюда какое-то
+// время после создания/привязки продукта к ключу отвечают 403 (см. историю в geocode_test.go
+// нет — не тестовый кейс, а разовая заминка на стороне Yandex) — если снова начнёт падать
+// 403 без auth-ошибки в теле, проверьте, что прошло достаточно времени после включения
+// продукта "API Геосаджеста" на ключе в консоли.
+var yandexSuggestURL = "https://suggest-maps.yandex.ru/v1/suggest"
+
+// armeniaBBox — грубый охват территории Армении (юго-запад~северо-восток), чтобы короткие
+// запросы не уводили совпадения в другие страны с похожими названиями.
+var armeniaBBox = []string{"43.45,38.82", "46.62,41.30"}
+
+var suggestLangByCode = map[string]string{"hy": "hy_AM", "ru": "ru_RU", "en": "en_US"}
+
 var geocodeHTTPClient = &http.Client{Timeout: 8 * time.Second}
 
 var cityRuNames = map[string]string{
@@ -318,26 +334,132 @@ func matchDistrictKey(yandexName string) string {
 	return ""
 }
 
-// ---------- GET /api/geocode/suggest ----------
-
-func handleGeocodeSuggest(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	suggestions := addressSuggestions(q.Get("city"), q.Get("d"), q.Get("q"), 5)
-	writeJSON(w, http.StatusOK, suggestions)
+type yandexSuggestResp struct {
+	Results []struct {
+		Title struct {
+			Text string `json:"text"`
+		} `json:"title"`
+		Subtitle struct {
+			Text string `json:"text"`
+		} `json:"subtitle"`
+		Tags []string `json:"tags"`
+	} `json:"results"`
 }
 
-// ---------- GET /api/geocode/district ----------
-
-// addressSuggestions заполняет District только у самого вероятного варианта (см. выше), чтобы
-// не тратить лишние запросы к Yandex на весь список. Если пользователь выбрал другую
-// подсказку, фронтенд донабирает район по её координатам через этот эндпоинт.
-func handleGeocodeDistrict(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	lat, errLat := strconv.ParseFloat(q.Get("lat"), 64)
-	lng, errLng := strconv.ParseFloat(q.Get("lng"), 64)
-	district := ""
-	if errLat == nil && errLng == nil {
-		district = districtAt(lat, lng)
+// runSuggest — запрос к Yandex Geosuggest API (см. yandexSuggestURL выше), ограниченный
+// территорией Армении через bbox+strict_bounds, чтобы короткий ввод не уводил совпадения в
+// другие страны. lang — код языка интерфейса (см. requestLang в translate.go); пустая строка
+// или неизвестный код — используется ru_RU, как и для обычного Geocoder.
+func runSuggest(query, lang string, results int) (yandexSuggestResp, bool) {
+	var out yandexSuggestResp
+	if yandexGeocoderKey == "" || strings.TrimSpace(query) == "" {
+		return out, false
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"district": district})
+	suggestLang := suggestLangByCode[lang]
+	if suggestLang == "" {
+		suggestLang = "ru_RU"
+	}
+	q := url.Values{
+		"apikey":        {yandexGeocoderKey},
+		"text":          {query},
+		"lang":          {suggestLang},
+		"results":       {strconv.Itoa(results)},
+		"bbox":          {armeniaBBox[0] + "~" + armeniaBBox[1]},
+		"strict_bounds": {"1"},
+		"type":          {"geo"},
+	}
+	req, err := http.NewRequest(http.MethodGet, yandexSuggestURL+"?"+q.Encode(), nil)
+	if err != nil {
+		return out, false
+	}
+	// см. комментарий в runGeocode — тот же ключ, то же ограничение по Referer.
+	req.Header.Set("Referer", "https://hayhome.am/")
+	resp, err := geocodeHTTPClient.Do(req)
+	if err != nil {
+		return out, false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return out, false
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return out, false
+	}
+	return out, true
+}
+
+// suggestLabels — чистая часть runSuggest без сетевого вызова (для теста на фиксированном
+// JSON). Организации ("tags":["business",...]) отбрасываем — фронтенду нужны только реальные
+// адреса, не названия заведений; type=geo в запросе уже должен это делать, но Yandex иногда
+// всё равно подмешивает сильные совпадения по названию, поэтому фильтруем ещё раз на своей
+// стороне.
+func suggestLabels(out yandexSuggestResp) []string {
+	seen := map[string]bool{}
+	labels := []string{}
+	for _, r := range out.Results {
+		business := false
+		for _, tag := range r.Tags {
+			if tag == "business" {
+				business = true
+				break
+			}
+		}
+		if business {
+			continue
+		}
+		title := strings.TrimSpace(r.Title.Text)
+		if title == "" {
+			continue
+		}
+		label := title
+		if sub := strings.TrimSpace(r.Subtitle.Text); sub != "" {
+			label = sub + ", " + title
+		}
+		if seen[label] {
+			continue
+		}
+		seen[label] = true
+		labels = append(labels, label)
+	}
+	return labels
+}
+
+// ---------- GET /api/geocode/suggest ----------
+
+// handleGeocodeSuggest — подсказки по мере ввода через Yandex Geosuggest API: в отличие от
+// обычного Geocoder (см. addressSuggestions), даёт совпадения уже с первого символа, включая
+// армянский ввод. Если Suggest недоступен (сетевая ошибка, продукт ещё не активирован на
+// ключе и т.п.), откатываемся на Geocoder — хуже по UX (нужен более полный адрес), но не
+// ломает форму совсем.
+func handleGeocodeSuggest(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	if out, ok := runSuggest(q.Get("q"), requestLang(r), 5); ok {
+		if labels := suggestLabels(out); len(labels) > 0 {
+			writeJSON(w, http.StatusOK, labels)
+			return
+		}
+	}
+	suggestions := addressSuggestions(q.Get("city"), q.Get("d"), q.Get("q"), 5)
+	labels := make([]string, 0, len(suggestions))
+	for _, s := range suggestions {
+		labels = append(labels, s.Full)
+	}
+	writeJSON(w, http.StatusOK, labels)
+}
+
+// ---------- GET /api/geocode/resolve ----------
+
+// handleGeocodeResolve превращает выбранный пользователем вариант (текст из handleGeocodeSuggest)
+// в структурированный результат с координатами и районом. У Suggest нет координат в ответе —
+// только текст, поэтому после выбора подсказки фронтенд всегда донабирает точные данные здесь,
+// через уже существующий geocoder-путь addressSuggestions (лишний токен локали в начале строки
+// вроде "Ереван, ..." Yandex Geocoder спокойно проглатывает вместе с уже подставляемым городом).
+func handleGeocodeResolve(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	suggestions := addressSuggestions(q.Get("city"), q.Get("d"), q.Get("text"), 1)
+	if len(suggestions) == 0 {
+		writeJSON(w, http.StatusOK, map[string]any{})
+		return
+	}
+	writeJSON(w, http.StatusOK, suggestions[0])
 }

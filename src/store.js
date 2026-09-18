@@ -590,9 +590,13 @@ export async function requestRoleChange(role) {
   }
 }
 
+// addressSuggestions — варианты адреса по мере ввода (см. onStreetInput в Post.jsx). Бэкенд
+// сам решает, через что отвечать (Yandex Geosuggest — с первого символа, включая армянский
+// ввод, либо запасной путь через Geocoder) — фронтенду всегда приходит плоский список готовых
+// подписей для выпадающего списка.
 export async function addressSuggestions(city, district, query) {
   const q = (query || '').trim();
-  if (q.length < 3) return [];
+  if (!q) return [];
   try {
     const params = new URLSearchParams({ city, d: district, q });
     return await api.get('/api/geocode/suggest?' + params.toString());
@@ -601,13 +605,18 @@ export async function addressSuggestions(city, district, query) {
   }
 }
 
-export async function geocodeDistrict(lat, lng) {
+// resolveAddress превращает выбранный пользователем вариант подсказки (текст из
+// addressSuggestions) в точный адрес с координатами и районом — у Suggest нет координат в
+// ответе, только текст.
+export async function resolveAddress(city, district, text) {
+  const q = (text || '').trim();
+  if (!q) return null;
   try {
-    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
-    const res = await api.get('/api/geocode/district?' + params.toString());
-    return (res && res.district) || '';
+    const params = new URLSearchParams({ city, d: district, text: q });
+    const res = await api.get('/api/geocode/resolve?' + params.toString());
+    return res && res.street ? res : null;
   } catch {
-    return '';
+    return null;
   }
 }
 
